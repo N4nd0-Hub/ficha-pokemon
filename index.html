@@ -17874,6 +17874,66 @@ html[data-font-theme="arcade"] .combat-status-badge{font-weight:400!important;}
   .portable-image-note{font-size:10px!important}
 }
 
+
+/* V5.0 — barra superior compacta e botão de personalização.
+   Seleção e criação de Pokémon permanecem na Box da Pokébola. */
+.top-actions .top-personalize-btn{
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;
+ gap:10px!important;height:44px!important;min-height:44px!important;
+ padding:5px 12px 5px 6px!important;
+ border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line))!important;
+ border-radius:10px!important;
+ background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 17%,var(--panel)),var(--panel) 76%)!important;
+ color:var(--text)!important;cursor:pointer;text-align:left;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 8px rgba(0,0,0,.16);
+ transition:border-color .18s,box-shadow .18s!important
+}
+.top-actions .top-personalize-btn:hover,
+.top-actions .top-personalize-btn:focus-visible{
+ border-color:var(--accent)!important;
+ box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)!important;
+ outline:none
+}
+.top-personalize-icon{display:grid;flex:0 0 32px;place-items:center;width:32px;height:32px;
+ border:1px solid color-mix(in srgb,var(--accent) 60%,var(--line));border-radius:8px;
+ background:color-mix(in srgb,var(--accent) 21%,var(--bg));color:var(--accent2)}
+.top-personalize-icon svg{display:block;width:18px;height:18px}
+.top-personalize-copy{display:flex;flex:1 1 auto;min-width:0;flex-direction:column;gap:3px}
+.top-personalize-copy b{color:var(--text);font-family:var(--font-display,inherit);
+ font-size:11px!important;font-weight:700;line-height:1.12;letter-spacing:.035em;white-space:nowrap}
+.top-personalize-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+ color:var(--muted);font-size:9px!important;line-height:1.1}
+.top-personalize-arrow{flex:0 0 auto;color:var(--accent2);font-size:14px;line-height:1}
+.top-action-divider{flex:0 0 1px;align-self:center;width:1px;height:27px;background:var(--line);opacity:.8}
+@media(min-width:901px){
+ .topbar{grid-template-columns:48px minmax(185px,255px) minmax(0,1fr)!important;overflow-x:visible!important}
+ .topbar>.brand{min-width:0!important}
+ .topbar>.top-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;
+  flex-wrap:nowrap!important;gap:9px!important;min-width:0!important;width:100%!important;overflow:visible!important}
+ .topbar>.top-actions>.top-personalize-btn{flex:0 1 205px!important;width:205px!important;min-width:175px!important;max-width:245px!important}
+ .topbar>.top-actions>.btn{flex:0 0 auto!important;width:auto!important;min-height:42px!important;
+  height:42px!important;padding:7px 13px!important;border-radius:8px!important;white-space:nowrap!important}
+}
+@media(min-width:901px) and (max-width:1080px){
+ .topbar{grid-template-columns:48px minmax(165px,215px) minmax(0,1fr)!important;gap:7px!important;padding-inline:10px!important}
+ .topbar>.top-actions{gap:6px!important}
+ .topbar>.top-actions>.top-personalize-btn{min-width:150px!important}
+ .topbar>.top-actions>.btn{padding-inline:7px!important;font-size:10px!important}
+}
+@media(max-width:900px){
+ .topbar>.top-actions{display:none!important}
+ .topbar>.top-actions.mobile-open{display:flex!important;flex-direction:column!important;
+  align-items:stretch!important;gap:9px!important;overflow-y:auto!important}
+ .topbar>.top-actions>.top-personalize-btn{width:100%!important;min-width:0!important;height:50px!important}
+ .topbar>.top-actions>.btn{width:100%!important}
+ .top-action-divider{flex:0 0 1px;width:100%;height:1px;margin:2px 0}
+}
+html[data-font-theme="arcade"] .top-personalize-copy b{font-weight:400!important;font-size:9px!important}
+html[data-font-theme="arcade"] .top-personalize-copy small{font-size:8px!important}
+html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
+ border-color:#111e26!important;background:linear-gradient(120deg,#183544,#10212a)!important;color:#eaffff!important
+}
+
 </style>
 </head>
 <body>
@@ -17892,23 +17952,27 @@ html[data-font-theme="arcade"] .combat-status-badge{font-weight:400!important;}
 
   <div class="top-actions" id="mobileToolsPanel">
     <div class="mobile-actions-head"><span>Ferramentas da ficha</span><button class="btn small" id="mobileToolsClose" type="button" aria-label="Fechar ferramentas">✕</button></div>
-    <button class="select-like top-selector" id="currentPokemonBtn">
-      <span class="top-selector-copy">
-        <strong>Ficha atual</strong>
-        <span id="topCurrentName">Blaziken</span>
+    <button class="top-personalize-btn" id="themeBtn" type="button"
+      aria-haspopup="dialog" aria-controls="themeModal"
+      title="Personalizar aparência, fontes e cores">
+      <span class="top-personalize-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a9 9 0 1 0 9 9c0-1.7-1.3-3-3-3h-1a2 2 0 0 1-2-2V6a3 3 0 0 0-3-3Z"/>
+          <circle cx="6.5" cy="12" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="9" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="15" cy="15.5" r="1" fill="currentColor" stroke="none"/>
+        </svg>
       </span>
-      <span class="top-selector-chevron" aria-hidden="true">⌄</span>
-    </button>
-    <button class="select-like top-selector" id="themeBtn">
-      <span class="top-selector-copy">
-        <strong>Personalização</strong>
-        <span id="themeLabel">Hazel • Padrão</span>
+      <span class="top-personalize-copy">
+        <b>Personalizar</b><small id="themeLabel">Hazel • Padrão</small>
       </span>
-      <span class="top-selector-chevron" aria-hidden="true">⌄</span>
+      <span class="top-personalize-arrow" aria-hidden="true">⌄</span>
     </button>
+    <span class="top-action-divider" aria-hidden="true"></span>
     <button class="btn" id="exportBtn" title="Exporta todas as fichas e suas artes personalizadas em um único JSON">Exportar JSON</button>
     <button class="btn" id="importBtn" title="Importa fichas e artes incluídas no JSON">Importar JSON</button>
-    <button class="btn primary" id="newPokemonBtn">＋ Novo Pokémon</button>
     <input type="file" id="importInput" accept=".json" hidden />
   </div>
 </header>
@@ -27936,7 +28000,7 @@ function initializeMobileInterface(){
     button.addEventListener("click",()=>setActiveSheetPage(button.dataset.mobilePage));
   });
 
-  ["themeBtn","exportBtn","importBtn","newPokemonBtn"].forEach(id=>{
+  ["themeBtn","exportBtn","importBtn"].forEach(id=>{
     document.getElementById(id)?.addEventListener("click",()=>setMobileToolsOpen(false));
   });
 
@@ -30322,7 +30386,7 @@ function renderAll(){
   setVal("imageUrl",current.imageUrl||"");
   setVal("abilityName",current.abilityName||"");
   setVal("abilityText",current.abilityText||"");
-  document.getElementById("topCurrentName").textContent=current.name||"Sem nome";
+  
   document.getElementById("dexLabel").textContent="#"+String(current.dex||"—").padStart(4,"0");
   const bst=Object.values(current.baseStats||current.stats).reduce((a,b)=>a+Number(b||0),0);
   document.getElementById("bstLabel").textContent="BST "+bst;
@@ -30352,7 +30416,7 @@ function bindValue(id,key,transform=v=>v){
   document.getElementById(id).addEventListener("input",e=>{
     current[key]=transform(e.target.value);
     if(key==="name"){
-      document.getElementById("topCurrentName").textContent=current.name||"Sem nome";
+      
       renderDrawer();
     }
     if(key==="dex") document.getElementById("dexLabel").textContent="#"+String(current.dex||"—").padStart(4,"0");
@@ -32956,8 +33020,6 @@ document.getElementById("abilitySystemLookup").addEventListener("keydown",e=>{
   if(e.key==="Enter") fillAbilityFromSystem();
 });
 document.getElementById("drawerToggle").onclick=toggleDrawer;
-document.getElementById("currentPokemonBtn").onclick=toggleDrawer;
-document.getElementById("newPokemonBtn").onclick=openManualPokemonModal;
 document.getElementById("drawerNewBtn").onclick=openManualPokemonModal;
 document.getElementById("addMoveBtn").onclick=addMove;
 document.getElementById("saveMoveEditBtn").onclick=saveMoveEdit;
