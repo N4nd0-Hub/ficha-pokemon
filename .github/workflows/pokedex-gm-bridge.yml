@@ -5,6 +5,8 @@ on:
     paths:
       - index.html
       - .github/workflows/pokedex-gm-bridge.yml
+      - scripts/ajustar_topo_v5.py
+      - styles/topbar-v5.css
   workflow_dispatch:
 
 permissions:
@@ -34,6 +36,20 @@ jobs:
               path.write_text(html, encoding="utf-8")
               print("Conector adicionado sem modificar as mecânicas existentes.")
           PY
+      - name: Reorganizar topo da ficha V5.0
+        shell: bash
+        run: |
+          python3 scripts/ajustar_topo_v5.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          source = Path("index.html").read_text(encoding="utf-8")
+          inline = re.findall(r"<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>", source)
+          if not inline:
+              raise SystemExit("Script interno da ficha não encontrado.")
+          Path("/tmp/ficha-v5-inline.js").write_text(max(inline, key=len), encoding="utf-8")
+          PY
+          node --check /tmp/ficha-v5-inline.js
       - name: Publicar a integração
         shell: bash
         run: |
@@ -44,5 +60,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Conectar catálogo publicado da Pokédex GM à ficha V5.0"
+          git commit -m "Ajustar barra superior e manter integração Pokédex GM V5.0"
           git push origin HEAD:main
