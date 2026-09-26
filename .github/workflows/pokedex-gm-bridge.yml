@@ -44,7 +44,7 @@ jobs:
           from pathlib import Path
           import re
           source = Path("index.html").read_text(encoding="utf-8")
-          inline = re.findall(r"<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>", source)
+          inline = re.findall(r"<script[^>]*>(.*?)</script>", source, flags=re.S)
           if not inline:
               raise SystemExit("Script interno da ficha não encontrado.")
           Path("/tmp/ficha-v5-inline.js").write_text(max(inline, key=len), encoding="utf-8")
