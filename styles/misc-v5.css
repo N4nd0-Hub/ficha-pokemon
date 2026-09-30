@@ -407,3 +407,119 @@ html[data-font-theme="arcade"] #page3 .item-description{font-size:8px!important}
   }
 }
 
+/* =========================================================
+   V5.0.3 — GRID FECHADA + ÍCONES REFEITOS
+   - posiciona cada painel em linha/coluna fixa
+   - abilities sobe para baixo do laboratório
+   - histórico fica abaixo de itens
+   - ícones refeitos de forma simples e estável
+   ========================================================= */
+#page3 .misc-command-grid{
+  grid-template-columns:minmax(0,1.55fr) minmax(320px,.85fr)!important;
+  grid-template-areas:
+    "training items"
+    "abilities history"
+    "notes notes"!important;
+  align-items:start!important;
+  gap:14px!important;
+}
+#page3 .misc-training-hub{grid-area:training!important}
+#page3 .misc-items-hub{grid-area:items!important}
+#page3 .misc-abilities-hub{grid-area:abilities!important}
+#page3 .misc-history-hub{grid-area:history!important}
+#page3 .misc-notes-hub{grid-area:notes!important}
+#page3 .misc-training-hub,
+#page3 .misc-items-hub,
+#page3 .misc-abilities-hub,
+#page3 .misc-history-hub,
+#page3 .misc-notes-hub{
+  grid-column:auto!important;
+  grid-row:auto!important;
+  align-self:start!important;
+  min-height:0!important;
+  height:auto!important;
+}
+#page3 .misc-training-hub>.panel-body,
+#page3 .misc-abilities-hub>.panel-body,
+#page3 .misc-items-hub>.panel-body,
+#page3 .misc-history-hub>.panel-body{
+  min-height:0!important;
+  height:auto!important;
+}
+
+/* Ícones refeitos: container limpo + símbolo central único */
+#page3 .misc-panel-icon{
+  position:relative!important;
+  width:18px!important;
+  height:18px!important;
+  flex:0 0 18px!important;
+  margin-right:10px!important;
+  border-radius:6px!important;
+  border:1px solid currentColor!important;
+  background:color-mix(in srgb,currentColor 8%,transparent)!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+  font-size:0!important;
+  line-height:0!important;
+}
+#page3 .misc-panel-icon::before,
+#page3 .misc-panel-icon::after{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  margin:auto!important;
+  display:block!important;
+}
+#page3 .misc-training-hub .misc-panel-icon{color:var(--misc-red)!important}
+#page3 .misc-training-hub .misc-panel-icon::before{
+  width:6px!important;height:6px!important;border-radius:2px!important;background:currentColor!important;transform:rotate(45deg)!important;
+}
+#page3 .misc-items-hub .misc-panel-icon{color:var(--misc-green)!important}
+#page3 .misc-items-hub .misc-panel-icon::before{
+  width:8px!important;height:8px!important;border:1px solid currentColor!important;border-radius:50%!important;background:transparent!important;
+}
+#page3 .misc-items-hub .misc-panel-icon::after{
+  width:4px!important;height:4px!important;border-radius:50%!important;background:currentColor!important;
+}
+#page3 .misc-history-hub .misc-panel-icon{color:var(--misc-yellow)!important}
+#page3 .misc-history-hub .misc-panel-icon::before{
+  width:8px!important;height:8px!important;border:1px solid currentColor!important;border-radius:50%!important;background:transparent!important;
+}
+#page3 .misc-history-hub .misc-panel-icon::after{
+  width:1px!important;height:5px!important;background:currentColor!important;transform:translate(1px,-1px)!important;box-shadow:2px 2px 0 0 currentColor!important;
+}
+#page3 .misc-abilities-hub .misc-panel-icon{color:var(--misc-purple)!important}
+#page3 .misc-abilities-hub .misc-panel-icon::before{
+  width:8px!important;height:8px!important;background:currentColor!important;clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)!important;
+}
+#page3 .misc-notes-hub .misc-panel-icon{color:var(--misc-red)!important}
+#page3 .misc-notes-hub .misc-panel-icon::before{
+  width:8px!important;height:10px!important;border:1px solid currentColor!important;border-radius:2px!important;background:transparent!important;
+}
+#page3 .misc-notes-hub .misc-panel-icon::after{
+  width:5px!important;height:1px!important;background:currentColor!important;transform:translateY(-2px)!important;box-shadow:0 3px 0 0 currentColor,0 6px 0 0 currentColor!important;
+}
+
+/* Ajustes de alinhamento no cabeçalho */
+#page3 .misc-panel-head-main{align-items:center!important}
+#page3 .misc-panel>.panel-head{min-height:56px!important}
+#page3 .misc-panel>.panel-head h2{margin:0!important}
+
+/* Em tablet/mobile, volta para pilha única limpa */
+@media(max-width:1180px){
+  #page3 .misc-command-grid{
+    grid-template-columns:1fr!important;
+    grid-template-areas:
+      "training"
+      "items"
+      "history"
+      "abilities"
+      "notes"!important;
+  }
+}
+@media(max-width:760px){
+  #page3 .misc-panel-icon{
+    width:16px!important;height:16px!important;flex-basis:16px!important;margin-right:8px!important;
+  }
+}
+
