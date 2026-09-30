@@ -12,6 +12,7 @@ source = index.read_text(encoding="utf-8")
 START = '<div class="page" id="page3">'
 END = '<div class="page" id="page4">'
 STYLE_LINK = '<link rel="stylesheet" href="styles/misc-v5.css" />'
+SCRIPT_LINK = '<script defer src="scripts/misc-options-v5.js"></script>'
 MARKER = 'class="page misc-page-v5" id="page3"'
 
 new_page = r'''<div class="page misc-page-v5" id="page3">
@@ -187,6 +188,21 @@ else:
         raise SystemExit("ERRO: a versão atual da Página 04 mudou. IDs ausentes: " + ", ".join(missing))
     source = source[:start] + new_page + source[end:]
 
+# A Página 04 agora possui decoração e recolhimento próprios.
+source = source.replace(
+    'document.querySelectorAll("#page1 .panel,#pageTrainer .panel,#page3 .panel")',
+    'document.querySelectorAll("#page1 .panel,#pageTrainer .panel")'
+)
+
+if SCRIPT_LINK not in source:
+    if STYLE_LINK in source:
+        source = source.replace(STYLE_LINK, STYLE_LINK + "\n  " + SCRIPT_LINK, 1)
+    else:
+        head_end = source.find("</head>")
+        if head_end < 0:
+            raise SystemExit("ERRO: </head> não encontrado para inserir o controlador da Miscelânea.")
+        source = source[:head_end] + "  " + SCRIPT_LINK + "\n" + source[head_end:]
+
 if STYLE_LINK not in source:
     head_end = source.find("</head>")
     if head_end < 0:
@@ -215,6 +231,8 @@ if problems:
 checks = {
     "Página 04 V5 instalada": MARKER in source,
     "CSS externo instalado": STYLE_LINK in source,
+    "Controlador da Miscelânea instalado": SCRIPT_LINK in source,
+    "Decoração legada removida da Página 04": '#pageTrainer .panel,#page3 .panel' not in source,
     "Enciclopédia preservada": 'class="page" id="page4"' in source,
     "Exportação JSON preservada": 'id="exportBtn"' in source,
     "Importação JSON preservada": 'id="importBtn"' in source,
