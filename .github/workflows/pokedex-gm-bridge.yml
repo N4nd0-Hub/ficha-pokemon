@@ -7,6 +7,8 @@ on:
       - .github/workflows/pokedex-gm-bridge.yml
       - scripts/ajustar_topo_v5.py
       - styles/topbar-v5.css
+      - scripts/repaginar_misc_v5.py
+      - styles/misc-v5.css
   workflow_dispatch:
 
 permissions:
@@ -40,6 +42,7 @@ jobs:
         shell: bash
         run: |
           python3 scripts/ajustar_topo_v5.py
+          python3 scripts/repaginar_misc_v5.py
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -60,5 +63,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Ajustar barra superior e manter integração Pokédex GM V5.0"
+          git commit -m "Ajustar barra superior e repaginar Miscelânea V5.0"
           git push origin HEAD:main
