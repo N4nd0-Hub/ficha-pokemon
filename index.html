@@ -17936,6 +17936,7 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
 
 </style>
   <link rel="stylesheet" href="styles/misc-v5.css" />
+  <script defer src="scripts/misc-options-v5.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -30280,7 +30281,7 @@ const PAGE_PANEL_DECORATION={
 };
 
 function decoratePagePanels(){
-  document.querySelectorAll("#page1 .panel,#pageTrainer .panel,#page3 .panel").forEach(panel=>{
+  document.querySelectorAll("#page1 .panel,#pageTrainer .panel").forEach(panel=>{
     if(panel.dataset.pageDecorated==="true")return;
 
     const heading=panel.querySelector(".panel-head h2");
