@@ -303,3 +303,107 @@ html[data-font-theme="arcade"] #page3 .item-description{font-size:8px!important}
     grid-row:auto!important;
   }
 }
+
+/* =========================================================
+   V5.0.2 — AJUSTE FINAL DOS CABEÇALHOS E LAYOUT DA MISCELÂNEA
+   - substitui os quadrados problemáticos por orbs pequenos
+   - remove o espaço vazio do laboratório de treinamento
+   ========================================================= */
+
+/* Layout real da página 04: coluna esquerda (Treino + Abilities) e
+   coluna direita (Itens + Histórico). Sem row-span, então o laboratório
+   não estica para acompanhar a altura do histórico. */
+#page3 .misc-command-grid{
+  align-items:start!important;
+  grid-template-columns:minmax(0,1.55fr) minmax(320px,.85fr)!important;
+  grid-auto-rows:auto!important;
+}
+#page3 .misc-training-hub,
+#page3 .misc-abilities-hub,
+#page3 .misc-items-hub,
+#page3 .misc-history-hub,
+#page3 .misc-notes-hub{
+  grid-row:auto!important;
+  align-self:start!important;
+  height:auto!important;
+  min-height:0!important;
+}
+#page3 .misc-training-hub{grid-column:1!important}
+#page3 .misc-abilities-hub{grid-column:1!important}
+#page3 .misc-items-hub{grid-column:2!important}
+#page3 .misc-history-hub{grid-column:2!important}
+#page3 .misc-notes-hub{grid-column:1 / -1!important}
+
+/* O painel de treino deve ter só a altura do seu conteúdo. */
+#page3 .misc-training-hub>.panel-body,
+#page3 .misc-training-hub .training-list{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+
+/* Substitui os "quadradinhos" por orbs pequenos mais discretos. */
+#page3 .misc-panel-icon{
+  width:14px!important;
+  height:14px!important;
+  flex:0 0 14px!important;
+  margin-right:12px!important;
+  border-radius:999px!important;
+  border:1px solid color-mix(in srgb,currentColor 80%,var(--line))!important;
+  background:
+    radial-gradient(circle at 35% 30%,rgba(255,255,255,.95) 0 16%,transparent 17%),
+    radial-gradient(circle at 48% 52%,currentColor 0 58%,color-mix(in srgb,currentColor 72%,#021018) 62% 100%)!important;
+  box-shadow:0 0 0 2px color-mix(in srgb,currentColor 10%,transparent)!important;
+  font-size:0!important;
+  line-height:0!important;
+  overflow:hidden!important;
+}
+#page3 .misc-panel-icon::before,
+#page3 .misc-panel-icon::after{
+  content:none!important;
+  display:none!important;
+}
+#page3 .misc-panel-head-main{align-items:center!important}
+#page3 .misc-panel>.panel-head{
+  min-height:54px!important;
+}
+
+/* Refinos do formulário do laboratório em desktop médio. */
+@media (min-width:980px) and (max-width:1450px){
+  #page3 .training-form{
+    grid-template-columns:minmax(0,1.1fr) minmax(110px,.58fr) minmax(110px,.65fr) minmax(96px,.42fr) minmax(96px,.42fr)!important;
+  }
+}
+
+/* Quebra mais cedo o cabeçalho de ferramentas, evitando apertos. */
+@media (max-width:1320px){
+  #page3 .move-auto-tools{
+    grid-template-columns:1fr!important;
+  }
+  #page3 .move-auto-tools .btn{
+    width:100%!important;
+  }
+}
+
+/* Tablet e afins: volta a uma coluna e limpa qualquer posicionamento manual. */
+@media (max-width:1180px){
+  #page3 .misc-command-grid{grid-template-columns:1fr!important}
+  #page3 .misc-training-hub,
+  #page3 .misc-abilities-hub,
+  #page3 .misc-items-hub,
+  #page3 .misc-history-hub,
+  #page3 .misc-notes-hub{
+    grid-column:1!important;
+  }
+}
+
+/* Mobile: orb ainda menor para não roubar espaço do título. */
+@media (max-width:760px){
+  #page3 .misc-panel-icon{
+    width:12px!important;
+    height:12px!important;
+    flex-basis:12px!important;
+    margin-right:9px!important;
+  }
+}
+
