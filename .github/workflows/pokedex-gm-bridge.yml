@@ -9,6 +9,7 @@ on:
       - styles/topbar-v5.css
       - scripts/repaginar_misc_v5.py
       - styles/misc-v5.css
+      - scripts/misc-options-v5.js
   workflow_dispatch:
 
 permissions:
@@ -53,6 +54,7 @@ jobs:
           Path("/tmp/ficha-v5-inline.js").write_text(max(inline, key=len), encoding="utf-8")
           PY
           node --check /tmp/ficha-v5-inline.js
+          node --check scripts/misc-options-v5.js
       - name: Publicar a integração
         shell: bash
         run: |
