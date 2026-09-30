@@ -523,3 +523,65 @@ html[data-font-theme="arcade"] #page3 .item-description{font-size:8px!important}
   }
 }
 
+/* =========================================================
+   V5.0.4 — ÍCONES SIMPLES COM LOSANGO
+   Mantém apenas a moldura externa + losango central.
+   ========================================================= */
+#page3 .misc-panel-icon{
+  position:relative!important;
+  width:22px!important;
+  height:22px!important;
+  flex:0 0 22px!important;
+  margin-right:9px!important;
+  border-radius:5px!important;
+  border:1px solid currentColor!important;
+  background:color-mix(in srgb,currentColor 7%,transparent)!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+  font-size:0!important;
+  line-height:0!important;
+}
+
+#page3 .misc-panel-icon::before{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  width:7px!important;
+  height:7px!important;
+  margin:0!important;
+  background:currentColor!important;
+  border:0!important;
+  border-radius:1px!important;
+  transform:translate(-50%,-50%) rotate(45deg)!important;
+  box-shadow:none!important;
+  clip-path:none!important;
+  -webkit-mask:none!important;
+  mask:none!important;
+}
+
+#page3 .misc-panel-icon::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* Cores por seção */
+#page3 .misc-training-hub .misc-panel-icon{color:var(--misc-red)!important}
+#page3 .misc-items-hub .misc-panel-icon{color:var(--misc-green)!important}
+#page3 .misc-history-hub .misc-panel-icon{color:var(--misc-yellow)!important}
+#page3 .misc-abilities-hub .misc-panel-icon{color:var(--misc-purple)!important}
+#page3 .misc-notes-hub .misc-panel-icon{color:var(--misc-red)!important}
+
+@media(max-width:760px){
+  #page3 .misc-panel-icon{
+    width:20px!important;
+    height:20px!important;
+    flex-basis:20px!important;
+    margin-right:8px!important;
+  }
+  #page3 .misc-panel-icon::before{
+    width:6px!important;
+    height:6px!important;
+  }
+}
+
