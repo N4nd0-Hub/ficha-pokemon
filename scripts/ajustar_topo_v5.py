@@ -10,11 +10,27 @@ index = Path("index.html")
 css_file = Path("styles/topbar-v5.css")
 source = index.read_text(encoding="utf-8")
 marker = "/* V5.0 — barra superior compacta e botão de personalização."
+ARCADE_LINK = '  <link rel="stylesheet" href="styles/arcade-font-v5.css?v=20261005-1" />'
+
+def ensure_arcade_font_link():
+    global source
+    if "styles/arcade-font-v5.css" in source:
+        return False
+    head_end = source.find("</head>")
+    if head_end < 0:
+        raise SystemExit("ERRO: </head> não encontrado para inserir ajuste Arcade 8-bit.")
+    source = source[:head_end] + ARCADE_LINK + "\n" + source[head_end:]
+    return True
 
 if 'class="top-personalize-btn"' in source:
     if marker not in source:
         raise SystemExit("ERRO: botão atualizado, mas o CSS está ausente.")
-    print("Topo já atualizado; sem alterações.")
+    changed = ensure_arcade_font_link()
+    if changed:
+        index.write_text(source, encoding="utf-8")
+        print("Topo já atualizado; ajuste Arcade 8-bit instalado.")
+    else:
+        print("Topo e ajuste Arcade 8-bit já atualizados; sem alterações.")
     raise SystemExit(0)
 
 def replace_exact(pattern, replacement, label):
@@ -73,6 +89,8 @@ old_name = 'document.getElementById("topCurrentName").textContent=current.name||
 if source.count(old_name) != 2:
     raise SystemExit("ERRO: atualização do nome da ficha não corresponde à versão esperada.")
 source = source.replace(old_name, "")
+
+ensure_arcade_font_link()
 
 css = css_file.read_text(encoding="utf-8")
 if source.count("</style>") < 1:
