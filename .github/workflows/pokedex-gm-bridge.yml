@@ -28,12 +28,24 @@ jobs:
           from pathlib import Path
           path = Path("index.html")
           html = path.read_text(encoding="utf-8")
+          import re
+          bridge_url = "https://n4nd0-hub.github.io/Pok-dex-GM/pokedex-gm-bridge.js?v=20261005-2"
           if "pokedex-gm-bridge.js" in html:
-              print("Ponte já instalada; nenhuma alteração necessária.")
+              updated = re.sub(
+                  r'https://n4nd0-hub\.github\.io/Pok-dex-GM/pokedex-gm-bridge\.js(?:\?v=[^"\']+)?',
+                  bridge_url,
+                  html
+              )
+              if updated != html:
+                  html = updated
+                  path.write_text(html, encoding="utf-8")
+                  print("Ponte atualizada e cache invalidado.")
+              else:
+                  print("Ponte já está na revisão atual.")
           else:
               if "Ficha Interativa - V5.0" not in html or "</body>" not in html:
                   raise SystemExit("O HTML não corresponde à ficha V5.0 esperada.")
-              snippet = '\n  <!-- Catálogo público: Pokédex GM V5.0 -->\n  <script src="https://n4nd0-hub.github.io/Pok-dex-GM/pokedex-gm-bridge.js" defer></script>\n'
+              snippet = f'\n  <!-- Catálogo público: Pokédex GM V5.0 -->\n  <script src="{bridge_url}" defer></script>\n'
               index = html.rfind("</body>")
               html = html[:index] + snippet + html[index:]
               path.write_text(html, encoding="utf-8")
