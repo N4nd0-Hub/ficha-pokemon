@@ -277,3 +277,82 @@
   .hh-gm-screen-frame { margin-top: 9px; padding: 7px; }
   .hh-gm-footer { padding: 9px 20px; }
 }
+
+
+/* ARCADE_8BIT_READABILITY_V2 */
+/* Arcade 8-bit: recupera o peso e a escala visual sem perder a estética pixelada. */
+html[data-font-theme="arcade"] body,
+html[data-font-theme="arcade"] input,
+html[data-font-theme="arcade"] textarea,
+html[data-font-theme="arcade"] select,
+html[data-font-theme="arcade"] button {
+  font-weight: 700;
+}
+
+html[data-font-theme="arcade"] .sheet-title input {
+  font-size: 21px !important;
+  line-height: 1.5 !important;
+}
+
+html[data-font-theme="arcade"] .brand,
+html[data-font-theme="arcade"] .panel-head h2,
+html[data-font-theme="arcade"] .modal-head b,
+html[data-font-theme="arcade"] .gimmick-section-title {
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+  -webkit-text-stroke: .12px currentColor;
+  text-shadow: .28px 0 currentColor, 0 .28px currentColor;
+}
+
+html[data-font-theme="arcade"] .btn,
+html[data-font-theme="arcade"] .select-like,
+html[data-font-theme="arcade"] .tab,
+html[data-font-theme="arcade"] .tag,
+html[data-font-theme="arcade"] .eyebrow {
+  font-size: 13px !important;
+  line-height: 1.45;
+}
+
+html[data-font-theme="arcade"] .field label,
+html[data-font-theme="arcade"] .pokemon-card b,
+html[data-font-theme="arcade"] .pokemon-card small,
+html[data-font-theme="arcade"] .drawer-group-title,
+html[data-font-theme="arcade"] .gimmick-section-sub,
+html[data-font-theme="arcade"] .gimmick-status-box {
+  font-size: 13px !important;
+  line-height: 1.5;
+}
+
+html[data-font-theme="arcade"] .top-personalize-copy b {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  line-height: 1.35 !important;
+  -webkit-text-stroke: .12px currentColor;
+  text-shadow: .25px 0 currentColor;
+}
+
+html[data-font-theme="arcade"] .top-personalize-copy small {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+}
+
+html[data-font-theme="arcade"] .font-theme-option[data-font-theme="arcade"] .font-theme-sample {
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  -webkit-text-stroke: .12px currentColor;
+  text-shadow: .25px 0 currentColor;
+}
+
+@media (max-width: 600px) {
+  html[data-font-theme="arcade"] .sheet-title input {
+    font-size: 19px !important;
+  }
+  html[data-font-theme="arcade"] .btn,
+  html[data-font-theme="arcade"] .select-like,
+  html[data-font-theme="arcade"] .tab,
+  html[data-font-theme="arcade"] .tag,
+  html[data-font-theme="arcade"] .eyebrow,
+  html[data-font-theme="arcade"] .field label {
+    font-size: 12px !important;
+  }
+}
