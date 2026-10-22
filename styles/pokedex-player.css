@@ -117,6 +117,11 @@
   font-size: 13px;
   color: #a5d6c5;
 }
+.hh-gm-sections { display: flex; gap: 8px; padding: 12px 16px 0; }
+.hh-gm-sections button { flex: 1; min-height: 42px; padding: 9px 10px; border: 1px solid #567978; border-radius: 7px; background: #152d30; color: #b7cfc8; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.hh-gm-sections button[aria-pressed="true"] { background: #326856; border-color: #72c4a4; color: #f2faf5; box-shadow: inset 0 -3px 0 #72c4a4; }
+.hh-gm-sections button:focus-visible { outline: 2px solid #9ae4cc; outline-offset: 3px; }
+.hh-gm-sections button span { display: inline-block; min-width: 22px; margin-left: 4px; padding: 2px 5px; border-radius: 4px; background: #0004; font-size: 12px; }
 .hh-gm-tools { display: flex; flex-wrap: wrap; gap: 8px; padding: 13px 16px 8px; }
 .hh-gm-tools input, .hh-gm-tools select {
   min-width: 0;
@@ -249,6 +254,8 @@
   .hh-gm-close { width: 36px; height: 36px; font-size: 23px; }
   .hh-gm-screen-frame { margin: 11px 10px 0; padding: 7px; }
   .hh-gm-screen-top { padding: 10px; font-size: 12px; }
+  .hh-gm-sections { padding: 10px 10px 0; gap: 6px; }
+  .hh-gm-sections button { padding: 9px 6px; font-size: 13px; }
   .hh-gm-tools { padding: 10px 10px 6px; }
   .hh-gm-tools input { flex-basis: 100%; }
   .hh-gm-tools select { flex: 1; }

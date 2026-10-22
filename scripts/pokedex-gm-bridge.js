@@ -5,6 +5,7 @@
   if (window.HH_GM_CATALOG_BRIDGE) return;
   var API = 'https://eoteckuikfmhfmkbbndc.supabase.co/rest/v1/';
   var PUBLIC_KEY = 'sb_publishable_a7zlErG9omVgrP_W9MK-4w_yjvP3Qd8';
+  var GM_SITE = 'https://n4nd0-hub.github.io/Pok-dex-GM/';
   var CACHE_DB = 'hh-pokedex-gm-bridge-v5';
   var cache = {species:[], forms:[], customMegas:[], savedAt:0};
   /* INDEPENDENT_CUSTOM_MEGA_V1 — Megas criadas sem duplicar a espécie oficial. */
@@ -18,15 +19,50 @@
   var lastError = '';
   var previousFocus = null;
   var previousOverflow = null;
+  var activeSection = 'species';
+  var repositoryLibrary = null;
 
-  function creationTime(entry) {
-    var value = Date.parse(entry.createdAt || entry.publishedAt || '');
-    return Number.isFinite(value) ? value : Infinity;
+  async function repositoryRows(force) {
+    if (!window.POKEDEX_REPOSITORY) {
+      if (!repositoryLibrary) repositoryLibrary = new Promise(function(resolve,reject){
+        var script = document.createElement('script');
+        script.src = GM_SITE + 'repository-catalog.js?files=1';
+        script.onload = function(){
+          if (window.POKEDEX_REPOSITORY) resolve();
+          else {repositoryLibrary=null; reject(Error('Catálogo dos arquivos indisponível.'));}
+        };
+        script.onerror = function(){script.remove();repositoryLibrary=null;reject(Error('Não foi possível consultar as criações do Git.'));};
+        document.head.appendChild(script);
+      });
+      await repositoryLibrary;
+    }
+    var data = await window.POKEDEX_REPOSITORY.fetchCatalog({baseUrl:GM_SITE,force:!!force});
+    return window.POKEDEX_REPOSITORY.publicRows(data);
   }
-  function creationOrder(a, b) {
-    var left = creationTime(a), right = creationTime(b);
+  function dexNumber(entry) {
+    var value = Number(entry.dex);
+    return Number.isFinite(value) && value > 0 ? value : Infinity;
+  }
+  function dexOrder(a, b) {
+    var left = dexNumber(a), right = dexNumber(b);
     return (left === right ? 0 : left < right ? -1 : 1)
-      || Number(a.catalogOrder || 0) - Number(b.catalogOrder || 0);
+      || a.name.localeCompare(b.name,'pt-BR',{numeric:true,sensitivity:'base'})
+      || String(a.gmId || a.id || '').localeCompare(String(b.gmId || b.id || ''));
+  }
+  function dexLabel(entry) {
+    var value = dexNumber(entry);
+    return value === Infinity ? '—' : '#' + String(value).padStart(3,'0');
+  }
+  function catalogSections(entries) {
+    return {
+      species:entries.filter(function(s){return !s.megaOnly;}).sort(dexOrder),
+      forms:entries.flatMap(function(s){return s.forms.map(function(f){return {species:s,form:f};});})
+        .sort(function(a,b){return dexOrder(a.species,b.species) || dexOrder(a.form,b.form);})
+    };
+  }
+  function catalogSummary() {
+    var sections = catalogSections(catalog);
+    return sections.species.length+' espécie(s) · '+sections.forms.length+' forma(s)';
   }
   function references(value) {
     if (Array.isArray(value)) return value.flatMap(references);
@@ -73,7 +109,7 @@
       var byId = new Map(members.map(function(s){return [s.gmId, s];}));
       var pending = new Map(members.map(function(s){return [s.gmId, 0];}));
       members.forEach(function(s){edges.get(s.gmId).forEach(function(id){if (pending.has(id)) pending.set(id, pending.get(id) + 1);});});
-      var queue = members.filter(function(s){return !pending.get(s.gmId);}).sort(creationOrder);
+      var queue = members.filter(function(s){return !pending.get(s.gmId);}).sort(dexOrder);
       var sorted = [], visited = new Set();
       while (queue.length) {
         var s = queue.shift();
@@ -84,12 +120,12 @@
           pending.set(id, pending.get(id) - 1);
           if (!pending.get(id)) queue.push(byId.get(id));
         });
-        queue.sort(creationOrder);
+        queue.sort(dexOrder);
       }
       // Dados incompletos ou circulares continuam visíveis, sem duplicação.
-      members.filter(function(s){return !visited.has(s.gmId);}).sort(creationOrder).forEach(function(s){sorted.push(s);});
-      return {members: sorted, first: members.slice().sort(creationOrder)[0]};
-    }).sort(function(a,b){return creationOrder(a.first, b.first);});
+      members.filter(function(s){return !visited.has(s.gmId);}).sort(dexOrder).forEach(function(s){sorted.push(s);});
+      return {members: sorted, first: members.slice().sort(dexOrder)[0]};
+    }).sort(function(a,b){return dexOrder(a.first, b.first);});
   }
 
   function key(s) {
@@ -216,7 +252,7 @@
         source:'Pokédex GM',megaOnly:true
       });
     });
-    return result.sort(creationOrder);
+    return result.sort(dexOrder);
   }
   function readCache() {
     return new Promise(function(resolve) {
@@ -271,7 +307,7 @@
     var el=document.getElementById('hhGmDexStatus');
     if(el)el.textContent=message;
     document.querySelectorAll('[data-gm-count]').forEach(function(n){
-      n.textContent = String(catalog.length);
+      n.textContent = String(catalogSections(catalog).species.length);
     });
   }
   function notify(message) {
@@ -287,15 +323,19 @@
         var data = await Promise.all([
           allRows('pokedex_public_species'),
           allRows('pokedex_public_forms'),
-          allRows('pokedex_public_custom_megas')
+          allRows('pokedex_public_custom_megas'),
+          repositoryRows(force).catch(function(){return {species:[],forms:[]};})
         ]);
-        var entries = build(data[0],data[1],data[2]);
+        var combined = window.POKEDEX_REPOSITORY
+          ? window.POKEDEX_REPOSITORY.mergePublicRows({species:data[0],forms:data[1]},data[3])
+          : {species:data[0],forms:data[1]};
+        var entries = build(combined.species,combined.forms,data[2]);
         catalog = entries;
         online = true;
         lastError = '';
-        cache = {species:data[0],forms:data[1],customMegas:data[2],savedAt:Date.now()};
+        cache = {species:combined.species,forms:combined.forms,customMegas:data[2],savedAt:Date.now()};
         writeCache(cache);
-        status(catalog.length+' espécie(s) publicadas • catálogo online');
+        status(catalogSummary()+' • catálogo online');
         render();
         if(typeof current!=='undefined' && current){
           var activeMatch=catalog.find(currentMatch);
@@ -305,10 +345,15 @@
         }
         return catalog;
       } catch(err) {
+        try {
+          var files = await repositoryRows(force);
+          var recovered = window.POKEDEX_REPOSITORY.mergePublicRows({species:cache.species||[],forms:cache.forms||[]},files);
+          catalog = build(recovered.species,recovered.forms,cache.customMegas||[]);
+        } catch(repositoryError) {/* O cache anterior continua disponível. */}
         lastError = err.message || 'Falha de conexão';
         online = false;
         status(catalog.length
-          ? catalog.length+' em cache offline • '+lastError+' • registros podem estar desatualizados'
+          ? catalogSummary()+' em cache offline • '+lastError+' • registros podem estar desatualizados'
           : 'Banco indisponível: '+lastError);
         render();
         return catalog;
@@ -456,66 +501,91 @@
       close();
     } catch(err) {notify('Falha ao importar: '+(err.message||err));console.error(err);}
   }
-  function matchesFilters(s) {
+  function matchesFilters(s, form) {
     var input=document.getElementById('hhGmDexSearch');
     var filter=document.getElementById('hhGmDexFilter');
     var q=key(input && input.value);
     if (filter && filter.value!=='all' && s.classification!==filter.value)return false;
     if (!q)return true;
-    return [s.name,s.slug,s.dex,s.classification].concat(s.forms.map(function(f){return f.name;}))
+    return [s.name,s.slug,s.dex,s.classification].concat(form?[form.name,form.slug,form.formType].concat(form.types):[])
       .some(function(x){return key(x).includes(q);});
   }
   function renderSpecies(s) {
     var bst=Object.values(s.baseStats).reduce(function(a,b){return a+Number(b||0);},0);
-    var megaCount=s.forms.filter(function(f){return f.formType==='mega';}).length;
     var image=art(s.image.dataUrl);
     var category={fakemon:'Fakemon',rework:'Rework',official:'Oficial'}[s.classification] || s.classification;
     var previous=s.evolution && (s.evolution.previous || s.evolution.evolvesFrom);
     var previousName=typeof previous==='string' ? previous.trim() : previous && previous.name;
-    var stage=s.megaOnly ? 'Mega disponível' : previousName ? 'Evolução' : 'Forma base';
+    var stage=previousName ? 'Evolução' : 'Forma base';
     return '<article class="hh-gm-entry" data-species-id="'+esc(s.gmId)+'">'
       +'<div class="hh-gm-art"><span class="hh-gm-stage">'+stage+'</span>'
       +(image?'<img loading="lazy" src="'+esc(image)+'" alt="'+esc(s.name)+'">':'<div class="hh-gm-placeholder" aria-hidden="true">◓</div>')+'</div>'
       +'<div class="hh-gm-details"><div class="hh-gm-entry-top"><strong>'+esc(s.name)+'</strong>'
-      +'<span>'+esc(category)+(s.megaOnly?'': ' · BST '+bst)+(s.dex?' · #'+esc(s.dex):'')+'</span></div>'
+      +'<span>'+esc(category)+' · BST '+bst+' · '+dexLabel(s)+'</span></div>'
       +(s.types.length?'<div class="hh-gm-types">'+s.types.map(function(type){return '<span class="hh-gm-type">'+esc(type)+'</span>';}).join('')+'</div>':'')
       +(previousName?'<div class="hh-gm-sub">Evolui de '+esc(previousName)+'</div>':'')
-      +(!s.megaOnly&&s.ability.name?'<div class="hh-gm-sub">Ability: '+esc(s.ability.name)+'</div>':'')
+      +(s.ability.name?'<div class="hh-gm-sub">Ability: '+esc(s.ability.name)+'</div>':'')
       +'<div class="hh-gm-buttons">'
-      +(s.megaOnly?'':('<button type="button" data-gm-create="'+esc(s.gmId)+'">＋ Nova ficha</button>'
-      +'<button type="button" data-gm-apply="'+esc(s.gmId)+'">Aplicar à atual</button>'))
-      +(megaCount&&currentMatch(s)?'<button type="button" data-gm-mega="'+esc(s.gmId)+'">Registrar Mega</button>':'')
+      +'<button type="button" data-gm-create="'+esc(s.gmId)+'">＋ Nova ficha</button>'
+      +'<button type="button" data-gm-apply="'+esc(s.gmId)+'">Aplicar à atual</button>'
       +'</div>'
-      +(s.forms.length?'<div class="hh-gm-forms">'+s.forms.slice().sort(creationOrder).map(function(f){
-        var formType={mega:'Mega',alternate:'Forma alternativa',regional:'Forma regional'}[f.formType] || f.formType;
-        return '<div class="hh-gm-form"><span>'+esc(f.name)+' · '+esc(formType)+'</span>'
-          +(f.formType==='mega'?'<span>Em Gimmicks</span>'
-            :'<button type="button" data-gm-form="'+esc(s.gmId)+'" data-form-id="'+esc(f.id)+'">＋ Nova ficha</button>')
-          +'</div>';
-      }).join('')+'</div>':'')
       +'</div></article>';
+  }
+  function renderForm(entry) {
+    var s=entry.species,f=entry.form;
+    var bst=Object.values(f.baseStats).reduce(function(a,b){return a+Number(b||0);},0);
+    var image=art(f.image.dataUrl || s.image.dataUrl);
+    var label={mega:'Mega',alternate:'Forma alternativa',regional:'Forma regional',shiny:'Shiny',primal:'Primal',gigantamax:'Gigantamax',other:'Outra forma'}[f.formType] || f.formType;
+    return '<article class="hh-gm-entry" data-species-id="'+esc(s.gmId)+'" data-form-id="'+esc(f.id)+'">'
+      +'<div class="hh-gm-art"><span class="hh-gm-stage">'+esc(label)+'</span>'
+      +(image?'<img loading="lazy" src="'+esc(image)+'" alt="'+esc(f.name)+'">':'<div class="hh-gm-placeholder" aria-hidden="true">◓</div>')+'</div>'
+      +'<div class="hh-gm-details"><div class="hh-gm-entry-top"><strong>'+esc(f.name)+'</strong>'
+      +'<span>'+dexLabel(s)+' · '+esc(s.name)+' · BST '+bst+'</span></div>'
+      +'<div class="hh-gm-types">'+f.types.map(function(t){return '<span class="hh-gm-type">'+esc(t)+'</span>';}).join('')+'</div>'
+      +(f.ability.name?'<div class="hh-gm-sub">Ability: '+esc(f.ability.name)+'</div>':'')
+      +(f.formType==='mega'?'<div class="hh-gm-sub">Disponível em Gimmicks na ficha de '+esc(s.name)+'.</div>':'')
+      +'<div class="hh-gm-buttons">'
+      +(f.formType==='mega'
+        ? (currentMatch(s)?'<button type="button" data-gm-mega="'+esc(s.gmId)+'">Registrar Mega</button>':'')
+        : '<button type="button" data-gm-form="'+esc(s.gmId)+'" data-form-id="'+esc(f.id)+'">＋ Nova ficha</button>')
+      +'</div></div></article>';
   }
   function render() {
     var list=document.getElementById('hhGmDexList');
     if(!list)return;
-    var lines=evolutionLines(catalog);
-    var shown=catalog.filter(matchesFilters);
-    var visibleLines=lines.filter(function(line){return line.members.some(matchesFilters);});
+    var sections=catalogSections(catalog);
+    document.getElementById('hhGmDexSpeciesCount').textContent=sections.species.length;
+    document.getElementById('hhGmDexFormsCount').textContent=sections.forms.length;
+    document.querySelectorAll('[data-gm-section]').forEach(function(button){
+      button.setAttribute('aria-pressed',String(button.getAttribute('data-gm-section')===activeSection));
+    });
+    var lines=evolutionLines(sections.species);
+    var shown=activeSection==='forms'
+      ? sections.forms.filter(function(entry){return matchesFilters(entry.species,entry.form);})
+      : sections.species.filter(function(s){return matchesFilters(s);});
+    var visibleLines=lines.filter(function(line){return line.members.some(function(s){return matchesFilters(s);});});
     var count=document.getElementById('hhGmDexCount');
-    if(count)count.textContent=shown.length+' Pokémon · '+visibleLines.length+' linha(s)';
+    if(count)count.textContent=activeSection==='forms'
+      ? shown.length+' forma(s)'
+      : shown.length+' Pokémon · '+visibleLines.length+' linha(s)';
     if(!shown.length) {
-      list.innerHTML='<div class="hh-gm-empty">'+(catalog.length
-        ? 'Nenhum Pokémon corresponde à busca.'
-        : online ? 'Nenhum Pokémon extra disponível ainda.'
+      var available=activeSection==='forms'?sections.forms.length:sections.species.length;
+      list.innerHTML='<div class="hh-gm-empty">'+(available
+        ? 'Nenhum registro corresponde à busca.'
+        : online ? (activeSection==='forms'?'Nenhuma Mega ou forma extra disponível ainda.':'Nenhuma espécie extra disponível ainda.')
           : 'Conecte-se à internet para carregar os Pokémon extras.')+'</div>';
       return;
     }
-    list.innerHTML=lines.map(function(line,index){
-      var members=line.members.filter(matchesFilters);
+    if(activeSection==='forms') {
+      list.innerHTML='<div class="hh-gm-line-cards">'+shown.map(renderForm).join('')+'</div>';
+      return;
+    }
+    list.innerHTML=lines.map(function(line){
+      var members=line.members.filter(function(s){return matchesFilters(s);});
       if(!members.length)return '';
       var title=line.members[0].name;
       return '<section class="hh-gm-line" aria-label="Linha de '+esc(title)+'">'
-        +'<header class="hh-gm-line-heading"><span class="hh-gm-line-number">'+String(index+1).padStart(3,'0')+'</span>'
+        +'<header class="hh-gm-line-heading"><span class="hh-gm-line-number">'+dexLabel(line.first)+'</span>'
         +'<div><small>'+(line.members.length>1?'Linha evolutiva':'Registro')+'</small><h3>'+esc(title)+'</h3></div></header>'
         +'<div class="hh-gm-line-cards">'+members.map(renderSpecies).join('')+'</div></section>';
     }).join('');
@@ -554,17 +624,24 @@
       +'<button type="button" class="hh-gm-close" id="hhGmDexClose" aria-label="Fechar Pokédex">×</button></div>'
       +'<div class="hh-gm-screen-frame"><div class="hh-gm-screen">'
       +'<div class="hh-gm-screen-top"><span>Banco de Pokémon</span><span id="hhGmDexCount">Carregando...</span></div>'
+      +'<nav class="hh-gm-sections" aria-label="Seções da Pokédex">'
+      +'<button type="button" data-gm-section="species" aria-pressed="true" aria-controls="hhGmDexList">Espécies <span id="hhGmDexSpeciesCount">0</span></button>'
+      +'<button type="button" data-gm-section="forms" aria-pressed="false" aria-controls="hhGmDexList">Megas e formas <span id="hhGmDexFormsCount">0</span></button></nav>'
       +'<div class="hh-gm-tools"><input id="hhGmDexSearch" placeholder="Buscar nome, Dex ou forma..." aria-label="Buscar Pokémon">'
       +'<select id="hhGmDexFilter" aria-label="Filtrar catálogo"><option value="all">Todas as espécies</option><option value="fakemon">Fakemon</option><option value="rework">Reworks</option><option value="official">Oficiais</option></select>'
       +'<button type="button" id="hhGmDexRefresh">↻ Atualizar</button></div>'
       +'<div id="hhGmDexStatus" role="status">Carregando Pokémon extras...</div>'
       +'<div id="hhGmDexList"></div></div></div>'
-      +'<div class="hh-gm-footer"><span>Linhas evolutivas · ordem de criação</span></div></div>';
+      +'<div class="hh-gm-footer"><span>Linhas evolutivas · ordem do número da Pokédex</span></div></div>';
     document.body.appendChild(overlay);
     overlay.addEventListener('click',function(e){
       if(e.target===overlay)close();
       var btn=e.target.closest('button');
       if(!btn)return;
+      if(btn.hasAttribute('data-gm-section')) {
+        activeSection=btn.getAttribute('data-gm-section');
+        render();document.getElementById('hhGmDexList').scrollTop=0;return;
+      }
       var id=btn.getAttribute('data-gm-create') || btn.getAttribute('data-gm-apply')
         || btn.getAttribute('data-gm-form') || btn.getAttribute('data-gm-mega');
       if(!id)return;
@@ -613,7 +690,7 @@
     installHooks();mount();
     var old=await readCache();
     if(old && Array.isArray(old.species) && Array.isArray(old.forms) && !online){
-      try{cache=old;catalog=build(old.species,old.forms,old.customMegas||[]);status(catalog.length+' em cache offline • verificando atualizações...');render();}
+      try{cache=old;catalog=build(old.species,old.forms,old.customMegas||[]);status(catalogSummary()+' em cache offline • verificando atualizações...');render();}
       catch(err){console.warn('Cache GM inválido:',err);}
     }
     refresh(true);
@@ -623,7 +700,7 @@
     find:findRemote,registerMegas:addMegas,getStatus:function(){
       return {online:online,count:catalog.length,savedAt:cache.savedAt,lastError:lastError,
         independentMegas:Array.isArray(cache.customMegas)?cache.customMegas.length:0};
-    },_evolutionLines:evolutionLines,_adaptSpecies:adaptSpecies,_adaptForm:adaptForm,_adaptIndependentMega:adaptIndependentMega,_build:build
+    },_evolutionLines:evolutionLines,_catalogSections:catalogSections,_adaptSpecies:adaptSpecies,_adaptForm:adaptForm,_adaptIndependentMega:adaptIndependentMega,_build:build
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
   else start();
