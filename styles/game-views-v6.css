@@ -400,7 +400,7 @@ html body #page1 #sumScreen .sum-adopted.panel>.panel-head{
 html body #page1 #sumScreen .sum-adopted.panel>.panel-head :is(h2,h3){color:var(--cl-text)!important;text-shadow:none!important;font-size:10px!important}
 html body #page1 #sumScreen .sum-adopted.panel>.panel-head :is(.eyebrow,small,span:not(.general-stack-toggle *)){color:var(--cl-muted)!important;text-shadow:none!important;background:none!important}
 html body #page1 #sumScreen .sum-adopted.panel>.panel-head::before{display:none!important}
-html body #page1 #sumScreen .sum-adopted .general-stack-toggle{display:none!important}
+html body #page1 #sumScreen .sum-adopted:not(.general-stack-nature):not(.collapsed) .general-stack-toggle{display:none!important}
 html body #page1 #sumScreen .sum-adopted.general-happiness-strip{padding:10px 12px!important}
 html body #page1 #sumScreen .radar-wrap{margin:0!important}
 
