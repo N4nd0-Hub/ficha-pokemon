@@ -17942,6 +17942,8 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
   <script defer src="scripts/misc-options-v5.js"></script>
   <link rel="stylesheet" href="styles/pokedex-player.css?v=20261022-dex" />
   <link rel="stylesheet" href="styles/arcade-font-v5.css?v=20261005-1" />
+<link rel="stylesheet" href="styles/sheet-polish-v6.css?v=20261109-v6" />
+<link rel="stylesheet" href="styles/pokedex-device-v6.css?v=20261109-v6" />
 </head>
 <body>
 <header class="topbar">
@@ -21503,8 +21505,8 @@ function renderTrainerParty(){
     slot.innerHTML=`
       <span class="trainer-party-slot-number">${String(index+1).padStart(2,"0")}</span>
       <span class="trainer-party-image">
-        ${p.imageUrl
-          ?`<img src="${escAttr(p.imageUrl)}" alt="${escAttr(p.name||"Pokémon")}">`
+        ${displayPokemonImage(p)
+          ?`<img src="${escAttr(displayPokemonImage(p))}" alt="${escAttr(p.name||"Pokémon")}" loading="lazy">`
           :`<span>◓</span>`}
       </span>
       <span class="trainer-party-copy">
@@ -22419,8 +22421,8 @@ function renderDrawerCard(p){
 
   card.innerHTML=`
     <div class="pokemon-thumb-stage">
-      ${p.imageUrl
-        ?`<img class="pokemon-thumb" src="${escAttr(p.imageUrl)}" alt="">`
+      ${displayPokemonImage(p)
+        ?`<img class="pokemon-thumb" src="${escAttr(displayPokemonImage(p))}" alt="" loading="lazy">`
         :`<div class="pokemon-thumb-placeholder">◓</div>`}
     </div>
 
@@ -22735,6 +22737,25 @@ function bestPokemonImage(data){
       || data?.sprites?.other?.home?.front_default
       || data?.sprites?.front_default
       || "";
+}
+
+/* V6 — número oficial da Pokédex de um Pokémon da ficha (0 quando é Fakemon ou desconhecido). */
+function officialPokedexId(p){
+  if(!p)return 0;
+  const api=p.apiData||{};
+  if(api.custom||api.source==="IntegratedCustomSpecies"||api.source==="Manual")return 0;
+  const fromApi=Number(api.pokemonId||0);
+  if(Number.isInteger(fromApi)&&fromApi>0)return fromApi;
+  const dex=Number(String(p.dex||"").replace(/\D/g,""));
+  return Number.isInteger(dex)&&dex>0&&dex<=1025?dex:0;
+}
+
+/* V6 — arte salva na ficha ou, na falta dela, a arte oficial (sem gravar nada no save). */
+function displayPokemonImage(p,{shiny=false}={}){
+  if(p?.imageUrl&&!shiny)return p.imageUrl;
+  const id=officialPokedexId(p);
+  if(!id)return p?.imageUrl||"";
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${shiny?"shiny/":""}${id}.png`;
 }
 
 const INTEGRATED_SPECIES_DATABASE_VERSION="1.0";
@@ -25595,8 +25616,9 @@ function renderCombatPage(){
 
   const img=document.getElementById("combatPortraitImg");
   const empty=document.getElementById("combatPortraitEmpty");
-  if(current.imageUrl){
-    img.src=current.imageUrl;
+  const combatSrc=displayPokemonImage(current);
+  if(combatSrc){
+    if(img.getAttribute("src")!==combatSrc)img.src=combatSrc;
     img.hidden=false;
     empty.hidden=true;
   }else{
@@ -29306,10 +29328,21 @@ const GENERAL_ABILITY_DRAG_HEIGHT_KEY="pokemon_hh_v5_ability_drag_height";
 function readGeneralAbilityDragHeight(){
   try{
     const value=Number(localStorage.getItem(GENERAL_ABILITY_DRAG_HEIGHT_KEY)||0);
-    return Number.isFinite(value)&&value>=56?value:56;
+    return Number.isFinite(value)&&value>=56?value:0;
   }catch(error){
-    return 56;
+    return 0;
   }
+}
+
+/* V6 — sem altura escolhida pelo jogador, a descrição cresce até caber o texto inteiro. */
+function fitGeneralAbilityText(){
+  const textarea=document.getElementById("abilityText");
+  if(!textarea||readGeneralAbilityDragHeight())return;
+  textarea.style.setProperty("--ability-user-height","56px");
+  const needed=Math.ceil(textarea.scrollHeight+2);
+  const height=Math.max(56,Math.min(420,needed));
+  textarea.style.setProperty("--ability-user-height",`${height}px`);
+  textarea.dataset.userHeight=String(height);
 }
 
 function writeGeneralAbilityDragHeight(value){
@@ -29351,7 +29384,15 @@ function initializeGeneralAbilityDragResize(){
     textarea.insertAdjacentElement("afterend",handle);
   }
 
-  applyGeneralAbilityDragHeight(readGeneralAbilityDragHeight());
+  const savedHeight=readGeneralAbilityDragHeight();
+  if(savedHeight)applyGeneralAbilityDragHeight(savedHeight);
+  else requestAnimationFrame(fitGeneralAbilityText);
+  textarea.addEventListener("input",fitGeneralAbilityText);
+  handle.addEventListener("dblclick",()=>{
+    try{localStorage.removeItem(GENERAL_ABILITY_DRAG_HEIGHT_KEY)}catch(error){}
+    fitGeneralAbilityText();
+  });
+  handle.title="Arraste para ajustar • clique duplo para caber o texto";
 
   let dragging=false;
   let startY=0;
@@ -29416,7 +29457,9 @@ function initializeGeneralAbilityDragResize(){
     let current=Number(textarea.dataset.userHeight||56);
 
     if(event.key==="Home"){
-      current=56;
+      try{localStorage.removeItem(GENERAL_ABILITY_DRAG_HEIGHT_KEY)}catch(error){}
+      fitGeneralAbilityText();
+      return;
     }else{
       const step=event.shiftKey?60:20;
       current+=event.key==="ArrowDown"?step:-step;
@@ -30300,7 +30343,10 @@ function renderAll(){
   renderPrimaryAbilitySource();
   refreshEvolutionButton();
 }
-function setVal(id,v){document.getElementById(id).value=v??""}
+function setVal(id,v){
+  document.getElementById(id).value=v??"";
+  if(id==="abilityText"&&typeof fitGeneralAbilityText==="function")requestAnimationFrame(fitGeneralAbilityText);
+}
 function bindValue(id,key,transform=v=>v){
   document.getElementById(id).addEventListener("input",e=>{
     current[key]=transform(e.target.value);
@@ -30861,8 +30907,12 @@ function renderAbilityMemory(){
 function renderPortrait(){
   const img=document.getElementById("portraitImg");
   const empty=document.getElementById("portraitEmpty");
-  if(current.imageUrl){
-    img.src=current.imageUrl; img.hidden=false; empty.hidden=true;
+  const src=displayPokemonImage(current);
+  img.classList.toggle("is-official-fallback",!current.imageUrl&&!!src);
+  if(src){
+    if(img.getAttribute("src")!==src)img.src=src;
+    img.hidden=false; empty.hidden=true;
+    img.onerror=()=>{img.hidden=true;empty.hidden=false;};
   }else{
     img.hidden=true; empty.hidden=false;
   }
@@ -30942,18 +30992,52 @@ function updateDerived(){
     `SP.DEF -${spd.dice}d6${spd.fixed?` -${spd.fixed}`:""}${spdStage?` • ${spdValue} (${combatStageSigned(spdStage)})`:""}`;
 }
 
+/* V6 — o radar anima entre os valores antigos e os novos e usa uma escala que acompanha o Pokémon. */
+let radarAnimFrom=null,radarAnimShown=null,radarAnimFrame=0;
+function radarScaleFor(values){
+  const top=Math.max(...values,1);
+  return Math.max(100,Math.ceil(top*1.12/25)*25);
+}
 function drawRadar(){
-  const c=document.getElementById("radar"),ctx=c.getContext("2d");
-  const w=c.width,h=c.height,cx=w/2,cy=214,R=132;
+  const target=STAT_KEYS.map(([k])=>Number(current?.stats?.[k]||0));
+  const targetMax=radarScaleFor(target);
+  const reduce=window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+  const start=radarAnimShown||target.map(()=>0);
+  const startMax=radarAnimFrom?.max||targetMax;
+  cancelAnimationFrame(radarAnimFrame);
+  const same=radarAnimShown&&radarAnimShown.every((v,i)=>v===target[i])&&startMax===targetMax;
+  if(reduce||same||document.hidden){
+    radarAnimShown=target.slice();radarAnimFrom={max:targetMax};
+    drawRadarFrame(target,targetMax);
+    return;
+  }
+  const t0=performance.now(),duration=radarAnimShown?420:780;
+  const ease=t=>1-Math.pow(1-t,3);
+  const step=now=>{
+    const k=ease(Math.min(1,(now-t0)/duration));
+    const vals=target.map((v,i)=>start[i]+(v-start[i])*k);
+    const max=startMax+(targetMax-startMax)*k;
+    radarAnimShown=vals;radarAnimFrom={max};
+    drawRadarFrame(vals,max,target);
+    if(k<1)radarAnimFrame=requestAnimationFrame(step);
+    else{radarAnimShown=target.slice();radarAnimFrom={max:targetMax};}
+  };
+  radarAnimFrame=requestAnimationFrame(step);
+}
+function drawRadarFrame(animatedValues,animatedMax,labelValues=animatedValues){
+  const c=document.getElementById("radar");
+  if(!c)return;
+  const ctx=c.getContext("2d");
+  const w=c.width,h=c.height,cx=w/2,cy=214,R=128;
   ctx.clearRect(0,0,w,h);
   ctx.imageSmoothingEnabled=false;
   const style=getComputedStyle(document.documentElement);
-  const gridColor='rgba(98,160,255,0.20)';
-  const axisColor='rgba(90,150,235,0.26)';
+  const gridColor='rgba(120,180,255,0.30)';
+  const axisColor='rgba(110,170,245,0.34)';
   const centerGlow=style.getPropertyValue("--accent").trim() || '#63d0ff';
   const labels=["VIDA","ATAQUE","DEFESA","ATQ. ESP.","DEF. ESP.","VELOCIDADE"];
-  const values=STAT_KEYS.map(([k])=>Number(current.stats[k]||0));
-  const max=Math.max(300,Math.ceil(Math.max(...values,1)/50)*50);
+  const values=animatedValues;
+  const max=animatedMax;
   const statColors=["#4fe36f","#ff9538","#4f8dff","#b067ff","#76e7ff","#ffd84a"];
   const labelFont='12px "Press Start 2P", "Silkscreen", monospace';
   const valueFont='15px "Silkscreen", "Press Start 2P", monospace';
@@ -31134,11 +31218,11 @@ function drawRadar(){
 
   const labelPos=[
     {x:cx,y:34,align:'center'},
-    {x:cx+R+28,y:cy-R/2+2,align:'left'},
-    {x:cx+R+28,y:cy+R/2+10,align:'left'},
+    {x:cx+R+24,y:cy-R/2+2,align:'left'},
+    {x:cx+R+24,y:cy+R/2+10,align:'left'},
     {x:cx,y:cy+R+34,align:'center'},
-    {x:cx-R-28,y:cy+R/2+10,align:'right'},
-    {x:cx-R-28,y:cy-R/2+2,align:'right'}
+    {x:cx-R-24,y:cy+R/2+10,align:'right'},
+    {x:cx-R-24,y:cy-R/2+2,align:'right'}
   ];
 
   labels.forEach((lab,i)=>{
@@ -31154,7 +31238,7 @@ function drawRadar(){
     ctx.fillStyle='#eaf4ff';
     ctx.shadowColor='rgba(0,0,0,0.35)';
     ctx.shadowBlur=4;
-    ctx.fillText(String(values[i]),pos.x,pos.y+22);
+    ctx.fillText(String(Math.round(labelValues[i])),pos.x,pos.y+22);
     ctx.shadowBlur=0;
   });
 
@@ -31162,7 +31246,7 @@ function drawRadar(){
   ctx.textBaseline='middle';
   ctx.font=scaleFont;
   ctx.fillStyle='rgba(190,214,255,0.70)';
-  ctx.fillText(`ESCALA MÁXIMA ${max}+`,cx,h-16);
+  ctx.fillText(`ESCALA ATÉ ${Math.round(max)}`,cx,h-16);
 }
 function hexToRgba(color,a){
   const tmp=document.createElement("div");tmp.style.color=color;document.body.appendChild(tmp);
@@ -31890,7 +31974,7 @@ function makeMoveCard(m,activeView){
           ${typeIconHtml(m.type,true)}
           <span class="tag combat-summary-tag">${esc(m.category||"—")}</span>
           <span class="tag combat-summary-tag">Power ${esc(String(powerText))}</span>
-          ${m.powerLabel==="—"?"":`<span class="tag combat-summary-tag">${dice}d6 base</span>`}
+          ${m.powerLabel==="—"||dice==="—"?"":`<span class="tag combat-summary-tag">${dice} base</span>`}
           <span class="tag combat-detail-tag${accuracyInfo.changed?" combat-stage-accuracy-adjusted":""}" title="${escAttr(accuracyInfo.detail)}">Acc. ${esc(String(accuracyText))}</span>
           ${offensiveBonus?`<span class="tag damage-stat-bonus combat-summary-tag">${esc(offensiveBonus)}</span>`:""}
           ${m.source==="Sistema"?'<span class="tag combat-detail-tag">Sistema / Rework</span>':""}
@@ -33087,5 +33171,8 @@ if(!document.getElementById("progressWarning").textContent.trim()){
 
   <!-- Catálogo público: Pokédex GM V5.0 -->
   <script src="scripts/pokedex-gm-bridge.js?v=20261022-dex" defer></script>
+  <!-- V6: animações da ficha e Pokédex como aparelho -->
+  <script src="scripts/sheet-motion-v6.js?v=20261109-v6" defer></script>
+  <script src="scripts/pokedex-device-v6.js?v=20261109-v6" defer></script>
 </body>
 </html>

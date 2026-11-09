@@ -1,0 +1,208 @@
+/* ============================================================
+   V6 — Organização de textos e animações da ficha
+   Carregado depois dos estilos da V5; só ajusta o que já existe.
+   ============================================================ */
+
+:root{
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ---------- Correções de texto e espaço ---------- */
+
+/* Imagens marcadas como ocultas não aparecem como ícone quebrado (ex.: foto do treinador vazia). */
+img[hidden]{display:none!important}
+
+/* Item segurado: rótulo em cima, campo e botão com a largura toda. */
+html #page1 .general-held-strip .field,
+.general-held-strip .field{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:5px!important;
+  min-width:0;
+}
+.general-held-strip .held-item-api-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+  width:100%;
+}
+.general-held-strip .held-item-api-row .input{min-width:0;width:100%}
+.general-held-strip .held-item-api-status:empty{display:none}
+
+/* Descrição da Ability: sem barra de rolagem escondendo o fim do texto. */
+#abilityText{overflow-y:auto;line-height:1.55}
+.general-ability-resize-handle{cursor:ns-resize}
+
+/* Combate: cada contador em uma linha só. */
+.pokemon-stage-slot-base{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:11px!important;
+  letter-spacing:.02em;
+}
+.pokemon-stage-effects-shell{
+  align-items:center;
+}
+.pokemon-stage-effects-label{
+  min-width:150px;
+  display:grid;
+  gap:3px;
+}
+.pokemon-stage-effects-label small{line-height:1.3}
+
+/* Cartões de golpe: etiquetas em fileira, não empilhadas. */
+.move-card .move-meta{
+  display:flex!important;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+}
+.move-card .move-meta>.tag,
+.move-card .move-meta>.type-icon-badge{
+  width:auto!important;
+  flex:0 0 auto;
+}
+
+/* Cartões de golpe do combate: botões embaixo, etiquetas com espaço para ficar lado a lado. */
+html .combat-active-moves .move-card-top{grid-template-columns:minmax(0,1fr)}
+html .combat-active-moves .move-actions{
+  width:100%;
+  min-width:0;
+  align-self:auto;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+
+/* Condições de Combate: título em uma linha, contador embaixo dele. */
+html .combat-card-head:has(.combat-condition-count){
+  grid-template-columns:28px minmax(0,1fr) 28px!important;
+  row-gap:6px!important;
+}
+html .combat-card-head .combat-condition-count{
+  grid-column:2!important;
+  grid-row:2!important;
+  justify-self:start!important;
+}
+html .combat-card-head:has(.combat-condition-count) .combat-collapse-btn{
+  grid-column:3!important;
+  grid-row:1!important;
+}
+html .combat-card-head:has(.combat-condition-count) .combat-card-icon{grid-row:1!important}
+
+/* Modo Pokédex no combate: textos que sumiam no fundo. */
+html[data-sheet-mode="pokedex"] .combat-goto-general{color:var(--text)!important}
+html[data-sheet-mode="pokedex"] .combat-hp-control-status span,
+html[data-sheet-mode="pokedex"] .combat-hp-quick>span,
+html[data-sheet-mode="pokedex"] .combat-hp-feedback,
+html[data-sheet-mode="pokedex"] .combat-bag-body .bag-result-note,
+html[data-sheet-mode="pokedex"] .combat-bag-list .empty-state{color:#46545c!important}
+
+/* Arte oficial usada como reserva (não salva na ficha). */
+#portraitImg.is-official-fallback{
+  object-fit:contain;
+  padding:6%;
+  filter:drop-shadow(0 10px 18px rgba(0,0,0,.45));
+}
+
+/* Modo Pokédex: textos escuros que ficavam sobre caixas escuras. */
+html[data-sheet-mode="pokedex"] .general-identity-drawer .general-drawer-copy b,
+html[data-sheet-mode="pokedex"] .general-identity-drawer summary,
+html[data-sheet-mode="pokedex"] .general-held-strip,
+html[data-sheet-mode="pokedex"] .general-held-strip label{
+  color:var(--text)!important;
+}
+html[data-sheet-mode="pokedex"] .general-held-strip label{
+  font-family:var(--pixel-font,"Silkscreen",monospace);
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  opacity:.92;
+}
+html[data-sheet-mode="pokedex"] .general-held-strip .held-item-api-btn{
+  color:var(--text)!important;
+  opacity:1!important;
+}
+
+/* ---------- Animações ---------- */
+
+@media (prefers-reduced-motion: no-preference){
+
+  /* Troca de página: entra subindo, painéis em cascata. */
+  .page.page-entering{
+    animation:sheetPageIn .42s var(--ease-out) both;
+  }
+  .page.page-entering .enter-block{
+    animation:sheetPanelIn .45s var(--ease-out) both;
+    animation-delay:calc(var(--enter-index,0) * 40ms + 40ms);
+  }
+  @keyframes sheetPageIn{
+    from{opacity:0;transform:translateY(10px)}
+    to{opacity:1;transform:none}
+  }
+  @keyframes sheetPanelIn{
+    from{opacity:0;transform:translateY(14px) scale(.985)}
+    to{opacity:1;transform:none}
+  }
+
+  /* Troca de Pokémon: cabeçalho e arte piscam como um novo registro. */
+  .sheet-head.pokemon-swapped .sheet-title input{
+    animation:nameReveal .6s var(--ease-out) both;
+  }
+  @keyframes nameReveal{
+    0%{clip-path:inset(0 100% 0 0);filter:brightness(2)}
+    100%{clip-path:inset(0 0 0 0);filter:none}
+  }
+  .portrait.pokemon-swapped #portraitImg,
+  .combat-portrait.pokemon-swapped img{
+    animation:portraitPop .55s var(--ease-spring) both;
+  }
+  @keyframes portraitPop{
+    0%{opacity:0;transform:scale(.82) translateY(10px);filter:brightness(3) saturate(0)}
+    60%{opacity:1;filter:brightness(1.4)}
+    100%{transform:none;filter:none}
+  }
+
+  /* Barras que mudam de valor deslizam. */
+  #hpFill,#happinessFill,
+  .drawer-hp-fill,
+  [id^="combatHp"][id$="Fill"],
+  .combat-hp-fill{
+    transition:width .5s var(--ease-out),background-color .3s ease;
+  }
+
+  /* Número que acabou de mudar dá um pulo. */
+  .value-bump{animation:valueBump .45s var(--ease-spring)}
+  @keyframes valueBump{
+    0%{transform:scale(1)}
+    35%{transform:scale(1.18);filter:brightness(1.5)}
+    100%{transform:scale(1)}
+  }
+
+  /* Botões e cartões respondem ao toque. */
+  .btn,.tab,.move-card,.registry-option-card,.pokemon-card{
+    transition:transform .16s var(--ease-out),box-shadow .2s ease,filter .2s ease,background-color .2s ease,border-color .2s ease;
+  }
+  .btn:active:not(:disabled),
+  .pokedex-hardware-key:active{
+    transform:translateY(2px) scale(.97);
+  }
+  .move-card:hover{transform:translateY(-2px);filter:brightness(1.05)}
+
+  /* Teclas da Pokédex: LED acende ao ativar. */
+  .pokedex-hardware-key.active .hardware-led{
+    animation:ledOn .5s ease both;
+  }
+  @keyframes ledOn{
+    0%,40%{filter:brightness(.6)}
+    50%{filter:brightness(2.2)}
+    100%{filter:none}
+  }
+
+  /* Cartões de golpe entram em cascata quando a lista é refeita. */
+  .move-card.card-entering{
+    animation:sheetPanelIn .38s var(--ease-out) both;
+    animation-delay:calc(var(--enter-index,0) * 40ms);
+  }
+}

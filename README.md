@@ -19,3 +19,15 @@ npm test
 ```
 
 Os testes exercitam migração, imagens maiores que o localStorage, gravações concorrentes, fechamento imediato, corrupção, recuperação e conflitos entre abas. A dependência de teste não é carregada pelo site.
+
+## Animações e Pokédex V6
+
+`styles/sheet-polish-v6.css` e `scripts/sheet-motion-v6.js` organizam textos que ficavam cortados ou apertados e animam a ficha: troca de página, troca de Pokémon, radar de status, números e golpes novos. Tudo respeita a opção "reduzir movimento" do sistema.
+
+`styles/pokedex-device-v6.css` e `scripts/pokedex-device-v6.js` transformam o Modo Pokédex em um aparelho. Ao ligar o modo, a Pokédex inicia e mostra um visor com o Pokémon escaneado, o registro dos jogos (EN/ES, via PokéAPI), status, tipos, golpes e Ability. Controles:
+
+- ← → trocam a seção; ↑ ↓ trocam o Pokémon (também pelo teclado da equipe).
+- A toca o grito; B narra o registro; S alterna a arte shiny.
+- O visor pode ser fechado e lembra a seção, o idioma, o som e o shiny em `state.dexDevice`.
+
+Fakemon usam os dados do banco H&H. Sem conexão, o visor mostra o que a ficha já tem.
