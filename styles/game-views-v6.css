@@ -485,9 +485,26 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 }
 .tc-toolbar button[aria-pressed="true"]{background:var(--cl-scan),linear-gradient(180deg,var(--cl-frame),var(--cl-frame-dark));color:#fff}
 .tc-toolbar button:active{transform:translateY(3px);box-shadow:none}
+.tc-custom{
+  width:min(720px,100%);padding:8px 12px;
+  border:2px solid var(--cl-ink);border-radius:8px;
+  background:var(--cl-paper);color:var(--cl-text);
+  font:700 11px var(--cl-pixel);
+}
+.tc-custom summary{cursor:pointer}
+.tc-custom-fields{display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px;padding-top:10px}
+.tc-custom-fields label{display:flex;align-items:center;gap:6px}
+.tc-custom-fields :is(select,button,input){
+  min-height:32px;border:2px solid var(--cl-line);border-radius:5px;
+  background:var(--cl-card);color:var(--cl-text);font:inherit;
+}
+.tc-custom-fields :is(button,input){cursor:pointer}
+.tc-custom-fields :is(button,select){padding:4px 8px}
 .tc-scene{width:min(720px,100%);perspective:1400px}
 .tc-card{
   --rx:0deg;--ry:0deg;--shine:50%;
+  --tc-front-texture:repeating-linear-gradient(135deg,transparent 0 16px,rgba(255,255,255,.18) 16px 32px);
+  --tc-back-texture:repeating-linear-gradient(45deg,transparent 0 16px,rgba(255,255,255,.14) 16px 32px);
   position:relative;
   display:grid;
   transform-style:preserve-3d;
@@ -496,13 +513,18 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
   cursor:pointer;
   outline:none;
 }
+.tc-card[data-pattern="quadriculado"]{
+  --tc-front-texture:repeating-conic-gradient(rgba(255,255,255,.18) 0% 25%,transparent 0% 50%) 0 0 / 28px 28px;
+  --tc-back-texture:var(--tc-front-texture);
+}
+.tc-card[data-pattern="liso"]{--tc-front-texture:none;--tc-back-texture:none}
 .tc-card.flipped{transform:rotateX(var(--rx)) rotateY(calc(180deg + var(--ry)))}
 .tc-card:focus-visible{box-shadow:0 0 0 4px #ffd040;border-radius:18px}
 .tc-face{
   grid-area:1/1;
   display:grid;gap:12px;align-content:start;
   padding:16px 18px;
-  border:4px solid var(--cl-ink);
+  border:4px solid var(--tc-border,var(--cl-ink));
   border-radius:18px;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
@@ -513,14 +535,14 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 .tc-front{
   background:
     linear-gradient(105deg,transparent calc(var(--shine) - 18%),rgba(255,255,255,.35) var(--shine),transparent calc(var(--shine) + 18%)),
-    repeating-linear-gradient(135deg,transparent 0 16px,rgba(255,255,255,.18) 16px 32px),
-    linear-gradient(180deg,#78c8a0,#4aa078);
+    var(--tc-front-texture),
+    linear-gradient(180deg,color-mix(in srgb,var(--tc-front,#4aa078) 65%,white),var(--tc-front,#4aa078));
 }
 .tc-back{
   transform:rotateY(180deg);
   background:
-    repeating-linear-gradient(45deg,transparent 0 16px,rgba(255,255,255,.14) 16px 32px),
-    linear-gradient(180deg,#80a8e0,#4a70b8);
+    var(--tc-back-texture),
+    linear-gradient(180deg,color-mix(in srgb,var(--tc-back,#4a70b8) 65%,white),var(--tc-back,#4a70b8));
 }
 .tc-head{
   display:flex;align-items:center;gap:12px;
@@ -591,7 +613,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
   animation:tcGlint 3s ease-in-out infinite;
 }
 @keyframes tcGlint{0%,80%,100%{filter:none}88%{filter:brightness(1.8)}}
-.tc-hint{font:700 10px var(--cl-pixel);color:rgba(0,0,0,.55);text-align:right}
+.tc-hint{justify-self:end;padding:3px 6px;border-radius:4px;background:#f8f8e8;color:#1f2a20;font:700 10px var(--cl-pixel);text-align:right}
 .tc-back-body{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .tc-back-body section{
   padding:10px;
@@ -611,7 +633,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 .tc-grade{display:grid;place-items:center;flex:0 0 22px;height:22px;border:2px solid var(--cl-ink);border-radius:4px;background:#e0e7f3;color:#1f2a20;font:400 9px var(--cl-title)}
 .tc-grade.g-S{background:#ffd040}.tc-grade.g-A{background:#ff9a60}.tc-grade.g-B{background:#9ad8ff}
 .tc-none{margin:0;color:#7080a0;font:700 10px var(--cl-pixel)}
-.tc-back .tc-hint{text-align:left}
+.tc-back .tc-hint{justify-self:start;text-align:left}
 
 @media (max-width:640px){
   .tc-body{grid-template-columns:minmax(0,1fr) 96px}

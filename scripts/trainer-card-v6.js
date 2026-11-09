@@ -34,6 +34,9 @@
   const team=()=>state.pokemon.filter(p=>(p.storageGroup||"team")==="team").slice(0,6);
   const img=p=>typeof displayPokemonImage==="function"?displayPokemonImage(p):(p.imageUrl||"");
 
+  const CARD_COLORS={front:"#4aa078",back:"#4a70b8",border:"#181a24"};
+  const CARD_PATTERNS=["listras","quadriculado","liso"];
+
   const wrap=document.createElement("section");
   wrap.className="tc-wrap";
   wrap.innerHTML=`
@@ -41,6 +44,20 @@
       <button type="button" data-tc="flip">⟲ VIRAR CARTÃO</button>
       <button type="button" data-tc="edit" aria-pressed="false">✎ EDITAR CARTÃO</button>
     </div>
+    <details class="tc-custom">
+      <summary>⚙ PERSONALIZAR VISUAL</summary>
+      <div class="tc-custom-fields">
+        <label>Frente <input type="color" name="front"></label>
+        <label>Verso <input type="color" name="back"></label>
+        <label>Moldura <input type="color" name="border"></label>
+        <label>Textura <select name="pattern">
+          <option value="listras">Listras clássicas</option>
+          <option value="quadriculado">Quadriculado</option>
+          <option value="liso">Liso</option>
+        </select></label>
+        <button type="button" data-tc-reset>Restaurar padrão</button>
+      </div>
+    </details>
     <div class="tc-scene">
       <div class="tc-card" id="tcCard" tabindex="0" role="button" aria-label="Trainer Card — clique para virar">
         <div class="tc-face tc-front"></div>
@@ -118,13 +135,43 @@
       <footer class="tc-hint">◀ Clique para voltar à frente</footer>`;
   }
 
+  function renderAppearance(appearance){
+    Object.entries(CARD_COLORS).forEach(([key,fallback])=>{
+      const saved=appearance?.[key];
+      const color=typeof saved==="string"&&/^#[0-9a-f]{6}$/i.test(saved)?saved:null;
+      if(color)card.style.setProperty(`--tc-${key}`,color);
+      else card.style.removeProperty(`--tc-${key}`);
+      custom.querySelector(`[name="${key}"]`).value=color||fallback;
+    });
+    const pattern=CARD_PATTERNS.includes(appearance?.pattern)?appearance.pattern:"listras";
+    card.dataset.pattern=pattern;
+    custom.querySelector('select[name="pattern"]').value=pattern;
+  }
+
   function render(){
     const t=typeof ensureTrainerData==="function"?ensureTrainerData():state.trainer||{};
+    renderAppearance(t.cardAppearance);
     wrap.querySelector(".tc-front").innerHTML=front(t);
     wrap.querySelector(".tc-back").innerHTML=back(t);
   }
 
   const card=wrap.querySelector("#tcCard");
+  const custom=wrap.querySelector(".tc-custom");
+  custom.addEventListener("input",event=>{
+    const control=event.target;
+    const key=control.name;
+    if(!Object.hasOwn(CARD_COLORS,key)&&key!=="pattern")return;
+    const t=ensureTrainerData();
+    t.cardAppearance={...t.cardAppearance,[key]:control.value};
+    renderAppearance(t.cardAppearance);
+    debouncedSave();
+  });
+  custom.querySelector("[data-tc-reset]").addEventListener("click",()=>{
+    delete ensureTrainerData().cardAppearance;
+    renderAppearance();
+    debouncedSave();
+  });
+
   function flip(){
     card.classList.toggle("flipped");
     sfx("page");
@@ -159,8 +206,14 @@
     window.renderTrainerPage=function(){const r=original.apply(this,arguments);render();return r;};
   }
   let timer=0;
-  page.addEventListener("input",()=>{clearTimeout(timer);timer=setTimeout(render,200);});
-  page.addEventListener("change",()=>{clearTimeout(timer);timer=setTimeout(render,50);});
+  page.addEventListener("input",event=>{
+    if(custom.contains(event.target))return;
+    clearTimeout(timer);timer=setTimeout(render,200);
+  });
+  page.addEventListener("change",event=>{
+    if(custom.contains(event.target))return;
+    clearTimeout(timer);timer=setTimeout(render,50);
+  });
   document.addEventListener("hh:render",render);
   document.addEventListener("hh:pokemonchange",render);
   render();
