@@ -1,6 +1,6 @@
 /* ============================================================
    V6 — Pokédex como aparelho
-   Só aparece com o Modo Pokédex ligado. Lê o Pokémon atual da
+   Substitui a visão geral com o Modo Pokédex ligado. Lê o Pokémon atual da
    ficha (state/current) e busca na PokéAPI o que a ficha não
    guarda: categoria, registro dos jogos, altura, peso e grito.
    Preferências do visor ficam em state.dexDevice e passam pelo
@@ -41,6 +41,10 @@
   const escHtml=s=>typeof esc==="function"?esc(s):String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
   const pad=n=>String(n||0).padStart(4,"0");
   const now=()=>typeof current!=="undefined"&&current?current:getCurrent();
+  const page=$("#page1");
+  if(!page)return;
+  const editSheet=$("#dexEditSheetBtn");
+  const isDexHome=()=>page.classList.contains("active")&&document.documentElement.dataset.sheetMode==="pokedex";
 
   /* ---------- Preferências do visor ---------- */
   function prefs(){
@@ -150,8 +154,6 @@
 
   function build(){
     if(root)return root;
-    const head=$(".sheet-head");
-    if(!head)return null;
     root=document.createElement("section");
     root.className="dex-device";
     root.id="dexDevice";
@@ -162,7 +164,7 @@
         <div class="dex-left-top">
           <span class="dex-top-leds" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></span>
           <span class="dex-device-title">VISOR DE REGISTRO<small>← → SEÇÕES • ↑ ↓ POKÉMON</small></span>
-          <button class="dex-fold-btn" type="button" data-dex="fold" title="Fechar ou abrir o visor">
+          <button class="dex-fold-btn" type="button" data-dex="fold" aria-expanded="true" aria-controls="dexScreen dexBody">
             <span class="dex-fold-icon">▾</span><span class="dex-fold-text">FECHAR</span>
           </button>
         </div>
@@ -225,7 +227,7 @@
         </div>
         <div class="dex-keypad" id="dexKeypad" aria-label="Equipe"></div>
       </div>`;
-    head.insertAdjacentElement("afterend",root);
+    page.prepend(root);
     bindEvents();
     return root;
   }
@@ -233,7 +235,7 @@
   /* ---------- Eventos ---------- */
   function bindEvents(){
     root.addEventListener("click",event=>{
-      const tab=event.target.closest("[data-section]");
+      const tab=event.target.closest(".dex-tabs [data-section]");
       if(tab){setSection(tab.dataset.section);return;}
       const key=event.target.closest("[data-pokemon-id]");
       if(key){switchPokemon(key.dataset.pokemonId);return;}
@@ -260,7 +262,7 @@
   }
 
   function press(action,btn){
-    if(!root||root.hidden)return;
+    if(!root||!isDexHome())return;
     flashButton(btn);
     const d=prefs();
     switch(action){
@@ -413,7 +415,7 @@
 
   function syncTabs(){
     const d=prefs();
-    root.querySelectorAll("[data-section]").forEach(tab=>{
+    root.querySelectorAll(".dex-tabs [data-section]").forEach(tab=>{
       const on=tab.dataset.section===d.section;
       tab.classList.toggle("active",on);
       tab.setAttribute("aria-selected",String(on));
@@ -428,6 +430,9 @@
   function syncFold(){
     const d=prefs();
     root.classList.toggle("is-folded",d.folded);
+    const button=$(".dex-fold-btn",root);
+    button.setAttribute("aria-expanded",String(!d.folded));
+    button.setAttribute("aria-label",d.folded?"Abrir visor da Pokédex":"Fechar visor da Pokédex");
     const text=$(".dex-fold-text",root),icon=$(".dex-fold-icon",root);
     if(text)text.textContent=d.folded?"ABRIR":"FECHAR";
     if(icon)icon.textContent=d.folded?"▸":"▾";
@@ -533,6 +538,8 @@
   function renderSection(animate){
     const body=$("#dexBody");
     if(!body)return;
+    clearInterval(typingTimer);
+    typingEl=null;
     const d=prefs();
     syncTabs();
     body.dataset.section=d.section;
@@ -655,8 +662,21 @@
 
   /* ---------- Atualização ---------- */
   async function refresh({newPokemon=false}={}){
-    if(document.documentElement.dataset.sheetMode!=="pokedex")return;
-    if(!build())return;
+    if(!isDexHome()){
+      if(lastId!==null){
+        lastId=null;
+        fetchController?.abort();
+        finishTyping();
+        clearTimeout(scanTimer);
+        root.classList.remove("is-busy");
+        $("#dexScreen",root).classList.remove("is-scanning");
+        window.speechSynthesis?.cancel();
+        cryAudio?.pause();
+        setSpeaking(false);
+      }
+      return;
+    }
+    build();
     const p=now();
     const id=p?.id;
     const changed=newPokemon||id!==lastId;
@@ -674,10 +694,10 @@
       if(officialId&&!info){
         try{
           const data=await loadOfficial(officialId);
-          if(now().id!==id)return;
+          if(!isDexHome()||now()?.id!==id)return;
           info=data;
         }catch(error){
-          if(error.name==="AbortError")return;
+          if(error.name==="AbortError"||!isDexHome()||now()?.id!==id)return;
           info=localEntry(p);
           toast("Sem conexão com a PokéAPI");
         }
@@ -686,10 +706,12 @@
       }
     }else{
       // Mesma ficha, outro dado mudou (stats, golpes, nome...): atualiza sem reescanear.
+      syncFold();
+      syncPills();
       renderIdentity();
       renderKeypad();
       const d=prefs();
-      if(d.section!=="entry")renderSection(false);
+      if(d.section!=="entry"||$("#dexBody").dataset.section!==d.section)renderSection(false);
       renderSprite(false);
     }
   }
@@ -733,52 +755,46 @@
     });
   }
 
-  function onModeChange(enabled,{boot=false}={}){
-    if(enabled){
-      build();
-      root.hidden=false;
-      lastId=null;
-      if(boot){
-        playBoot().then(()=>refresh({newPokemon:true}));
-      }else{
-        refresh({newPokemon:true});
-      }
-    }else if(root){
-      window.speechSynthesis?.cancel();
-      cryAudio?.pause();
-      setSpeaking(false);
-      root.hidden=true;
-    }
-  }
-
   if(typeof window.setSheetPokedexMode==="function"){
     const original=window.setSheetPokedexMode;
+    let powerOffTimer=0;
     window.setSheetPokedexMode=function(enabled){
+      clearTimeout(powerOffTimer);
+      root?.classList.remove("is-powering-off");
       const was=!!state.sheetPokedexMode;
-      if(was&&!enabled&&root&&!reduceMotion()){
+      const apply=()=>{
+        const restoreFocus=!enabled&&document.activeElement===editSheet;
+        const result=original.call(this,enabled);
+        if(!was&&enabled&&isDexHome()){
+          build();
+          playBoot().then(()=>refresh());
+        }else{
+          refresh();
+        }
+        if(restoreFocus)$("#sumScreen [data-sum-tab].active")?.focus({preventScroll:true});
+        return result;
+      };
+      if(was&&!enabled&&root&&isDexHome()&&!prefs().folded&&!reduceMotion()){
         root.classList.add("is-powering-off");
         beep(440,90,"triangle");setTimeout(()=>beep(220,140,"triangle"),90);
-        setTimeout(()=>{
+        powerOffTimer=setTimeout(()=>{
           root.classList.remove("is-powering-off");
-          original.apply(this,[enabled]);
-          onModeChange(false);
+          apply();
         },380);
         return;
       }
-      const result=original.apply(this,arguments);
-      onModeChange(!!enabled,{boot:!was&&!!enabled});
-      return result;
+      return apply();
     };
+    editSheet?.addEventListener("click",()=>window.setSheetPokedexMode(false));
   }
 
+  document.addEventListener("hh:pagechange",()=>refresh());
   document.addEventListener("hh:pokemonchange",()=>refresh({newPokemon:true}));
   document.addEventListener("hh:render",()=>refresh());
 
   // Estado inicial (a ficha pode abrir já no Modo Pokédex).
   prefs();
-  if(state.sheetPokedexMode){
-    onModeChange(true);
-  }
+  refresh();
 
   // API pequena para testes e para quem quiser chamar de fora.
   window.hhDexDevice={refresh,press,setSection,playBoot};
