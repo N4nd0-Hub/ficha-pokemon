@@ -96,7 +96,7 @@
     const src=img(p);
     const on=String(p.id)===String(state.currentId);
     return `<button type="button" class="pc-slot${on?" current":""}" data-pc-id="${esc(p.id)}" title="${esc(p.name)} • Lv. ${Number(p.level||1)}">
-      ${src?`<img src="${esc(src)}" alt="" loading="lazy" draggable="false">`:'<span class="pc-ball">◓</span>'}
+      ${src?`<img src="${esc(src)}" alt="" loading="lazy" decoding="async" draggable="false">`:'<span class="pc-ball">◓</span>'}
       ${p.favorite?'<i class="pc-fav" aria-label="Favorito">★</i>':""}
     </button>`;
   }
@@ -105,7 +105,7 @@
     const pct=hpPct(p);
     const on=String(p.id)===String(state.currentId);
     return `<button type="button" class="pc-party${on?" current":""}" data-pc-id="${esc(p.id)}">
-      <span class="pc-party-sprite">${src?`<img src="${esc(src)}" alt="" loading="lazy" draggable="false">`:'<span class="pc-ball">◓</span>'}</span>
+      <span class="pc-party-sprite">${src?`<img src="${esc(src)}" alt="" loading="lazy" decoding="async" draggable="false">`:'<span class="pc-ball">◓</span>'}</span>
       <span class="pc-party-info">
         <b>${esc(p.name||"Sem nome")}${p.favorite?' <i class="pc-fav-inline">★</i>':""}</b>
         <span class="pc-party-lv">Lv${Number(p.level||1)}</span>
@@ -135,18 +135,23 @@
     </div>`;
   }
 
+  function wallHtml(t,b){
+    if(view==="team"){
+      return `<div class="pc-party-list">${t.map(partyHtml).join("")}${Array.from({length:Math.max(0,TEAM_MAX-t.length)},()=>'<span class="pc-party empty" aria-hidden="true"><span>— vazio —</span></span>').join("")}</div>`;
+    }
+    const n=Number(view.split("-")[1])-1;
+    const slots=b.slice(n*BOX_SIZE,(n+1)*BOX_SIZE);
+    return `<div class="pc-grid">${Array.from({length:BOX_SIZE},(_,i)=>slotHtml(slots[i],i)).join("")}</div>`;
+  }
+
+  function viewCount(t,b){
+    return view==="team"?`${t.length} / ${TEAM_MAX}`:`${b.length} guardados`;
+  }
+
   function render(){
     if(!views().includes(view))view="team";
     const t=team(),b=boxed();
     const previewP=byId(previewId)||byId(state.currentId);
-    let body="";
-    if(view==="team"){
-      body=`<div class="pc-party-list">${t.map(partyHtml).join("")}${Array.from({length:Math.max(0,TEAM_MAX-t.length)},()=>'<span class="pc-party empty" aria-hidden="true"><span>— vazio —</span></span>').join("")}</div>`;
-    }else{
-      const n=Number(view.split("-")[1])-1;
-      const slots=b.slice(n*BOX_SIZE,(n+1)*BOX_SIZE);
-      body=`<div class="pc-grid">${Array.from({length:BOX_SIZE},(_,i)=>slotHtml(slots[i],i)).join("")}</div>`;
-    }
     root.innerHTML=`
       <header class="pc-head">
         <div class="pc-title"><span class="pc-led" aria-hidden="true"></span><div><small>SISTEMA DE ARMAZENAMENTO</small><b>PC DE POKÉMON</b></div></div>
@@ -156,11 +161,11 @@
         <button type="button" data-pc-nav="-1" aria-label="Caixa anterior">◀</button>
         <div class="pc-switch-label" aria-live="polite">
           <b>${viewLabel(view)}</b>
-          <small>${view==="team"?`${t.length} / ${TEAM_MAX}`:`${b.length} guardados`}</small>
+          <small>${viewCount(t,b)}</small>
         </div>
         <button type="button" data-pc-nav="1" aria-label="Próxima caixa">▶</button>
       </div>
-      <div class="pc-wall ${view==="team"?"is-team":"is-box"}">${body}</div>
+      <div class="pc-wall ${view==="team"?"is-team":"is-box"}">${wallHtml(t,b)}</div>
       ${previewHtml(previewP)}
       <footer class="pc-foot">${state.pokemon.length} Pokémon registrados • Equipe ${t.length}/${TEAM_MAX}</footer>`;
   }
@@ -173,9 +178,17 @@
       view=list[(i+Number(nav.dataset.pcNav)+list.length)%list.length];
       store.set("hh_pc_view",view);
       sfx("page");
+      const t=team(),b=boxed();
+      root.querySelector(".pc-switch-label b").textContent=viewLabel(view);
+      root.querySelector(".pc-switch-label small").textContent=viewCount(t,b);
       const wall=root.querySelector(".pc-wall");
-      render();
-      root.querySelector(".pc-wall")?.classList.add(Number(nav.dataset.pcNav)>0?"slide-left":"slide-right");
+      wall.classList.toggle("is-team",view==="team");
+      wall.classList.toggle("is-box",view!=="team");
+      wall.innerHTML=wallHtml(t,b);
+      if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+        const contents=wall.firstElementChild;
+        contents.classList.add("pc-slide",Number(nav.dataset.pcNav)>0?"slide-left":"slide-right");
+      }
       return;
     }
     const act=event.target.closest("[data-pc-act]");
@@ -192,8 +205,7 @@
     const slot=event.target.closest("[data-pc-id]");
     if(slot){previewId=slot.dataset.pcId;selectPokemon(byId(slot.dataset.pcId));}
   });
-  root.addEventListener("pointerover",event=>{
-    const slot=event.target.closest("[data-pc-id]");
+  function previewSlot(slot){
     if(!slot||slot.dataset.pcId===previewId)return;
     previewId=slot.dataset.pcId;
     const holder=root.querySelector(".pc-preview");
@@ -202,6 +214,17 @@
       tmp.innerHTML=previewHtml(byId(previewId));
       holder.replaceWith(tmp.firstElementChild);
     }
+  }
+  const finishSlide=event=>{
+    if(event.animationName!=="pcSlide"||!event.target.classList.contains("pc-slide"))return;
+    event.target.classList.remove("pc-slide","slide-left","slide-right");
+    previewSlot(event.target.querySelector("[data-pc-id]:hover"));
+  };
+  root.addEventListener("animationend",finishSlide);
+  root.addEventListener("animationcancel",finishSlide);
+  root.addEventListener("pointerover",event=>{
+    const slot=event.target.closest("[data-pc-id]");
+    if(slot&&!slot.closest(".pc-slide"))previewSlot(slot);
   });
 
   // Atualiza sempre que a gaveta original seria redesenhada.
