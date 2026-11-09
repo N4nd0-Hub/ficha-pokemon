@@ -1,0 +1,738 @@
+/* ============================================================
+   V6 — Pokédex como aparelho
+   Visível só com html[data-sheet-mode="pokedex"].
+   Cores da carcaça vêm de --pokedex-color (Personalizar).
+   ============================================================ */
+
+.dex-device{display:none}
+
+html[data-sheet-mode="pokedex"] .dex-device:not([hidden]){
+  --dex-pixel:"Press Start 2P","Silkscreen",ui-monospace,monospace;
+  --dex-mono:"Silkscreen",ui-monospace,monospace;
+  --dex-body:var(--pokedex-color,#e31b3d);
+  --dex-body-light:color-mix(in srgb,var(--dex-body) 74%,#fff);
+  --dex-body-dark:color-mix(in srgb,var(--dex-body) 52%,#05070b);
+  --dex-ink:#0d151b;
+  --dex-lcd:#071a22;
+  --dex-tint:#59cfff;
+  --dex-tint-2:#59cfff;
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 30px minmax(0,1.12fr);
+  margin:14px 0 18px;
+  outline:none;
+  color:#eef6f8;
+  perspective:1600px;
+}
+html[data-sheet-mode="pokedex"] .dex-device:focus-visible{
+  outline:3px solid #8fe3ff;
+  outline-offset:6px;
+  border-radius:20px;
+}
+
+/* ---------- Metades e dobradiça ---------- */
+.dex-half{
+  position:relative;
+  min-width:0;
+  padding:16px;
+  border:4px solid var(--dex-ink);
+  background:
+    linear-gradient(118deg,rgba(255,255,255,.2),transparent 24%),
+    linear-gradient(180deg,var(--dex-body-light),var(--dex-body) 22%,var(--dex-body-dark));
+  box-shadow:
+    inset 0 3px 0 rgba(255,255,255,.28),
+    inset 0 -6px 0 rgba(0,0,0,.22),
+    6px 8px 0 rgba(0,0,0,.4);
+}
+.dex-left{border-radius:18px 6px 6px 18px}
+.dex-right{
+  border-radius:6px 18px 18px 6px;
+  display:grid;
+  grid-template-rows:minmax(0,1fr) auto auto;
+  gap:12px;
+  transform-origin:left center;
+  transition:transform .55s cubic-bezier(.22,1,.36,1),opacity .35s ease;
+}
+.dex-hinge{
+  display:flex;
+  flex-direction:column;
+  justify-content:space-around;
+  align-items:center;
+  margin:22px 0;
+  border:4px solid var(--dex-ink);
+  border-left:0;border-right:0;
+  background:linear-gradient(90deg,var(--dex-body-dark),var(--dex-body-light) 46%,var(--dex-body-dark));
+}
+.dex-hinge i{
+  width:12px;height:30px;
+  border:3px solid var(--dex-ink);
+  border-radius:999px;
+  background:var(--dex-body);
+}
+
+/* ---------- Topo da metade esquerda ---------- */
+.dex-left-top{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:-4px 0 12px;
+  padding-bottom:10px;
+  border-bottom:4px solid rgba(0,0,0,.28);
+}
+.dex-top-leds{display:flex;gap:8px}
+.dex-device-title{
+  display:grid;gap:3px;min-width:0;
+  font:11px var(--dex-pixel);letter-spacing:.08em;color:#fff;
+  text-shadow:1px 1px 0 rgba(0,0,0,.5);
+}
+.dex-device-title small{font:10px var(--dex-mono);letter-spacing:.1em;opacity:.8}
+.dex-device-title,.dex-device-title small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dex-top-leds i{
+  width:13px;height:13px;border:2px solid var(--dex-ink);border-radius:50%;
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.55);
+}
+.dex-top-leds .r{background:#ff3b50}
+.dex-top-leds .y{background:#ffd84a}
+.dex-top-leds .g{background:#45d175}
+.dex-fold-btn{
+  margin-left:auto;
+  display:flex;align-items:center;gap:6px;
+  padding:7px 10px;
+  border:3px solid var(--dex-ink);
+  border-radius:8px;
+  background:rgba(4,10,14,.55);
+  color:#fff;
+  font:12px var(--dex-mono);
+  letter-spacing:.08em;
+  cursor:pointer;
+}
+.dex-fold-btn:hover{background:rgba(4,10,14,.8)}
+
+/* ---------- Tela do sprite ---------- */
+.dex-screen-bezel{
+  position:relative;
+  padding:14px 18px 10px;
+  border:4px solid var(--dex-ink);
+  border-radius:10px 10px 10px 34px;
+  background:linear-gradient(180deg,#f4f7f8,#cfd8db);
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.14);
+}
+.dex-bezel-leds{display:flex;justify-content:center;gap:10px;margin:-6px 0 7px}
+.dex-bezel-leds i{width:8px;height:8px;border-radius:50%;background:#e1293d;border:2px solid var(--dex-ink)}
+.dex-screen{
+  position:relative;
+  height:236px;
+  overflow:hidden;
+  border:4px solid var(--dex-ink);
+  border-radius:6px;
+  background:
+    radial-gradient(circle at 50% 58%,color-mix(in srgb,var(--dex-tint) 42%,transparent),transparent 62%),
+    radial-gradient(circle at 80% 10%,color-mix(in srgb,var(--dex-tint-2) 28%,transparent),transparent 50%),
+    var(--dex-lcd);
+  transition:background .6s ease;
+}
+.dex-screen::after{ /* linhas de varredura */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);
+  mix-blend-mode:multiply;
+}
+.dex-screen-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(140,220,255,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(140,220,255,.08) 1px,transparent 1px);
+  background-size:16px 16px;
+}
+.dex-sprite-wrap{position:absolute;inset:30px 12px 30px;display:grid;place-items:center}
+.dex-sprite{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:contain;
+  image-rendering:auto;
+  filter:drop-shadow(0 8px 0 rgba(0,0,0,.35));
+  animation:dexIdle 3.4s ease-in-out infinite;
+  user-select:none;
+}
+.dex-sprite-empty{font:12px var(--dex-pixel);color:rgba(220,245,255,.6);letter-spacing:.08em}
+.dex-screen-hud{
+  position:absolute;left:8px;right:8px;top:7px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  font:12px var(--dex-pixel);
+  color:#dff8ff;
+  text-shadow:1px 1px 0 #000;
+  z-index:2;
+}
+.dex-hud-flags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.dex-hud-flags .flag{
+  padding:3px 5px;
+  border:2px solid currentColor;
+  font:10px var(--dex-mono);
+  letter-spacing:.06em;
+  background:rgba(0,0,0,.45);
+}
+.dex-hud-flags .legend{color:#ffd84a}
+.dex-hud-flags .myth{color:#ff8de0}
+.dex-hud-flags .fake{color:#9cf0b0}
+.dex-hud-flags .lv{color:#bfefff}
+.dex-screen-status{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  padding:5px 8px;
+  background:rgba(0,0,0,.55);
+  color:#8fe3ff;
+  font:11px var(--dex-pixel);
+  letter-spacing:.08em;
+  text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dex-screen-status.is-alert{color:#ffd84a}
+.dex-scanline{
+  position:absolute;left:0;right:0;top:-10%;height:12px;z-index:3;opacity:0;
+  background:linear-gradient(180deg,transparent,rgba(160,240,255,.9),transparent);
+  box-shadow:0 0 18px 4px rgba(120,220,255,.6);
+  pointer-events:none;
+}
+.dex-bezel-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.dex-red-button{
+  width:24px;height:24px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ff8b95,#d81f33 60%);
+  border:3px solid var(--dex-ink);
+}
+.dex-grill{display:grid;gap:4px}
+.dex-grill i{display:block;width:38px;height:4px;border-radius:2px;background:var(--dex-ink)}
+
+/* ---------- Controles ---------- */
+.dex-controls{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:14px;
+  align-items:center;
+  margin-top:14px;
+}
+.dex-dpad{
+  display:grid;
+  grid-template-columns:repeat(3,30px);
+  grid-template-rows:repeat(3,30px);
+  filter:drop-shadow(3px 4px 0 rgba(0,0,0,.4));
+}
+.dex-dpad button{
+  border:0;padding:0;
+  background:#1a242b;
+  color:rgba(255,255,255,.55);
+  font-size:10px;
+  cursor:pointer;
+}
+.dex-dpad button:hover{color:#fff;background:#24323b}
+.dex-dpad .up{grid-area:1/2;border-radius:5px 5px 0 0}
+.dex-dpad .left{grid-area:2/1;border-radius:5px 0 0 5px}
+.dex-dpad .center{grid-area:2/2;border-radius:0}
+.dex-dpad .center::after{content:"";display:block;width:12px;height:12px;margin:auto;border-radius:50%;background:#0e161b;box-shadow:inset 0 2px 2px rgba(0,0,0,.6)}
+.dex-dpad .right{grid-area:2/3;border-radius:0 5px 5px 0}
+.dex-dpad .down{grid-area:3/2;border-radius:0 0 5px 5px}
+
+.dex-ident{display:grid;gap:8px;min-width:0}
+.dex-ident-screen{
+  padding:8px 10px;
+  border:3px solid var(--dex-ink);
+  border-radius:6px;
+  background:linear-gradient(180deg,#a6c96a,#8eb556);
+  color:#17280c;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.3),inset 0 -2px 0 rgba(0,0,0,.15);
+  min-width:0;
+}
+.dex-ident-screen b{
+  display:block;
+  font:13px var(--dex-pixel);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dex-ident-screen small{
+  display:block;margin-top:6px;
+  font:11px var(--dex-mono);
+  letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.dex-pills{display:flex;gap:6px}
+.dex-pill{
+  flex:1;
+  padding:6px 4px;
+  border:2px solid var(--dex-ink);
+  border-radius:999px;
+  background:#2a353d;
+  color:#d5e4ea;
+  font:10px var(--dex-mono);
+  letter-spacing:.06em;
+  cursor:pointer;
+}
+.dex-pill[aria-pressed="true"]{background:#ffd84a;color:#2a2000}
+#dexSoundBtn[aria-pressed="true"]{background:#45d175;color:#062612}
+.dex-pill:disabled{opacity:.4;cursor:not-allowed}
+
+.dex-ab{display:flex;gap:10px;align-items:flex-end}
+.dex-ab button{
+  display:grid;place-items:center;gap:2px;
+  width:48px;height:48px;
+  border:3px solid var(--dex-ink);
+  border-radius:50%;
+  color:#fff;
+  cursor:pointer;
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.3),0 4px 0 rgba(0,0,0,.45);
+}
+.dex-ab button b{font:13px var(--dex-pixel);line-height:1}
+.dex-ab button small{font:9px var(--dex-mono);letter-spacing:.04em;opacity:.9}
+.dex-btn-a{background:#3e7be0;transform:translateY(-12px)}
+.dex-btn-b{background:#2a353d}
+
+.dex-device button.is-pressed{filter:brightness(1.5)}
+
+/* ---------- Tela de dados (direita) ---------- */
+.dex-data-screen{
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  min-height:0;
+  border:4px solid var(--dex-ink);
+  border-radius:8px;
+  background:var(--dex-lcd);
+  box-shadow:inset 0 0 0 2px rgba(120,220,255,.12),inset 0 0 40px rgba(0,0,0,.5);
+  overflow:hidden;
+}
+.dex-tabs{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  border-bottom:3px solid var(--dex-ink);
+  background:#0b232d;
+}
+.dex-tabs button{
+  position:relative;
+  padding:9px 2px;
+  border:0;
+  border-right:2px solid rgba(0,0,0,.45);
+  background:transparent;
+  color:rgba(190,232,245,.6);
+  font:11px var(--dex-pixel);
+  letter-spacing:.02em;
+  cursor:pointer;
+}
+.dex-tabs button small{display:none;font:inherit}
+.dex-tabs button:last-child{border-right:0}
+.dex-tabs button:hover{color:#e9faff;background:rgba(120,220,255,.07)}
+.dex-tabs button.active{
+  color:#062330;
+  background:#8fe3ff;
+}
+.dex-body{
+  position:relative;
+  min-height:0;
+  max-height:330px;
+  overflow:auto;
+  padding:14px 16px;
+  font-size:14px;
+  line-height:1.55;
+  scrollbar-width:thin;
+}
+.dex-kicker{
+  display:inline-block;
+  color:#8fe3ff;
+  font:11px var(--dex-pixel);
+  letter-spacing:.06em;
+}
+.dex-empty{color:rgba(220,240,248,.7)}
+
+/* Entrada */
+.dex-entry-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.dex-entry-tools{display:flex;gap:8px;align-items:center}
+.dex-entry-nav{display:flex;gap:5px;align-items:center;font:11px var(--dex-mono);color:#bfefff}
+.dex-chip{
+  min-width:26px;
+  padding:4px 7px;
+  border:2px solid #8fe3ff;
+  border-radius:4px;
+  background:transparent;
+  color:#8fe3ff;
+  font:11px var(--dex-mono);
+  cursor:pointer;
+}
+.dex-chip:hover{background:#8fe3ff;color:#062330}
+.dex-typing{
+  margin:12px 0 0;
+  min-height:5.2em;
+  font-size:15px;
+  color:#eaf9ff;
+  cursor:pointer;
+}
+.dex-typing.is-typing::after{
+  content:"▌";
+  margin-left:2px;
+  color:#8fe3ff;
+  animation:dexBlink .7s steps(1) infinite;
+}
+.dex-loading{font:11px var(--dex-pixel);color:#8fe3ff;letter-spacing:.06em}
+.dex-loading i{animation:dexBlink 1s steps(1) infinite;font-style:normal}
+.dex-loading i:nth-child(2){animation-delay:.33s}
+.dex-loading i:nth-child(3){animation-delay:.66s}
+.dex-notes{
+  margin-top:14px;padding-top:12px;
+  border-top:2px dashed rgba(143,227,255,.25);
+}
+.dex-notes p{margin:6px 0 0;color:#d2e8ef;white-space:pre-wrap}
+
+/* Status */
+.dex-stat-list{display:grid;gap:8px}
+.dex-stat{
+  display:grid;
+  grid-template-columns:86px minmax(0,1fr) 44px;
+  gap:10px;
+  align-items:center;
+}
+.dex-stat-name{font:11px var(--dex-pixel);color:var(--stat-color);white-space:nowrap}
+.dex-stat-name em{font-style:normal;font-size:10px}
+.dex-stat-name .up{color:#ff8a8a}
+.dex-stat-name .down{color:#7fb4ff}
+.dex-stat-bar{
+  height:12px;
+  border:2px solid #000;
+  background:#0f2a35;
+  overflow:hidden;
+}
+.dex-stat-bar i{
+  display:block;height:100%;
+  width:var(--stat-pct);
+  background:
+    repeating-linear-gradient(90deg,transparent 0 6px,rgba(0,0,0,.25) 6px 8px),
+    var(--stat-color);
+  box-shadow:0 0 10px color-mix(in srgb,var(--stat-color) 60%,transparent);
+}
+.dex-stat-value{font:13px var(--dex-pixel);text-align:right;color:#fff}
+.dex-stat-foot{
+  display:flex;flex-wrap:wrap;gap:8px 18px;
+  margin-top:14px;padding-top:10px;
+  border-top:2px dashed rgba(143,227,255,.25);
+  font:11px var(--dex-mono);letter-spacing:.06em;color:#9ccfe0;
+}
+.dex-stat-foot b{color:#fff;font-family:var(--dex-pixel);font-size:11px;margin-left:4px}
+
+/* Tipos */
+.dex-type-main{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.dex-type-big{
+  padding:8px 14px;
+  border:3px solid #000;
+  background:var(--t);
+  color:#fff;
+  font:13px var(--dex-pixel);
+  text-shadow:2px 2px 0 rgba(0,0,0,.5);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.3),3px 3px 0 rgba(0,0,0,.5);
+}
+.dex-type-row{
+  display:grid;
+  grid-template-columns:96px minmax(0,1fr);
+  gap:10px;
+  align-items:start;
+  padding:8px 0;
+  border-top:1px solid rgba(143,227,255,.12);
+}
+.dex-type-row>span{font:11px var(--dex-pixel);padding-top:2px;line-height:1.4}
+.dex-type-row>span small{display:block;font:11px var(--dex-mono);letter-spacing:.06em;opacity:.85}
+.dex-type-row.bad>span{color:#ff8a8a}
+.dex-type-row.good>span{color:#8be3a5}
+.dex-type-row.immune>span{color:#c5b3ff}
+.dex-type-row>div{display:flex;flex-wrap:wrap;gap:5px}
+
+/* Golpes */
+.dex-move-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:mv}
+.dex-move-list li{
+  counter-increment:mv;
+  display:grid;gap:5px;
+  padding:9px 10px 9px 38px;
+  position:relative;
+  border-left:5px solid var(--t);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--t) 22%,transparent),transparent 70%);
+}
+.dex-move-list li::before{
+  content:counter(mv,decimal-leading-zero);
+  position:absolute;left:9px;top:10px;
+  font:11px var(--dex-pixel);color:#8fe3ff;
+}
+.dex-move-list b{font:12px var(--dex-pixel);letter-spacing:.02em}
+.dex-move-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dex-move-meta em{
+  font:10px var(--dex-mono);font-style:normal;letter-spacing:.06em;
+  padding:2px 6px;border:1px solid rgba(255,255,255,.25);color:#cfe8f0;
+}
+.dex-foot-note{margin:10px 0 0;font:11px var(--dex-mono);color:#9ccfe0;letter-spacing:.05em}
+
+/* Ability */
+.dex-ability h4{margin:6px 0 6px;font:14px var(--dex-pixel);line-height:1.4;color:#fff}
+.dex-ability p{margin:0;color:#d8edf3}
+.dex-ability.held{margin-top:14px;padding-top:12px;border-top:2px dashed rgba(143,227,255,.25)}
+
+/* ---------- Mini telas LCD e teclado da equipe ---------- */
+.dex-info-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dex-lcd{
+  padding:7px 10px;
+  border:3px solid var(--dex-ink);
+  border-radius:6px;
+  background:linear-gradient(180deg,#a6c96a,#8eb556);
+  color:#17280c;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.3);
+  min-width:0;
+}
+.dex-lcd small{display:block;font:10px var(--dex-mono);letter-spacing:.08em;opacity:.8}
+.dex-lcd b{display:block;margin-top:3px;font:13px var(--dex-pixel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dex-lcd b small{font:11px var(--dex-mono);letter-spacing:0}
+
+.dex-keypad{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(54px,1fr));
+  gap:7px;
+}
+.dex-key{
+  position:relative;
+  height:54px;
+  display:grid;place-items:center;
+  padding:0;
+  border:3px solid var(--dex-ink);
+  border-radius:6px;
+  background:linear-gradient(180deg,#5bb8f0,#2f86c9);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 4px 0 rgba(0,0,0,.4);
+  cursor:pointer;
+  overflow:hidden;
+}
+.dex-key img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 2px 0 rgba(0,0,0,.4))}
+.dex-key-ball{font-size:22px;color:#0b2738}
+.dex-key-num{position:absolute;top:2px;left:4px;font:9px var(--dex-mono);color:#06263a}
+.dex-key:hover{filter:brightness(1.12)}
+.dex-key.active{
+  background:linear-gradient(180deg,#ffe56b,#f2b83a);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.45),0 0 0 3px #fff,0 4px 0 rgba(0,0,0,.4);
+}
+.dex-key.empty{
+  background:rgba(0,0,0,.22);
+  box-shadow:inset 0 3px 6px rgba(0,0,0,.35);
+  cursor:default;
+}
+
+/* ---------- Visor fechado ---------- */
+html[data-sheet-mode="pokedex"] .dex-device.is-folded:not([hidden]){grid-template-columns:minmax(0,1fr)}
+.dex-device.is-folded .dex-hinge,
+.dex-device.is-folded .dex-right,
+.dex-device.is-folded .dex-screen-bezel,
+.dex-device.is-folded .dex-dpad,
+.dex-device.is-folded .dex-ab,
+.dex-device.is-folded .dex-pills{display:none}
+.dex-device.is-folded .dex-left{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  border-radius:18px;
+  padding:10px 14px;
+}
+.dex-device.is-folded .dex-controls{
+  order:0;
+  display:block;
+  width:min(360px,48%);
+  margin:0;
+}
+.dex-device.is-folded .dex-left-top{order:1;flex:1;margin:0;padding:0;border:0}
+
+/* ---------- Animações ---------- */
+@keyframes dexBlink{50%{opacity:0}}
+@keyframes dexIdle{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-5px)}
+}
+
+@media (prefers-reduced-motion: no-preference){
+  html[data-sheet-mode="pokedex"] .dex-device:not([hidden]){
+    animation:dexDeviceIn .6s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes dexDeviceIn{
+    from{opacity:0;transform:translateY(-14px) scale(.98)}
+    to{opacity:1;transform:none}
+  }
+  .dex-device:not(.is-folded) .dex-right{animation:dexOpenLid .7s cubic-bezier(.22,1,.36,1) both}
+  @keyframes dexOpenLid{
+    from{transform:rotateY(-78deg);opacity:.3}
+    to{transform:none;opacity:1}
+  }
+
+  /* Escaneamento: silhueta, linha de varredura e revelação. */
+  .dex-screen.is-scanning .dex-sprite{animation:dexReveal 1.15s steps(18) both}
+  .dex-screen.is-scanning .dex-scanline{animation:dexScan 1.15s linear both}
+  .dex-screen.is-scanning .dex-screen-grid{animation:dexGridPulse .38s ease-in-out 3}
+  @keyframes dexReveal{
+    0%{filter:brightness(0) drop-shadow(0 0 0 transparent);clip-path:inset(0 0 100% 0);transform:scale(.92)}
+    30%{clip-path:inset(0 0 60% 0)}
+    70%{filter:brightness(0) drop-shadow(0 0 6px rgba(140,230,255,.9));clip-path:inset(0 0 0 0);transform:scale(1)}
+    100%{filter:drop-shadow(0 8px 0 rgba(0,0,0,.35));clip-path:inset(0 0 0 0)}
+  }
+  @keyframes dexScan{
+    0%{top:-10%;opacity:1}
+    80%{top:100%;opacity:1}
+    100%{top:100%;opacity:0}
+  }
+  @keyframes dexGridPulse{50%{opacity:.25}}
+  .dex-screen.is-registered .dex-screen-status{animation:dexStamp .45s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes dexStamp{
+    0%{transform:scaleY(0);color:#fff}
+    100%{transform:none}
+  }
+  .dex-screen.is-nudged{animation:dexNudge .28s ease}
+  @keyframes dexNudge{
+    25%{transform:translateX(var(--nudge))}
+    75%{transform:translateX(calc(var(--nudge) * -.5))}
+  }
+
+  /* Troca de seção: a tela "pisca" como LCD. */
+  .dex-body.is-switching{animation:dexLcdSwitch .32s steps(4) both}
+  @keyframes dexLcdSwitch{
+    0%{opacity:0;filter:brightness(2.4)}
+    50%{opacity:.6}
+    100%{opacity:1;filter:none}
+  }
+  .dex-body.is-switching .dex-stat-bar i{animation:dexBarFill .75s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i,0) * 60ms)}
+  @keyframes dexBarFill{from{width:0}}
+  .dex-body.is-switching .dex-move-list li,
+  .dex-body.is-switching .dex-type-row{animation:dexRowIn .4s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i,0) * 55ms)}
+  .dex-body.is-switching .dex-type-row:nth-of-type(2){--i:1}
+  .dex-body.is-switching .dex-type-row:nth-of-type(3){--i:2}
+  .dex-body.is-switching .dex-type-row:nth-of-type(4){--i:3}
+  .dex-body.is-switching .dex-type-row:nth-of-type(5){--i:4}
+  .dex-body.is-switching .dex-type-row:nth-of-type(6){--i:5}
+  @keyframes dexRowIn{from{opacity:0;transform:translateX(-10px)}}
+  .dex-body.is-switching .dex-type-big{animation:dexPop .45s cubic-bezier(.34,1.56,.64,1) both}
+  .dex-body.is-switching .dex-type-big+.dex-type-big{animation-delay:.08s}
+  @keyframes dexPop{from{opacity:0;transform:scale(.6)}}
+
+  /* LEDs: piscam quando o aparelho está trabalhando ou falando. */
+  .dex-device.is-busy .dex-top-leds .y{animation:dexBlink .3s steps(1) infinite}
+  .dex-device.is-busy .dex-bezel-leds i{animation:dexBlink .2s steps(1) infinite}
+  html[data-sheet-mode="pokedex"] .full-pokedex-camera.is-speaking{animation:dexLensTalk .32s ease-in-out infinite alternate}
+  @keyframes dexLensTalk{
+    from{box-shadow:0 0 0 4px var(--dex-ink,#122129),0 0 0 rgba(120,220,255,0)}
+    to{box-shadow:0 0 0 4px var(--dex-ink,#122129),0 0 26px 6px rgba(120,220,255,.75);filter:brightness(1.35)}
+  }
+  .dex-device.is-speaking .dex-top-leds .g{animation:dexBlink .25s steps(1) infinite}
+  .dex-device.is-speaking .dex-bezel-leds i{animation:dexBlink .18s steps(1) infinite;background:#4fe36f}
+  .dex-device.is-speaking .dex-grill i{animation:dexGrill .22s ease-in-out infinite alternate}
+  .dex-device.is-speaking .dex-grill i:nth-child(2n){animation-delay:.11s}
+  @keyframes dexGrill{to{transform:scaleX(.55)}}
+
+  /* Brilho do shiny */
+  .dex-sprite.is-sparkle{animation:dexSparkle .9s ease both,dexIdle 3.4s ease-in-out .9s infinite}
+  @keyframes dexSparkle{
+    0%{filter:brightness(3) saturate(0)}
+    40%{filter:brightness(1.6) drop-shadow(0 0 14px #fff6b0)}
+    100%{filter:drop-shadow(0 8px 0 rgba(0,0,0,.35))}
+  }
+  .dex-device.is-shiny .dex-screen::before{
+    content:"✦ ✧ ✦";
+    position:absolute;right:14px;top:34px;z-index:2;
+    color:#fff6b0;font-size:14px;letter-spacing:6px;
+    text-shadow:0 0 8px #ffd84a;
+    animation:dexBlink 1.4s steps(1) infinite;
+  }
+
+  /* Desligando: a tela encolhe até virar uma linha. */
+  .dex-device.is-powering-off .dex-screen,
+  .dex-device.is-powering-off .dex-data-screen{animation:dexCrtOff .38s ease-in both}
+  @keyframes dexCrtOff{
+    60%{transform:scaleY(.02);filter:brightness(3)}
+    100%{transform:scale(0,.02);filter:brightness(0)}
+  }
+
+  .dex-key{transition:transform .15s ease,filter .15s ease}
+  .dex-key:active{transform:translateY(3px)}
+  .dex-dpad button:active,.dex-ab button:active{transform:translateY(2px)}
+}
+
+/* ---------- Abertura (boot) ---------- */
+.dex-boot{
+  position:fixed;inset:0;z-index:9999;
+  display:grid;grid-template-rows:38% 62%;
+  cursor:pointer;
+  --boot:var(--pokedex-color,#e31b3d);
+}
+.dex-boot-top,.dex-boot-bottom{
+  position:relative;
+  background:
+    linear-gradient(120deg,rgba(255,255,255,.18),transparent 30%),
+    linear-gradient(180deg,color-mix(in srgb,var(--boot) 80%,#fff),var(--boot) 30%,color-mix(in srgb,var(--boot) 55%,#05070b));
+  transition:transform .5s cubic-bezier(.65,0,.35,1);
+}
+.dex-boot-top{
+  display:flex;align-items:flex-end;gap:22px;
+  padding:0 max(24px,8vw) 26px;
+  border-bottom:8px solid #0d151b;
+}
+.dex-boot-bottom{display:grid;place-items:start center;padding-top:6vh}
+.dex-boot-lens{
+  width:min(110px,22vw);aspect-ratio:1;border-radius:50%;
+  border:9px solid #eaf2f4;
+  background:
+    radial-gradient(circle at 34% 28%,#ecfcff 0 9%,transparent 10%),
+    radial-gradient(circle at 50% 50%,#52cdf6 0 32%,#0a80b8 34% 64%,#06446c 66%);
+  box-shadow:0 0 0 6px #0d151b;
+  animation:dexBootLens 1.6s ease-in-out both;
+}
+@keyframes dexBootLens{
+  0%{filter:brightness(.3)}
+  30%{filter:brightness(1.8);box-shadow:0 0 0 6px #0d151b,0 0 60px 12px rgba(120,220,255,.8)}
+  100%{filter:none}
+}
+.dex-boot-leds{display:flex;gap:12px;align-self:flex-start;margin-top:calc(38vh - 26px - min(110px,22vw))}
+.dex-boot-leds i{width:20px;height:20px;border-radius:50%;border:3px solid #0d151b;opacity:.25;animation:dexBootLed .5s steps(1) both}
+.dex-boot-leds i:nth-child(1){background:#ff3b50;animation-delay:.15s}
+.dex-boot-leds i:nth-child(2){background:#ffd84a;animation-delay:.33s}
+.dex-boot-leds i:nth-child(3){background:#45d175;animation-delay:.51s}
+@keyframes dexBootLed{to{opacity:1}}
+.dex-boot-screen{
+  width:min(440px,86vw);
+  padding:26px 24px;
+  border:6px solid #0d151b;
+  border-radius:10px;
+  background:#071a22;
+  color:#8fe3ff;
+  text-align:center;
+  box-shadow:inset 0 0 40px rgba(0,0,0,.6),0 8px 0 rgba(0,0,0,.35);
+  font-family:"Press Start 2P","Silkscreen",monospace;
+  animation:dexBootScreen .5s steps(5) .1s both;
+}
+@keyframes dexBootScreen{from{transform:scaleY(.02);filter:brightness(3)}}
+.dex-boot-screen b{display:block;font-size:18px;color:#fff;letter-spacing:.06em}
+.dex-boot-line{display:block;margin-top:16px;font-size:11px;letter-spacing:.08em}
+.dex-boot-bar{display:block;height:12px;margin-top:16px;border:3px solid #8fe3ff;padding:2px}
+.dex-boot-bar i{display:block;height:100%;background:#8fe3ff;animation:dexBootBar 1.4s steps(14) both}
+@keyframes dexBootBar{from{width:0}to{width:100%}}
+.dex-boot-screen small{display:block;margin-top:14px;font:11px "Silkscreen",monospace;color:rgba(190,232,245,.6)}
+.dex-boot.is-opening .dex-boot-top{transform:translateY(-102%)}
+.dex-boot.is-opening .dex-boot-bottom{transform:translateY(102%)}
+
+/* ---------- Telas menores ---------- */
+@media (max-width:980px){
+  html[data-sheet-mode="pokedex"] .dex-device:not([hidden]){grid-template-columns:minmax(0,1fr);grid-template-rows:auto 26px auto}
+  .dex-left{border-radius:18px 18px 6px 6px}
+  .dex-right{border-radius:6px 6px 18px 18px;transform-origin:center top}
+  .dex-hinge{flex-direction:row;margin:0 22px;border:4px solid var(--dex-ink);border-top:0;border-bottom:0}
+  .dex-hinge i{width:30px;height:12px}
+  @media (prefers-reduced-motion: no-preference){
+    @keyframes dexOpenLid{from{transform:rotateX(70deg);opacity:.3}to{transform:none;opacity:1}}
+  }
+}
+@media (max-width:560px){
+  .dex-half{padding:12px}
+  .dex-screen{height:200px}
+  .dex-controls{grid-template-columns:auto minmax(0,1fr);}
+  .dex-ab{grid-column:1/-1;justify-content:flex-end}
+  .dex-btn-a{transform:none}
+  .dex-tabs button span{display:none}
+  .dex-tabs button small{display:inline}
+  .dex-stat{grid-template-columns:70px minmax(0,1fr) 38px}
+  .dex-type-row{grid-template-columns:minmax(0,1fr)}
+  .dex-body{max-height:none}
+  .dex-device-title small{display:none}
+  .dex-device.is-folded .dex-top-leds{display:none}
+  .dex-device.is-folded .dex-controls{width:60%}
+  .dex-fold-text{display:none}
+  .dex-lcd{padding:6px 7px}
+  .dex-lcd b{font-size:11px}
+  .dex-keypad{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
