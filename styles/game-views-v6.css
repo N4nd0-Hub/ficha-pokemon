@@ -325,17 +325,28 @@ html body #page1 #sumScreen{
 }
 #sumScreen .sum-tabs .sum-arrow{flex:0 0 40px;font-size:12px}
 #sumScreen .sum-tabs button:hover{color:#fff;background:rgba(255,255,255,.12)}
+#sumScreen .sum-tabs [role="tab"]{position:relative}
 #sumScreen .sum-tabs button.active{
-  position:relative;
   color:var(--cl-text);
   background:var(--cl-paper);
   text-shadow:none;
 }
-#sumScreen .sum-tabs button.active::before{content:"▶ ";color:var(--cl-banner)}
+#sumScreen .sum-tabs [role="tab"]::before{
+  content:"▶";
+  position:absolute;
+  left:3px;top:calc(50% - 4px);
+  font-size:8px;line-height:8px;
+  color:var(--cl-accent-text);
+  visibility:hidden;
+}
+#sumScreen .sum-tabs [role="tab"].active::before{visibility:visible;animation:sumTabCursor .14s ease-out}
+@keyframes sumTabCursor{from{opacity:0;transform:translateX(-4px)}}
+@media (prefers-reduced-motion: reduce){
+  #sumScreen .sum-tabs [role="tab"].active::before{animation:none}
+}
 #sumScreen .sum-pages{padding:14px;min-width:0}
 #sumScreen .sum-page[hidden]{display:none!important}
 #sumScreen .sum-page{display:grid;gap:12px;align-content:start}
-#sumScreen .sum-page.sum-enter{animation:sumPage .22s steps(3)}
 @keyframes sumPage{from{opacity:0;transform:translateX(12px)}}
 
 /* INFO */

@@ -33,8 +33,7 @@
     {id:"ability",label:"HABILIDADE"},
     {id:"types",label:"TIPOS"}
   ];
-  let tab=store.get("hh_sum_tab","info");
-  if(!TABS.some(t=>t.id===tab))tab="info";
+  let tab=null;
   let selectedMove=null;
 
   /* ---------- Estrutura ---------- */
@@ -105,25 +104,21 @@
 
   /* ---------- Abas ---------- */
   function setTab(id,{sound=true}={}){
-    if(!TABS.some(t=>t.id===id))return;
-    const changed=id!==tab;
-    tab=id;store.set("hh_sum_tab",id);
+    if(tab===id||!TABS.some(t=>t.id===id))return;
+    tab=id;
+    if(sound)store.set("hh_sum_tab",id);
     screen.querySelectorAll("[data-sum-tab]").forEach(b=>{
       const on=b.dataset.sumTab===id;
       b.classList.toggle("active",on);
       b.setAttribute("aria-selected",String(on));
     });
     screen.querySelectorAll("[data-sum-page]").forEach(p=>{
-      const on=p.dataset.sumPage===id;
-      p.hidden=!on;
-      if(on&&changed&&!reduceMotion()){p.classList.remove("sum-enter");void p.offsetWidth;p.classList.add("sum-enter");}
+      p.hidden=p.dataset.sumPage!==id;
     });
-    if(id==="status"&&typeof drawRadar==="function")requestAnimationFrame(()=>drawRadar());
-    if(id==="ability"&&typeof fitGeneralAbilityText==="function"){
-      requestAnimationFrame(fitGeneralAbilityText);
-      setTimeout(fitGeneralAbilityText,260);
+    if(id==="status"&&typeof drawRadar==="function"){
+      requestAnimationFrame(()=>{if(tab==="status")drawRadar();});
     }
-    if(changed&&sound)sfx("select");
+    if(sound)sfx("select");
   }
   function stepTab(d){
     const i=TABS.findIndex(t=>t.id===tab);
@@ -307,10 +302,13 @@
     let lastW=0;
     new ResizeObserver(entries=>{
       const w=Math.round(entries[0].contentRect.width);
-      if(w&&w!==lastW){lastW=w;requestAnimationFrame(fitGeneralAbilityText);}
+      if(w===lastW)return;
+      lastW=w;
+      if(w)requestAnimationFrame(()=>{if(tab==="ability")fitGeneralAbilityText();});
     }).observe(abilityText);
   }
 
-  setTab(tab,{sound:false});
+  const savedTab=store.get("hh_sum_tab","info");
+  setTab(TABS.some(t=>t.id===savedTab)?savedTab:"info",{sound:false});
   render();
 })();
