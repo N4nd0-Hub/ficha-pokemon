@@ -17925,6 +17925,7 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
 <link rel="stylesheet" href="styles/pokedex-device-v6.css?v=20261109-dex-controls" />
 <link rel="stylesheet" href="styles/classic-ui-v6.css?v=20261109-contrast" />
 <link rel="stylesheet" href="styles/game-views-v6.css?v=20261109-card-style" />
+<link rel="stylesheet" href="styles/encyclopedia-device-v6.css?v=20261109-archive" />
 </head>
 <body>
 <header class="topbar">
@@ -19303,14 +19304,7 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
           <button id="pokedexFollowThemeQuick" type="button" aria-pressed="true">SEGUIR TEMA</button>
         </div>
 
-        <button class="encyclopedia-rules-launch" id="encyclopediaRulesBtn" type="button" aria-pressed="false">
-          <span class="encyclopedia-rules-icon">RG</span>
-          <span>
-            <b>REGRAS DO RPG</b>
-            <small>Criação • Combate • Progressão</small>
-          </span>
-          <i>›</i>
-        </button>
+
 
       </div>
     </header>
@@ -19323,6 +19317,9 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
           </button>
           <button class="encyclopedia-mode-btn" type="button" data-ency-mode="moves" role="tab" aria-selected="false">
             <span>MV</span><span><b>Moves</b><small id="encyclopediaMoveTabCount">Biblioteca</small></span>
+          </button>
+          <button class="encyclopedia-mode-btn" id="encyclopediaRulesBtn" type="button" role="tab" aria-selected="false">
+            <span>RG</span><span><b>Regras</b><small>Manual do RPG</small></span>
           </button>
         </div>
 
@@ -19349,26 +19346,45 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
             <b id="encyclopediaIndexTitle">ÍNDICE DE ABILITIES</b>
             <span id="encyclopediaResultCount" aria-live="polite">379 REGISTROS</span>
           </div>
+          <div class="dex-archive-controls" role="group" aria-label="Controles do índice">
+            <button class="dex-chip" type="button" data-archive="prev" aria-label="Registro anterior">▲</button>
+            <button class="dex-chip" type="button" data-archive="next" aria-label="Próximo registro">▼</button>
+            <button class="dex-chip" type="button" data-archive="open">A · VER REGISTRO</button>
+          </div>
           <div class="encyclopedia-list" id="encyclopediaList"></div>
         </aside>
 
         <div class="pokedex-hinge" aria-hidden="true"><i></i><i></i><i></i></div>
 
-        <article class="encyclopedia-reader" id="encyclopediaReader" aria-live="polite">
-          <div class="encyclopedia-open-book">
-            <section class="encyclopedia-paper">
-              <span class="encyclopedia-volume-label">TELA DE IDENTIFICAÇÃO</span>
-              <div class="encyclopedia-emblem">DEX</div>
-              <h2>Selecione um registro</h2>
-              <div class="encyclopedia-page-number">AGUARDANDO</div>
-            </section>
-            <section class="encyclopedia-paper">
-              <h3>Banco de Combate</h3>
-              <p>Escolha uma Ability ou um Move no visor ao lado para abrir os dados completos.</p>
-              <div class="encyclopedia-page-number">SISTEMA H&amp;H</div>
-            </section>
+        <section class="dex-archive-visor" aria-label="Visor da Enciclopédia">
+          <div class="dex-archive-head">
+            <span class="dex-top-leds" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+            <div><span class="dex-device-title">VISOR DO RPG</span><b id="dexArchiveName" aria-live="polite">Selecione um registro</b></div>
+            <div class="dex-archive-actions" role="group" aria-label="Áudio da Enciclopédia">
+              <button class="dex-chip" type="button" data-archive="voice" aria-pressed="false">B · LER</button>
+              <button class="dex-chip" type="button" data-archive="sound" aria-pressed="true">♪ SOM</button>
+            </div>
           </div>
-        </article>
+          <div class="dex-archive-display">
+            <div class="dex-screen-grid" aria-hidden="true"></div>
+            <div class="dex-archive-sweep" aria-hidden="true"></div>
+            <article class="encyclopedia-reader" id="encyclopediaReader" aria-label="Ficha do registro" tabindex="0">
+              <div class="encyclopedia-open-book">
+                <section class="encyclopedia-paper">
+                  <span class="encyclopedia-volume-label">TELA DE IDENTIFICAÇÃO</span>
+                  <div class="encyclopedia-emblem">DEX</div>
+                  <h2>Selecione um registro</h2>
+                  <div class="encyclopedia-page-number">AGUARDANDO</div>
+                </section>
+                <section class="encyclopedia-paper">
+                  <h3>Banco de Combate</h3>
+                  <p>Escolha uma Ability ou um Move no visor ao lado para abrir os dados completos.</p>
+                  <div class="encyclopedia-page-number">SISTEMA H&amp;H</div>
+                </section>
+              </div>
+            </article>
+          </div>
+        </section>
       </div>
     </div>
   </section>
@@ -27613,7 +27629,7 @@ renderEncyclopediaStats=function(){
   if(rulesButton){
     rulesButton.classList.toggle("active",encyclopediaState.mode==="rules");
     rulesButton.setAttribute(
-      "aria-pressed",
+      "aria-selected",
       String(encyclopediaState.mode==="rules")
     );
   }
@@ -33146,7 +33162,8 @@ if(!document.getElementById("progressWarning").textContent.trim()){
   <script src="scripts/pokedex-gm-bridge.js?v=20261022-dex" defer></script>
   <!-- V6: animações da ficha e Pokédex como aparelho -->
   <script src="scripts/sheet-motion-v6.js?v=20261109-v6" defer></script>
-  <script src="scripts/pokedex-device-v6.js?v=20261109-dex-controls" defer></script>
+  <script src="scripts/pokedex-device-v6.js?v=20261109-archive" defer></script>
+  <script src="scripts/encyclopedia-device-v6.js?v=20261109-archive" defer></script>
   <script src="scripts/classic-ui-v6.js?v=20261109-dex-controls" defer></script>
   <script src="scripts/pc-box-v6.js?v=20261109-pc-slide" defer></script>
   <script src="scripts/summary-v6.js?v=20261109-level" defer></script>

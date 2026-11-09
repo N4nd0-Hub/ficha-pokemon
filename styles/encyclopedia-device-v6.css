@@ -1,0 +1,167 @@
+/* V6 — Segundo visor da Pokédex, dedicado à biblioteca do RPG. */
+#page4 .encyclopedia-console{
+  container:archive / inline-size;
+  --dex-ink:#0d151b;
+  --dex-lcd:#071a22;
+  --dex-pixel:"Press Start 2P",ui-monospace,monospace;
+  --dex-mono:"Silkscreen",ui-monospace,monospace;
+}
+#page4 .encyclopedia-toolbar{
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) auto;
+}
+#page4 .encyclopedia-mode-switch{
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  padding:5px;
+  opacity:1;
+  background:#0b1a22;
+}
+#page4 .encyclopedia-mode-btn{
+  min-width:0;
+  min-height:44px;
+  border:2px solid #33515f;
+  border-bottom-width:4px;
+  border-radius:6px;
+  background:linear-gradient(180deg,#31434d,#152731);
+  color:#e2f6ff;
+  box-shadow:inset 0 1px 0 #fff2;
+}
+#page4 .encyclopedia-mode-btn.active{
+  border-color:#8fe3ff;
+  background:linear-gradient(180deg,#1b536d,#0b293a);
+  color:#fff;
+}
+#page4 .encyclopedia-mode-btn small{color:#b9d6e1}
+#page4 .encyclopedia-mode-btn:active,
+#page4 .dex-archive-controls button:active,
+#page4 .dex-archive-actions button:active{transform:translateY(2px)}
+#page4 :is(.encyclopedia-entry,.encyclopedia-mode-btn,.dex-chip,.encyclopedia-reader):focus-visible{
+  outline:2px solid #8fe3ff;
+  outline-offset:-2px;
+}
+
+#page4 .encyclopedia-content{
+  display:grid;
+  grid-template-columns:minmax(0,.72fr) 24px minmax(0,1.7fr);
+  min-height:0;
+}
+#page4 .pokedex-hinge{display:flex}
+#page4 .encyclopedia-index{display:flex;flex-direction:column}
+#page4 .encyclopedia-index-head{flex-wrap:wrap}
+#page4 .encyclopedia-list{height:clamp(320px,43vh,500px)}
+.dex-archive-controls,.dex-archive-actions{display:flex;gap:6px;flex-wrap:wrap}
+.dex-archive-controls{
+  padding:7px;
+  border-bottom:2px solid #314954;
+  background:#14242c;
+}
+#page4 :is(.dex-archive-controls,.dex-archive-actions) .dex-chip{
+  min-height:34px;
+  border-color:#487382;
+  background:#11232e;
+  color:#def5ff;
+}
+#page4 .dex-chip[data-archive="open"]{flex:1;background:#174867}
+#page4 .dex-chip:disabled{opacity:.45;cursor:default}
+#page4 .dex-archive-actions button[aria-pressed="true"]{border-color:#7bdca1;color:#a9f2bf}
+#page4 .dex-archive-actions button:not(:disabled):hover,
+#page4 .dex-archive-controls button:not(:disabled):hover{border-color:#8fe3ff;background:#23516b}
+
+.dex-archive-visor{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  padding:12px;
+  border:4px solid var(--dex-ink);
+  background:
+    linear-gradient(115deg,#fff3,transparent 35%),
+    linear-gradient(180deg,var(--dex-shell-light),var(--dex-shell-dark));
+  box-shadow:inset 0 2px 0 #fff4;
+  scroll-margin-top:78px;
+}
+.dex-archive-head{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:9px;
+  border:3px solid var(--dex-ink);
+  border-radius:8px;
+  background:linear-gradient(180deg,#213744,#0b1b24);
+  color:#bceeff;
+}
+.dex-archive-head .dex-device-title{font-size:9px;color:#b8d4df}
+#dexArchiveName{display:block;margin-top:4px;font:700 14px var(--dex-mono);overflow-wrap:anywhere}
+.dex-archive-display{
+  position:relative;
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  border:4px solid var(--dex-ink);
+  border-radius:9px;
+  background:radial-gradient(ellipse at 50% 0,#123748,var(--dex-lcd) 65%);
+  isolation:isolate;
+}
+.dex-archive-display .dex-screen-grid{pointer-events:none}
+#page4 .encyclopedia-reader{
+  position:relative;
+  height:100%;
+  max-height:540px;
+  padding:12px;
+  background:transparent;
+  scrollbar-color:#4b8298 #071a22;
+}
+#page4 .encyclopedia-open-book{
+  width:100%;
+  min-height:0;
+  grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);
+  align-items:start;
+  gap:9px;
+}
+#page4 .encyclopedia-paper{padding:16px 13px 28px;min-height:0;overflow-wrap:anywhere}
+#page4 .encyclopedia-paper p,#page4 .encyclopedia-rule-prose{font-size:14px;line-height:1.6}
+#page4 .encyclopedia-paper h2{line-height:1.35}
+#page4 .encyclopedia-reader-actions button{white-space:normal;overflow-wrap:anywhere}
+.dex-archive-sweep{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  pointer-events:none;
+  opacity:0;
+  background:linear-gradient(180deg,transparent 45%,#91edff73 50%,transparent 57%);
+}
+
+@container archive (max-width:1050px){
+  #page4 .encyclopedia-rule-cover{position:relative!important}
+  #page4 .encyclopedia-open-book{grid-template-columns:minmax(0,1fr)}
+}
+@container archive (max-width:720px){
+  #page4 .encyclopedia-content{grid-template-columns:minmax(0,1fr)}
+  #page4 .encyclopedia-list{height:240px}
+  #page4 .pokedex-hinge{
+    height:22px;
+    flex-direction:row;
+    border-width:3px 0;
+    background:linear-gradient(var(--dex-shell-dark),var(--dex-shell-light),var(--dex-shell-dark));
+  }
+  #page4 .encyclopedia-reader{height:auto;max-height:none}
+}
+@container archive (max-width:520px){
+  #page4 .encyclopedia-toolbar{grid-template-columns:minmax(0,1fr) auto}
+  #page4 .encyclopedia-toolbar .encyclopedia-mode-switch + .encyclopedia-field{grid-column:1/-1}
+  #page4 .encyclopedia-mode-btn{display:grid;grid-template-columns:1fr;justify-items:center;gap:2px;padding:5px}
+  #page4 .encyclopedia-mode-btn>span:last-child{text-align:center}
+  #page4 .encyclopedia-mode-btn small{display:none}
+  .dex-archive-visor{padding:7px}
+  .dex-archive-head{grid-template-columns:auto minmax(0,1fr)}
+  .dex-archive-actions{grid-column:1/-1}
+  #page4 .encyclopedia-reader{padding:7px}
+}
+
+/* O indicador de save fica acima das teclas da navegação móvel. */
+@media(max-width:900px){
+  #hhLocalSaveButton{bottom:calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 8px)}
+}

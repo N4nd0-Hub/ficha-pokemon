@@ -95,6 +95,13 @@
     if(typeof debouncedSave==="function")debouncedSave();
   }
 
+  function setSound(enabled){
+    prefs().sound=!!enabled;
+    savePrefs();
+    syncPills();
+    if(enabled)chirp();
+  }
+
   /* ---------- Som (bipes curtos, gerados na hora) ---------- */
   let audioCtx=null;
   function beep(freq=880,ms=55,type="square",gain=.035){
@@ -310,7 +317,7 @@
         d.shiny=!d.shiny;savePrefs();chirp();
         renderSprite(true);syncPills();break;
       case "sound":
-        d.sound=!d.sound;savePrefs();if(d.sound)chirp();syncPills();break;
+        setSound(!d.sound);break;
       case "fold":
         d.folded=!d.folded;savePrefs();beep(d.folded?420:760,70);syncFold();break;
       case "lang":
@@ -835,5 +842,5 @@
   refresh();
 
   // API pequena para testes e para quem quiser chamar de fora.
-  window.hhDexDevice={refresh,press,setSection,playBoot};
+  window.hhDexDevice={refresh,press,setSection,playBoot,beep,setSound,soundEnabled:()=>prefs().sound};
 })();
