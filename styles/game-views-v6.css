@@ -608,7 +608,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 .tc-list li{display:flex;align-items:center;gap:6px;font-size:12px}
 .tc-list b{font:700 11px var(--cl-pixel)}
 .tc-list small{margin-left:auto;color:#6070a0;font:700 9px var(--cl-pixel)}
-.tc-grade{display:grid;place-items:center;width:22px;height:22px;border:2px solid var(--cl-ink);border-radius:4px;background:var(--cl-card);font:400 9px var(--cl-title)}
+.tc-grade{display:grid;place-items:center;flex:0 0 22px;height:22px;border:2px solid var(--cl-ink);border-radius:4px;background:#e0e7f3;color:#1f2a20;font:400 9px var(--cl-title)}
 .tc-grade.g-S{background:#ffd040}.tc-grade.g-A{background:#ff9a60}.tc-grade.g-B{background:#9ad8ff}
 .tc-none{margin:0;color:#7080a0;font:700 10px var(--cl-pixel)}
 .tc-back .tc-hint{text-align:left}
