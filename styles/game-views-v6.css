@@ -33,7 +33,7 @@
 .pc-new{
   padding:6px 10px;
   border:3px solid var(--cl-ink);border-radius:8px;
-  background:#fff;color:var(--cl-text);
+  background:var(--cl-card);color:var(--cl-text);
   font:700 11px var(--cl-pixel);
   box-shadow:0 3px 0 var(--cl-ink);cursor:pointer;
 }
@@ -45,7 +45,7 @@
 .pc-switch button{
   height:40px;
   border:3px solid var(--cl-ink);border-radius:8px;
-  background:#fff;color:var(--cl-text);
+  background:var(--cl-card);color:var(--cl-text);
   font-size:14px;
   box-shadow:0 3px 0 var(--cl-ink);cursor:pointer;
 }
@@ -151,7 +151,7 @@
   border:3px solid var(--cl-ink);
   border-radius:10px;
   background:var(--cl-paper);
-  box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px var(--cl-frame),0 3px 0 var(--cl-ink);
+  box-shadow:inset 0 0 0 2px var(--cl-hl),inset 0 0 0 4px var(--cl-frame),0 3px 0 var(--cl-ink);
 }
 .pc-preview.empty{grid-template-columns:1fr;text-align:center;color:var(--cl-muted);font-size:11px}
 .pc-preview-stage{
@@ -169,7 +169,7 @@
 .pc-preview-actions button{
   padding:6px 4px;
   border:2px solid var(--cl-ink);border-radius:6px;
-  background:#fff;color:var(--cl-text);
+  background:var(--cl-card);color:var(--cl-text);
   font:700 10px var(--cl-pixel);letter-spacing:.04em;
   box-shadow:0 2px 0 var(--cl-ink);cursor:pointer;
 }
@@ -197,7 +197,7 @@ html body #page1.sum-active.sum-tools .general-top-identity{grid-column:1 / -1!i
 
 html body #page1 #sumScreen{
   --sum-t1:#8aa0c0;--sum-t2:#8aa0c0;
-  --text:var(--cl-text);--muted:var(--cl-muted);--bg:#fff;--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:#b8bcae;
+  --text:var(--cl-text);--muted:var(--cl-muted);--bg:var(--cl-card);--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:var(--cl-line);
   position:relative;
   display:grid;
   grid-template-columns:minmax(260px,340px) minmax(0,1fr);
@@ -248,7 +248,7 @@ html body #page1 #sumScreen{
     radial-gradient(ellipse 46% 9% at 50% 84%,rgba(0,0,0,.28),transparent 72%),
     radial-gradient(ellipse 62% 15% at 50% 84%,rgba(255,255,255,.75),transparent 74%),
     linear-gradient(180deg,#cfeaff,#f2faff 64%,#bfe2a8 64.5%,#d9efc6);
-  box-shadow:inset 0 0 0 2px #fff;
+  box-shadow:inset 0 0 0 2px var(--cl-hl);
   overflow:hidden;
   cursor:pointer;
 }
@@ -257,6 +257,7 @@ html body #page1 #sumScreen{
   background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--sum-t1) 25%,transparent) 0 10deg,transparent 10deg 20deg);
   opacity:.5;
   animation:sumSpin 30s linear infinite;
+  will-change:transform;
 }
 #sumScreen .sum-stage img{
   position:relative;
@@ -266,7 +267,7 @@ html body #page1 #sumScreen{
   animation:sumIdle 2.4s steps(2) infinite;
 }
 #sumScreen .sum-empty{position:relative;font:700 11px var(--cl-pixel);color:var(--cl-muted)}
-#sumScreen .sum-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#sumScreen .sum-flash{position:absolute;inset:0;background:var(--cl-card);opacity:0;pointer-events:none}
 #sumScreen .sum-stage.sum-release img{animation:sumRelease .7s cubic-bezier(.34,1.56,.64,1) both}
 #sumScreen .sum-stage.sum-release .sum-flash{animation:sumFlash .5s ease-out both}
 #sumScreen .sum-stage.sum-hop img{animation:sumHop .5s steps(4)}
@@ -295,7 +296,7 @@ html body #page1 #sumScreen{
 #sumScreen .sum-left-actions button,#sumScreen .sum-link{
   padding:8px 6px;
   border:3px solid var(--cl-ink);border-radius:8px;
-  background:#fff;color:var(--cl-text);
+  background:var(--cl-card);color:var(--cl-text);
   font:700 10px var(--cl-pixel);letter-spacing:.04em;
   box-shadow:0 3px 0 var(--cl-ink);cursor:pointer;
 }
@@ -347,14 +348,14 @@ html body #page1 #sumScreen{
 }
 #sumScreen .sum-table dt,#sumScreen .sum-table dd{margin:0;padding:8px 12px;display:flex;align-items:center;gap:6px;min-height:40px}
 #sumScreen .sum-table dt{background:var(--cl-scan),linear-gradient(180deg,var(--cl-frame),var(--cl-frame-dark));color:#fff;font:700 11px var(--cl-pixel);letter-spacing:.06em;text-shadow:1px 1px 0 rgba(0,0,0,.3)}
-#sumScreen .sum-table dd{background:#fff;font:700 13px var(--cl-pixel)}
+#sumScreen .sum-table dd{background:var(--cl-card);font:700 13px var(--cl-pixel)}
 #sumScreen .sum-table dt:nth-of-type(even),#sumScreen .sum-table dt:nth-of-type(even)+dd{filter:brightness(.96)}
-#sumScreen .sum-table dt:not(:last-of-type),#sumScreen .sum-table dd:not(:last-of-type){border-bottom:2px solid #d8dacb}
+#sumScreen .sum-table dt:not(:last-of-type),#sumScreen .sum-table dd:not(:last-of-type){border-bottom:2px solid var(--cl-line)}
 #sumScreen .sum-inline{
   width:100%;max-width:260px;
   padding:4px 8px;
   border:2px solid var(--cl-ink);border-radius:6px;
-  background:#fff;color:var(--cl-text);
+  background:var(--cl-card);color:var(--cl-text);
   font:700 13px var(--cl-pixel);
 }
 #sumScreen .sum-inline.num{width:64px;text-align:center}
@@ -421,8 +422,8 @@ html body #page1 #sumScreen .radar-wrap{margin:0!important}
   margin:0;
   padding:14px 36px 14px 16px;
   border:3px solid var(--cl-ink);border-radius:10px;
-  background:#fff;
-  box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 6px var(--cl-frame);
+  background:var(--cl-card);
+  box-shadow:inset 0 0 0 3px var(--cl-hl),inset 0 0 0 6px var(--cl-frame);
   font-size:14px;line-height:1.6;
 }
 #sumScreen .sum-dialog::after{content:"▼";position:absolute;right:14px;bottom:10px;color:var(--cl-banner);font-size:11px;animation:clBlink .8s steps(1) infinite}
@@ -447,12 +448,12 @@ html body #page1 #sumScreen .radar-wrap{margin:0!important}
 
 html body #page1 #sumScreen .derived>div,
 html body #page1 #sumScreen .base-stats-summary{
-  border:2px solid #c9ccbc!important;border-radius:8px!important;background:var(--cl-paper2)!important;color:var(--cl-text)!important;
+  border:2px solid var(--cl-line)!important;border-radius:8px!important;background:var(--cl-paper2)!important;color:var(--cl-text)!important;
 }
 html body #page1 #sumScreen .derived>div *,html body #page1 #sumScreen .base-stats-summary *{color:var(--cl-text)!important}
 html body #page1 #sumScreen .sum-adopted.pokemon-held-item-console{background:var(--cl-paper)!important;padding:10px 12px!important}
 html body #page1 #sumScreen .sum-adopted.pokemon-held-item-console label{color:var(--cl-text)!important;font-family:var(--cl-pixel)!important}
-html body #page1 #sumScreen .sum-adopted.pokemon-held-item-console .pokemon-held-item-icon{border:2px solid var(--cl-ink)!important;border-radius:6px!important;background:#fff!important}
+html body #page1 #sumScreen .sum-adopted.pokemon-held-item-console .pokemon-held-item-icon{border:2px solid var(--cl-ink)!important;border-radius:6px!important;background:var(--cl-card)!important}
 
 /* ============================================================
    TRAINER CARD
@@ -592,7 +593,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 .tc-list li{display:flex;align-items:center;gap:6px;font-size:12px}
 .tc-list b{font:700 11px var(--cl-pixel)}
 .tc-list small{margin-left:auto;color:#6070a0;font:700 9px var(--cl-pixel)}
-.tc-grade{display:grid;place-items:center;width:22px;height:22px;border:2px solid var(--cl-ink);border-radius:4px;background:#fff;font:400 9px var(--cl-title)}
+.tc-grade{display:grid;place-items:center;width:22px;height:22px;border:2px solid var(--cl-ink);border-radius:4px;background:var(--cl-card);font:400 9px var(--cl-title)}
 .tc-grade.g-S{background:#ffd040}.tc-grade.g-A{background:#ff9a60}.tc-grade.g-B{background:#9ad8ff}
 .tc-none{margin:0;color:#7080a0;font:700 10px var(--cl-pixel)}
 .tc-back .tc-hint{text-align:left}
@@ -611,7 +612,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 
 .tc-back-body section.wide{grid-column:span 3/span 3}
 .tc-bag{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}
-.tc-bag span{display:grid;place-items:center;padding:4px;border:2px solid var(--cl-ink);border-radius:8px;background:#fff}
+.tc-bag span{display:grid;place-items:center;padding:4px;border:2px solid var(--cl-ink);border-radius:8px;background:var(--cl-card)}
 .tc-bag img{width:32px;height:32px;image-rendering:pixelated}
 .tc-bag b{font:700 10px var(--cl-pixel)}
 .tc-notes{margin:0;white-space:pre-wrap;font-size:13px;line-height:1.5;max-height:160px;overflow:auto}
@@ -644,7 +645,7 @@ html body #page2.bt-active .combat-center{max-width:1100px;width:100%;justify-se
 @keyframes btHeal{40%{filter:brightness(1.5) drop-shadow(0 0 16px #80ffa8)}}
 
 .bt-box{
-  --text:var(--cl-text);--muted:var(--cl-muted);--bg:#fff;--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:#b8bcae;
+  --text:var(--cl-text);--muted:var(--cl-muted);--bg:var(--cl-card);--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:var(--cl-line);
   display:grid;gap:12px;
   margin:12px 0 16px;
 }
@@ -689,7 +690,7 @@ html body #page2.bt-active .combat-center{max-width:1100px;width:100%;justify-se
 .bt-cmd:hover{filter:brightness(1.1)}
 .bt-cmd:active{transform:translateY(4px);box-shadow:none}
 .bt-cmd.active::before{content:"▶";position:absolute;left:9px;top:50%;transform:translateY(-50%);animation:clNudge .5s steps(2) infinite}
-.bt-cmd.active{box-shadow:0 4px 0 var(--cl-ink),inset 0 0 0 3px #fff}
+.bt-cmd.active{box-shadow:0 4px 0 var(--cl-ink),inset 0 0 0 3px var(--cl-hl)}
 
 .bt-panels{
   padding:14px;
@@ -724,8 +725,8 @@ html body #page2.bt-active .combat-center{max-width:1100px;width:100%;justify-se
   margin-top:14px;
   padding:14px;
   border:3px solid var(--cl-ink);border-radius:10px;
-  background:#fff;
-  box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 6px var(--cl-frame);
+  background:var(--cl-card);
+  box-shadow:inset 0 0 0 3px var(--cl-hl),inset 0 0 0 6px var(--cl-frame);
 }
 .bt-roll[hidden]{display:none}
 .bt-roll-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
@@ -748,7 +749,7 @@ html body #page2.bt-active .combat-center{max-width:1100px;width:100%;justify-se
   display:grid;place-items:center;
   width:38px;height:38px;
   border:3px solid var(--cl-ink);border-radius:8px;
-  background:#fff;
+  background:var(--cl-card);
   font:400 13px var(--cl-title);
   box-shadow:0 3px 0 var(--cl-ink);
   animation:btShake .1s steps(2) infinite;
@@ -782,3 +783,7 @@ html body #page2 [data-bt-panel="party"] #combatPartyList{display:grid!important
 @media (prefers-reduced-motion: reduce){
   .bt-cmd.active::before,.bt-die{animation:none!important}
 }
+
+/* Camadas próprias para o que se move sempre: o navegador só desloca, sem redesenhar. */
+#sumScreen .sum-stage img,.pc-preview-stage img{will-change:transform}
+#sumScreen .sum-stage,.pc-wall{contain:paint}

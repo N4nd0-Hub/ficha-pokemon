@@ -22,10 +22,16 @@ CSS = r'''
    ============================================================ */
 
 :root{
+  /* Paleta clássica derivada do tema: o papel das janelas leva um pouco
+     da cor secundária do tema e as faixas usam a principal. */
   --cl-ink:#181a24;
-  --cl-paper:#fbfaf2;
-  --cl-paper2:#efeee2;
-  --cl-paper3:#e2e2d2;
+  --cl-paper:color-mix(in srgb,var(--accent2,#2f6fd0) 7%,#fbfaf2);
+  --cl-paper2:color-mix(in srgb,var(--accent2,#2f6fd0) 11%,#eceee2);
+  --cl-paper3:color-mix(in srgb,var(--accent2,#2f6fd0) 16%,#dfe1d2);
+  --cl-card:color-mix(in srgb,var(--accent2,#2f6fd0) 3%,#ffffff);
+  --cl-inset:color-mix(in srgb,var(--accent2,#2f6fd0) 10%,#e7e7da);
+  --cl-line:color-mix(in srgb,var(--accent2,#2f6fd0) 18%,#bfc2b2);
+  --cl-hl:#ffffff;
   --cl-text:#23262e;
   --cl-muted:#5f6670;
   --cl-frame:color-mix(in srgb,var(--accent2,#2f6fd0) 72%,#ffffff);
@@ -37,6 +43,22 @@ CSS = r'''
   --cl-scan:repeating-linear-gradient(180deg,rgba(255,255,255,.10) 0 2px,transparent 2px 4px);
   --cl-ball:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%23ffffff' fill-opacity='.05'%3E%3Cpath d='M6 2h4v1h2v1h1v2h1v1H9V6H7v1H2V6h1V4h1V3h2z'/%3E%3Cpath d='M2 9h5v1h2V9h5v1h-1v2h-1v1h-2v1H6v-1H4v-1H3v-2H2z'/%3E%3Cpath d='M7 7h2v2H7z'/%3E%3C/g%3E%3C/svg%3E");
 }
+/* Modo escuro: janelas noturnas tingidas pelo tema. */
+html[data-cl-scheme="dark"]{
+  --cl-ink:#05070c;
+  --cl-paper:color-mix(in srgb,var(--accent2,#2f6fd0) 14%,#151922);
+  --cl-paper2:color-mix(in srgb,var(--accent2,#2f6fd0) 16%,#1d222d);
+  --cl-paper3:color-mix(in srgb,var(--accent2,#2f6fd0) 22%,#272d3a);
+  --cl-card:color-mix(in srgb,var(--accent2,#2f6fd0) 10%,#202632);
+  --cl-inset:color-mix(in srgb,var(--accent2,#2f6fd0) 8%,#11151c);
+  --cl-line:color-mix(in srgb,var(--accent2,#2f6fd0) 30%,#3a4252);
+  --cl-hl:color-mix(in srgb,var(--accent2,#2f6fd0) 25%,#3a4252);
+  --cl-text:#eef2f8;
+  --cl-muted:#a3adbd;
+  --cl-frame:color-mix(in srgb,var(--accent2,#2f6fd0) 75%,#9ab0d0);
+  --cl-frame-dark:color-mix(in srgb,var(--accent2,#2f6fd0) 70%,#000000);
+}
+html[data-cl-scheme="dark"] :is(input,textarea,select)::placeholder{color:#7d8798!important}
 
 /* ---------- Fundo: Poké Balls em pixel deslizando na diagonal ---------- */
 $S{
@@ -55,6 +77,8 @@ $S::before{
   background-size:64px 64px,auto;
   pointer-events:none;
   animation:clDrift 12s linear infinite;
+  will-change:transform;
+  contain:strict;
 }
 @keyframes clDrift{to{transform:translate(64px,64px)}}
 
@@ -95,7 +119,7 @@ $S .sheet .sheet-head{
   border:4px solid var(--cl-frame)!important;
   border-radius:12px!important;
   background:var(--cl-paper)!important;
-  box-shadow:0 0 0 3px var(--cl-ink),6px 6px 0 3px rgba(0,0,0,.45),inset 0 0 0 2px #fff!important;
+  box-shadow:0 0 0 3px var(--cl-ink),6px 6px 0 3px rgba(0,0,0,.45),inset 0 0 0 2px var(--cl-hl)!important;
   color:var(--cl-text)!important;
   overflow:visible!important;
 }
@@ -121,7 +145,7 @@ $S .sheet .sheet-title input{
 $S .sheet .sheet-head .type-pill{
   border:2px solid var(--cl-ink)!important;
   border-radius:4px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   font-family:var(--cl-pixel)!important;
   box-shadow:0 2px 0 var(--cl-ink)!important;
@@ -152,7 +176,7 @@ $S .sheet .sheet-navigation .tab.pokedex-hardware-key{
   padding:5px 10px 5px 22px!important;
   border:3px solid var(--cl-ink)!important;
   border-radius:8px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   box-shadow:0 4px 0 var(--cl-ink)!important;
   transform:none!important;
@@ -203,11 +227,11 @@ $S .sheet .sheet-navigation .tab.pokedex-hardware-key.active{
   text-shadow:2px 2px 0 rgba(0,0,0,.35);
 }
 $S .sheet .sheet-navigation .tab.pokedex-hardware-key.active::before{opacity:1;color:#fff;animation:clBlink .8s steps(1) infinite}
-$S .sheet .sheet-navigation .tab.pokedex-hardware-key.active .hardware-symbol{background:#fff!important}
+$S .sheet .sheet-navigation .tab.pokedex-hardware-key.active .hardware-symbol{background:var(--cl-card)!important}
 $S .sheet .sheet-head .sheet-import-port{
   border:3px solid var(--cl-ink)!important;
   border-radius:8px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   box-shadow:0 3px 0 var(--cl-ink)!important;
 }
@@ -239,11 +263,11 @@ html[data-sheet-mode="pokedex"] .cl-lr-hint{display:none}
 $P :is(.panel,.page-intro,.combat-info-card,.misc-menu-hero){
   --text:var(--cl-text);
   --muted:var(--cl-muted);
-  --bg:#ffffff;
+  --bg:var(--cl-card);
   --bg2:var(--cl-paper2);
   --panel:var(--cl-paper);
   --panel2:var(--cl-paper2);
-  --line:#b8bcae;
+  --line:var(--cl-line);
   position:relative;
   margin-bottom:6px;
   overflow:hidden!important;
@@ -251,7 +275,7 @@ $P :is(.panel,.page-intro,.combat-info-card,.misc-menu-hero){
   border-radius:12px!important;
   background:var(--cl-paper)!important;
   color:var(--cl-text)!important;
-  box-shadow:0 0 0 3px var(--cl-ink),6px 6px 0 3px rgba(0,0,0,.4),inset 0 0 0 2px #fff!important;
+  box-shadow:0 0 0 3px var(--cl-ink),6px 6px 0 3px rgba(0,0,0,.4),inset 0 0 0 2px var(--cl-hl)!important;
   clip-path:none!important;
   -webkit-clip-path:none!important;
 }
@@ -283,7 +307,7 @@ $P .panel>.panel-head::before{
   padding:0 5px;
   border:2px solid var(--cl-ink)!important;
   border-radius:4px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-banner-dark)!important;
   font:700 10px var(--cl-pixel)!important;
   box-shadow:0 2px 0 var(--cl-ink)!important;
@@ -320,13 +344,13 @@ $P .panel>.panel-head .eyebrow{
 $P .combat-info-card>.combat-card-head .combat-card-icon{
   border:2px solid var(--cl-ink)!important;
   border-radius:4px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-banner-dark)!important;
 }
 $P :is(.general-stack-toggle,.combat-collapse-btn,.misc-option-toggle){
   border:2px solid var(--cl-ink)!important;
   border-radius:6px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   box-shadow:0 2px 0 var(--cl-ink)!important;
 }
@@ -339,7 +363,7 @@ $P .combat-info-card>.combat-card-head small{font-size:9px!important;line-height
 
 /* Trainer Card: cartão claro como o de FireRed / LeafGreen */
 $S .sheet #pageTrainer .trainer-license-card{
-  --text:var(--cl-text);--muted:var(--cl-muted);--bg:#fff;--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:#b8bcae;
+  --text:var(--cl-text);--muted:var(--cl-muted);--bg:var(--cl-card);--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:var(--cl-line);
   border:4px solid var(--cl-frame)!important;
   border-radius:16px!important;
   background:
@@ -357,10 +381,10 @@ $S .sheet #pageTrainer .trainer-license-card>:first-child{
 }
 $S .sheet #pageTrainer .trainer-license-card>:first-child *{color:#fff!important;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
 $S .sheet #pageTrainer .trainer-license-card :is(input,textarea,select){
-  border:2px solid var(--cl-ink)!important;border-radius:6px!important;background:#fff!important;color:var(--cl-text)!important;box-shadow:inset 0 3px 0 #e7e7da!important;
+  border:2px solid var(--cl-ink)!important;border-radius:6px!important;background:var(--cl-card)!important;color:var(--cl-text)!important;box-shadow:inset 0 3px 0 var(--cl-inset)!important;
 }
 $S .sheet #pageTrainer .trainer-license-card :is(.trainer-card-mini-stats>*,.trainer-party-strip,.trainer-badges,.trainer-badge,.trainer-badge-card,[class*="trainer-badge"]){
-  border-color:#c9ccbc!important;background:var(--cl-paper2)!important;color:var(--cl-text)!important;box-shadow:none!important;
+  border-color:var(--cl-line)!important;background:var(--cl-paper2)!important;color:var(--cl-text)!important;box-shadow:none!important;
 }
 $S .sheet #pageTrainer .trainer-party-slot{
   border:3px solid var(--cl-ink)!important;border-radius:10px!important;
@@ -379,19 +403,19 @@ $S .sheet #pageTrainer .trainer-mechanics-divider span{
 $S .sheet #pageTrainer .trainer-mechanics-divider i{background:var(--cl-ink)!important;height:3px!important}
 
 $S .drawer .drawer-overview-stat :is(span,b){color:var(--cl-text)!important}
-$S .drawer .drawer-overview-stat{border:3px solid var(--cl-ink)!important;border-radius:8px!important;background:#fff!important;box-shadow:0 3px 0 var(--cl-ink)!important}
+$S .drawer .drawer-overview-stat{border:3px solid var(--cl-ink)!important;border-radius:8px!important;background:var(--cl-card)!important;box-shadow:0 3px 0 var(--cl-ink)!important}
 
 /* Arquivo: faixa de título e cartões de Ability */
 $P .misc-menu-hero{padding:14px 18px!important}
 $P .misc-menu-hero :is(h3,b,strong){color:var(--cl-text)!important;font-family:var(--cl-title)!important;font-size:14px!important}
 $P .misc-menu-hero :is(span,small,p){color:var(--cl-muted)!important}
 $P .misc-menu-hero :is([class*="stat"],[class*="metric"]){
-  border:2px solid var(--cl-ink)!important;border-radius:6px!important;background:#fff!important;box-shadow:0 2px 0 var(--cl-ink)!important;
+  border:2px solid var(--cl-ink)!important;border-radius:6px!important;background:var(--cl-card)!important;box-shadow:0 2px 0 var(--cl-ink)!important;
 }
 $P .misc-menu-hero :is([class*="stat"],[class*="metric"]) b{color:var(--cl-text)!important}
 $S .sheet #page3 :is(.ability-memory-card,.ability-card,.memory-ability-card,.move-card) .move-name{color:var(--cl-text)!important;font-family:var(--cl-title)!important;font-size:11px!important}
 $S .sheet #page3 .move-card{
-  border:3px solid var(--cl-ink)!important;border-radius:10px!important;background:#fff!important;box-shadow:0 3px 0 var(--cl-ink)!important;
+  border:3px solid var(--cl-ink)!important;border-radius:10px!important;background:var(--cl-card)!important;box-shadow:0 3px 0 var(--cl-ink)!important;
 }
 
 /* Corpo da janela */
@@ -403,7 +427,7 @@ $P .panel :is(h3,h4,label,.label,.field>label){color:var(--cl-text)}
 $P .panel :is(.pokemon-registry-console,.pokemon-data-console,.pokemon-vitals-console,.level-training-console,
   .registry-option-card,.general-identity-drawer,.pokemon-held-item-console,.matchup-group,.derived>div,
   .base-stats-summary,.registry-evolution-bar,.manual-section,.misc-card,.misc-box){
-  border:2px solid #c9ccbc!important;
+  border:2px solid var(--cl-line)!important;
   border-radius:8px!important;
   background:var(--cl-paper2)!important;
   color:var(--cl-text)!important;
@@ -415,7 +439,7 @@ $P .btn,$S .modal .btn,$S .drawer .btn{
   min-height:32px;
   border:3px solid var(--cl-ink)!important;
   border-radius:8px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   font-family:var(--cl-pixel)!important;
   font-size:11px!important;
@@ -444,22 +468,22 @@ $P :is(.input,input:not([type=checkbox]):not([type=radio]):not([type=range]):not
 $S .modal :is(.input,input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),textarea,select){
   border:2px solid var(--cl-ink)!important;
   border-radius:6px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
-  box-shadow:inset 0 3px 0 #e7e7da!important;
+  box-shadow:inset 0 3px 0 var(--cl-inset)!important;
 }
 $P :is(.input,input,textarea,select)::placeholder,$S .modal :is(.input,input,textarea)::placeholder{color:#8b9097!important;opacity:1}
 $P :is(.input,input,textarea,select):focus,$S .modal :is(.input,input,textarea,select):focus{
   outline:none!important;
   border-color:var(--cl-frame-dark)!important;
-  box-shadow:inset 0 3px 0 #e7e7da,0 0 0 3px color-mix(in srgb,var(--cl-frame) 60%,transparent)!important;
+  box-shadow:inset 0 3px 0 var(--cl-inset),0 0 0 3px color-mix(in srgb,var(--cl-frame) 60%,transparent)!important;
 }
 
 /* ---------- Etiquetas ---------- */
 $P .tag{
-  border:2px solid #c3c6b6!important;
+  border:2px solid var(--cl-line)!important;
   border-radius:4px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   font-family:var(--cl-pixel)!important;
 }
@@ -499,7 +523,7 @@ $S :is(.hp-bar,.drawer-hp-bar,.happiness-bar){
   border:2px solid var(--cl-ink)!important;
   border-radius:999px!important;
   background:#3b3f4a!important;
-  box-shadow:inset 0 0 0 2px #fff!important;
+  box-shadow:inset 0 0 0 2px var(--cl-hl)!important;
   overflow:hidden;
 }
 $S :is(.hp-fill,.drawer-hp-fill){
@@ -536,7 +560,7 @@ $P .page-intro :is(p,small){color:var(--cl-muted)!important}
 $P .page-intro .page-intro-stat{
   border:2px solid var(--cl-ink)!important;
   border-radius:6px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   box-shadow:0 2px 0 var(--cl-ink)!important;
 }
 $P .page-intro .page-intro-stat span{color:var(--cl-muted)!important;font-family:var(--cl-pixel)!important}
@@ -565,7 +589,7 @@ $G .portrait{
     radial-gradient(ellipse 60% 14% at 50% 86%,rgba(0,0,0,.22),transparent 70%),
     radial-gradient(ellipse 70% 22% at 50% 86%,color-mix(in srgb,var(--cl-frame) 55%,#fff),transparent 72%),
     linear-gradient(180deg,#d8f0ff,#f4fbff 58%,#cfe8c0 58.5%,#e6f4d8)!important;
-  box-shadow:inset 0 0 0 2px #fff!important;
+  box-shadow:inset 0 0 0 2px var(--cl-hl)!important;
 }
 $G .portrait::before,$G .portrait::after{display:none!important}
 $G .portrait .portrait-empty{color:var(--cl-muted)!important}
@@ -573,13 +597,13 @@ $G .radar-box{
   border:3px solid var(--cl-ink)!important;
   border-radius:10px!important;
   background:#151a26!important;
-  box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px var(--cl-frame)!important;
+  box-shadow:inset 0 0 0 2px var(--cl-hl),inset 0 0 0 4px var(--cl-frame)!important;
 }
 $G .stat-row{
   border:2px solid var(--cl-ink)!important;
   border-left-width:8px!important;
   border-radius:6px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   box-shadow:0 2px 0 var(--cl-ink)!important;
 }
 $G .stat-row span{font-family:var(--cl-pixel)!important;color:color-mix(in srgb,currentColor 55%,#000)!important;font-weight:700!important}
@@ -638,11 +662,11 @@ $G .general-stack-ability #abilityText{
   padding:12px 34px 12px 16px!important;
   border:3px solid var(--cl-ink)!important;
   border-radius:10px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   font-size:14px!important;
   line-height:1.65!important;
-  box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 6px var(--cl-frame)!important;
+  box-shadow:inset 0 0 0 3px var(--cl-hl),inset 0 0 0 6px var(--cl-frame)!important;
   resize:none;
 }
 $G .general-stack-ability .general-ability-resize-handle{
@@ -692,7 +716,7 @@ $G .general-stack-weakness .matchup-group{
   border:2px solid var(--cl-ink)!important;
   border-left:8px solid var(--cl-mult)!important;
   border-radius:8px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   box-shadow:0 3px 0 var(--cl-ink)!important;
 }
 $G .general-stack-weakness .matchup-group::before{
@@ -721,7 +745,7 @@ $G .general-stack-weakness .matchup-group:has(.matchup-empty) .matchup-rule{disp
 /* Moves: lista de golpes como na tela de resumo */
 $G .general-stack-moves .learnset-helper{
   padding:8px 12px 8px 36px!important;
-  border:2px solid #c9ccbc!important;
+  border:2px solid var(--cl-line)!important;
   border-radius:8px!important;
   background:var(--cl-paper2)!important;
   color:var(--cl-muted)!important;
@@ -816,7 +840,7 @@ $G #memoryMoves .move-description{
   margin:0!important;
   padding:6px 0 0!important;
   border:0!important;
-  border-top:2px dashed #d3d5c6!important;
+  border-top:2px dashed var(--cl-line)!important;
   background:none!important;
   color:var(--cl-muted)!important;
   font-size:12.5px!important;
@@ -828,9 +852,9 @@ $G #memoryMoves .move-card.cl-selected .move-description{
   padding:10px 14px!important;
   border:3px solid var(--cl-ink)!important;
   border-radius:8px;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
-  box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px var(--cl-frame)!important;
+  box-shadow:inset 0 0 0 2px var(--cl-hl),inset 0 0 0 4px var(--cl-frame)!important;
 }
 $G #memoryMoves .move-card[data-cl-state="active"] .move-name::after{
   content:"EQUIPADO";
@@ -847,7 +871,7 @@ $G #memoryMoves .move-card[data-cl-state="locked"] .move-name::before{content:"�
 $G #memoryMoves .move-actions{display:flex!important;gap:5px!important;align-self:center}
 $G #memoryMoves .move-actions .btn{min-height:30px!important;padding:4px 10px!important;font-size:10px!important}
 $G #memoryMoves .move-actions .btn.toggle{background:var(--cl-scan),linear-gradient(180deg,var(--cl-frame),var(--cl-frame-dark))!important;color:#fff!important}
-$G #memoryMoves .move-card[data-cl-state="active"] .move-actions .btn.toggle{background:#fff!important;color:var(--cl-text)!important}
+$G #memoryMoves .move-card[data-cl-state="active"] .move-actions .btn.toggle{background:var(--cl-card)!important;color:var(--cl-text)!important}
 #memoryMoves[data-cl-filter="active"] .move-card:not([data-cl-state="active"]),
 #memoryMoves[data-cl-filter="available"] .move-card[data-cl-state="locked"],
 #memoryMoves[data-cl-filter="locked"] .move-card:not([data-cl-state="locked"]){display:none!important}
@@ -876,7 +900,7 @@ $G #memoryMoves .move-card[data-cl-state="active"] .move-actions .btn.toggle{bac
   padding:6px 12px;
   border:3px solid var(--cl-ink);
   border-radius:8px;
-  background:#fff;
+  background:var(--cl-card);
   color:var(--cl-text);
   font:700 11px var(--cl-pixel);
   letter-spacing:.06em;
@@ -901,7 +925,7 @@ $G #memoryMoves .move-card[data-cl-state="active"] .move-actions .btn.toggle{bac
    GAVETA (Box & Bolsa) — caixa do PC
    ============================================================ */
 $S .drawer{
-  --text:var(--cl-text);--muted:var(--cl-muted);--bg:#fff;--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:#b8bcae;
+  --text:var(--cl-text);--muted:var(--cl-muted);--bg:var(--cl-card);--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:var(--cl-line);
   border-right:4px solid var(--cl-ink)!important;
   background:
     var(--cl-ball),
@@ -919,7 +943,7 @@ $S .drawer .pokemon-card{
   border:3px solid var(--cl-ink)!important;
   border-left:8px solid var(--drawer-card-type,var(--cl-frame))!important;
   border-radius:10px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   box-shadow:0 3px 0 var(--cl-ink)!important;
 }
@@ -932,7 +956,7 @@ $S .drawer .pokemon-thumb-stage{border:2px solid var(--cl-ink)!important;border-
    ============================================================ */
 $S .modal-backdrop{background:rgba(8,10,20,.72)!important;backdrop-filter:none!important}
 $S .modal{
-  --text:var(--cl-text);--muted:var(--cl-muted);--bg:#fff;--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:#b8bcae;
+  --text:var(--cl-text);--muted:var(--cl-muted);--bg:var(--cl-card);--bg2:var(--cl-paper2);--panel:var(--cl-paper);--panel2:var(--cl-paper2);--line:var(--cl-line);
   border:4px solid var(--cl-frame)!important;
   border-radius:14px!important;
   background:var(--cl-paper)!important;
@@ -949,7 +973,7 @@ $S .modal .modal-head :is(small,div>div,span){color:rgba(255,255,255,.88)!import
 $S .modal :is(.theme-option,.font-option,.appearance-tab){
   border:3px solid var(--cl-ink)!important;
   border-radius:8px!important;
-  background:#fff!important;
+  background:var(--cl-card)!important;
   color:var(--cl-text)!important;
   box-shadow:0 3px 0 var(--cl-ink)!important;
 }

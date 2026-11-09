@@ -72,6 +72,58 @@
     else actions.prepend(btn);
   }
 
+  /* ============================================================
+     MODO CLARO / ESCURO / AUTOMÁTICO
+     "Automático" segue o tema: temas escuros abrem as janelas escuras.
+     ============================================================ */
+  const SCHEMES=["light","dark","auto"];
+  const SCHEME_LABEL={light:"☀",dark:"☾",auto:"◐"};
+  const SCHEME_TITLE={light:"Janelas claras",dark:"Janelas escuras",auto:"Automático (segue o tema)"};
+  function schemePref(){
+    const v=(typeof state!=="undefined"&&state.classicScheme)||store.get("hh_classic_scheme","light");
+    return SCHEMES.includes(v)?v:"light";
+  }
+  function themeIsDark(){
+    const bg=getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+    const m=bg.match(/^#?([0-9a-f]{6})$/i);
+    if(!m)return true;
+    const n=parseInt(m[1],16);
+    const l=(.2126*((n>>16)&255)+.7152*((n>>8)&255)+.0722*(n&255))/255;
+    return l<.5;
+  }
+  function applyScheme(){
+    const pref=schemePref();
+    const dark=pref==="dark"||(pref==="auto"&&themeIsDark());
+    document.documentElement.dataset.clScheme=dark?"dark":"light";
+    const btn=document.getElementById("clSchemeBtn");
+    if(btn){
+      btn.textContent=SCHEME_LABEL[pref];
+      btn.title=`${SCHEME_TITLE[pref]} — clique para trocar`;
+      btn.setAttribute("aria-label",btn.title);
+    }
+    if(typeof drawRadar==="function")requestAnimationFrame(()=>drawRadar());
+  }
+  function addSchemeButton(){
+    const sound=document.getElementById("clSoundBtn");
+    if(!sound||document.getElementById("clSchemeBtn"))return;
+    const btn=document.createElement("button");
+    btn.type="button";btn.id="clSchemeBtn";btn.className="cl-sound-btn";
+    btn.addEventListener("click",()=>{
+      const next=SCHEMES[(SCHEMES.indexOf(schemePref())+1)%SCHEMES.length];
+      if(typeof state!=="undefined"){state.classicScheme=next;if(typeof debouncedSave==="function")debouncedSave();}
+      store.set("hh_classic_scheme",next);
+      applyScheme();
+      sfx.select();
+      if(typeof window.showToast==="function")window.showToast(`Aparência: ${SCHEME_TITLE[next]}.`);
+    });
+    sound.insertAdjacentElement("beforebegin",btn);
+  }
+  if(typeof window.applyTheme==="function"){
+    const originalTheme=window.applyTheme;
+    window.applyTheme=function(){const r=originalTheme.apply(this,arguments);applyScheme();return r;};
+  }
+  applyScheme();
+
   /* Clique em qualquer item de menu faz o bipe. */
   const SELECTABLE=[
     ".tab",".btn",".pokemon-card",".move-card",".cl-move-filters button",".theme-option",".font-option",
@@ -116,7 +168,12 @@
     const el=event.target.closest?.(SELECTABLE);
     if(el&&el.matches(":focus-visible"))placeCursor(el);
   });
-  addEventListener("scroll",()=>{if(cursorTarget)placeCursor(cursorTarget)},{passive:true});
+  let scrollQueued=false;
+  addEventListener("scroll",()=>{
+    if(!cursorTarget||scrollQueued)return;
+    scrollQueued=true;
+    requestAnimationFrame(()=>{scrollQueued=false;if(cursorTarget)placeCursor(cursorTarget);});
+  },{passive:true});
   document.addEventListener("pointerleave",()=>cursor.classList.remove("on"));
 
   /* ============================================================
@@ -339,5 +396,7 @@
   }
 
   addSoundButton();
+  addSchemeButton();
+  applyScheme();
   labelTabs();
 })();
