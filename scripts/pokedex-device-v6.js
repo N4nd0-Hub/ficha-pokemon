@@ -45,6 +45,39 @@
   if(!page)return;
   const editSheet=$("#dexEditSheetBtn");
   const isDexHome=()=>page.classList.contains("active")&&document.documentElement.dataset.sheetMode==="pokedex";
+  const navigation=$(".sheet-head .sheet-navigation");
+  const pageKeys=[...document.querySelectorAll(".sheet-head [data-dex-label]")];
+  const navReadout=$("#dexNavCurrent");
+
+  function updateNavReadout(pageId){
+    pageKeys.forEach(key=>{
+      const active=key.dataset.page===pageId;
+      if(active)key.setAttribute("aria-current","page");
+      else key.removeAttribute("aria-current");
+      if(active&&navReadout){
+        const number=$(".hardware-code",key)?.textContent||"06";
+        navReadout.textContent=`${number} / ${key.dataset.dexLabel.toUpperCase()}`;
+      }
+    });
+  }
+
+  navigation?.addEventListener("keydown",event=>{
+    if(document.documentElement.dataset.sheetMode!=="pokedex")return;
+    if(event.altKey||event.ctrlKey||event.metaKey)return;
+    const keys=pageKeys.filter(key=>navigation.contains(key));
+    const index=keys.indexOf(event.target);
+    if(index<0)return;
+    const next={
+      ArrowLeft:(index-1+keys.length)%keys.length,
+      ArrowRight:(index+1)%keys.length,
+      Home:0,
+      End:keys.length-1
+    }[event.key];
+    if(!Number.isInteger(next))return;
+    event.preventDefault();
+    keys[next].focus({preventScroll:true});
+    keys[next].click();
+  });
 
   /* ---------- Preferências do visor ---------- */
   function prefs(){
@@ -788,11 +821,16 @@
     editSheet?.addEventListener("click",()=>window.setSheetPokedexMode(false));
   }
 
-  document.addEventListener("hh:pagechange",()=>refresh());
+  document.addEventListener("hh:pagechange",event=>{
+    updateNavReadout(event.detail.to);
+    if(document.documentElement.dataset.sheetMode==="pokedex")beep(980,60);
+    refresh();
+  });
   document.addEventListener("hh:pokemonchange",()=>refresh({newPokemon:true}));
   document.addEventListener("hh:render",()=>refresh());
 
   // Estado inicial (a ficha pode abrir já no Modo Pokédex).
+  updateNavReadout(pageKeys.find(key=>key.classList.contains("active"))?.dataset.page);
   prefs();
   refresh();
 

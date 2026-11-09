@@ -205,9 +205,10 @@
     setTimeout(()=>el.remove(),600);
   }
   document.addEventListener("hh:pagechange",()=>{
+    cursor.classList.remove("on");
+    if(isDexMode())return;
     sfx.page();
     wipe();
-    cursor.classList.remove("on");
   });
 
   function pageOrder(){
