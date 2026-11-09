@@ -246,10 +246,17 @@
     }
     const step=event.target.closest("[data-level-step]");
     if(step){
-      const lv=Math.max(1,Math.min(100,Number(current.level||1)+Number(step.dataset.levelStep)));
-      proxy("level",lv);
-      if(Number(step.dataset.levelStep)>0&&lv>1)showToast(`${current.name||"Pokémon"} subiu para o nível ${lv}!`);
-      render();
+      const previousLevel=Number(current.level||1);
+      if(Number(step.dataset.levelStep)>0){
+        confirmNextLevel();
+        const level=Number(current.level||1);
+        screen.querySelector('[data-proxy="level"]').value=level;
+        const report=document.getElementById("progressWarning").textContent;
+        showToast(level>previousLevel?`${current.name||"Pokémon"} subiu para o nível ${level}!`:report);
+      }else{
+        proxy("level",Math.max(1,previousLevel-1));
+        render();
+      }
       return;
     }
     const act=event.target.closest("[data-sum-act]")?.dataset.sumAct;
