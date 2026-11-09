@@ -130,19 +130,14 @@ html[data-sheet-mode="pokedex"] .general-held-strip .held-item-api-btn{
 @media (prefers-reduced-motion: no-preference){
 
   /* Troca de página: entra subindo, painéis em cascata. */
-  .page.page-entering{
-    animation:sheetPageIn .42s var(--ease-out) both;
-  }
-  .page.page-entering .enter-block{
-    animation:sheetPanelIn .45s var(--ease-out) both;
+  /* Deslize em 4 passos, como nos menus antigos: o navegador redesenha
+     só 4 vezes por painel em vez de a cada quadro. */
+  .page.page-entering .enter-block.enter-anim{
+    animation:sheetPanelIn .36s steps(4,end) both;
     animation-delay:calc(var(--enter-index,0) * 40ms + 40ms);
   }
-  @keyframes sheetPageIn{
-    from{opacity:0;transform:translateY(10px)}
-    to{opacity:1;transform:none}
-  }
   @keyframes sheetPanelIn{
-    from{opacity:0;transform:translateY(14px) scale(.985)}
+    from{opacity:0;transform:translateY(12px)}
     to{opacity:1;transform:none}
   }
 

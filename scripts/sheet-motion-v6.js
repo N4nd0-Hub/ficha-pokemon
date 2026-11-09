@@ -25,10 +25,13 @@
       .filter(block=>!block.parentElement.closest(".panel")&&block.offsetParent!==null);
     const fold=window.innerHeight*1.2;
     let index=0;
+    // Só anima o que está na tela; o resto aparece pronto (sem custo de desenho).
     blocks.forEach(block=>{
       block.classList.add("enter-block");
-      const top=block.getBoundingClientRect().top;
-      block.style.setProperty("--enter-index",String(top<fold?Math.min(index++,8):0));
+      const r=block.getBoundingClientRect();
+      const visible=r.bottom>0&&r.top<fold;
+      block.classList.toggle("enter-anim",visible);
+      if(visible)block.style.setProperty("--enter-index",String(Math.min(index++,8)));
     });
     restartClass(page,"page-entering",1300);
   }
