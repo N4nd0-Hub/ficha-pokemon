@@ -206,3 +206,36 @@ html[data-sheet-mode="pokedex"] .general-held-strip .held-item-api-btn{
     animation-delay:calc(var(--enter-index,0) * 40ms);
   }
 }
+
+/* ---------- Gráfico de status ---------- */
+#radar{display:block;max-width:100%;height:auto;margin:0 auto;touch-action:manipulation}
+.radar-box{
+  background:
+    radial-gradient(circle at 50% 47%,rgba(76,133,220,.22),rgba(12,20,36,.1) 52%,transparent 75%),
+    linear-gradient(180deg,rgba(255,255,255,.025),transparent 40%)!important;
+}
+#statEditor .stat-row{transition:transform .18s var(--ease-out),box-shadow .18s ease,background-color .18s ease}
+#statEditor .stat-row.radar-linked{
+  transform:translateX(-4px);
+  background:color-mix(in srgb,var(--panel2) 80%,#fff 6%)!important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.18),0 6px 16px rgba(0,0,0,.25);
+}
+@media (prefers-reduced-motion: reduce){
+  #statEditor .stat-row.radar-linked{transform:none}
+}
+html .radar-box{min-height:0!important;padding:8px 0}
+
+/* Menu inferior do celular: nomes cabem no botão sem se sobrepor. */
+.mobile-bottom-nav .mobile-nav-btn{min-width:0;overflow:hidden}
+.mobile-bottom-nav .mobile-nav-btn b{
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:clip;
+  white-space:nowrap;
+  font-family:Inter,"Segoe UI",system-ui,sans-serif!important;
+  font-size:10.5px!important;
+  font-weight:700!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
