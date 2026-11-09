@@ -57,12 +57,6 @@
     font-weight:900;letter-spacing:.08em;text-transform:uppercase;
     margin-right:6px;white-space:nowrap;
   }
-  .brand-mark{
-    width:32px;height:32px;border:2px solid var(--accent);
-    border-radius:50%;display:grid;place-items:center;
-    box-shadow:inset 0 0 0 6px color-mix(in srgb,var(--accent) 18%, transparent);
-  }
-  .brand-mark::before{content:"";width:20px;height:2px;background:var(--accent);box-shadow:0 -7px 0 -5px var(--accent)}
   .brand small{display:block;color:var(--muted);font-size:12px;letter-spacing:.14em;font-weight:700}
 
   .top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
@@ -1236,7 +1230,6 @@
   }
   @media(max-width:850px){
     .topbar{align-items:flex-start}
-    .brand span:last-child{display:none}
     .app.drawer-open{grid-template-columns:1fr}
     .drawer{
       position:fixed;left:0;top:64px;width:310px;z-index:70;
@@ -2980,12 +2973,6 @@
       min-width:0;
       gap:7px;
     }
-    .brand-mark{
-      width:27px;
-      height:27px;
-      flex:0 0 auto;
-    }
-    .brand-mark::before{width:17px}
     .brand>span{
       min-width:0;
       overflow:hidden;
@@ -3494,7 +3481,6 @@
   }
 
   @media(max-width:480px){
-    .brand-mark{display:none}
     .brand>span{font-size:12px}
     .sheet-title{grid-template-columns:minmax(0,1fr) auto}
     .sheet-title #bstLabel{display:none}
@@ -7088,17 +7074,7 @@ html[data-font-theme="arcade"] .encyclopedia-page *{border-radius:2px!important}
       0 5px 0 rgba(0,0,0,.34);
   }
 
-  html[data-sheet-mode="pokedex"] .brand-mark{
-    border:5px solid #dce9ed;
-    background:
-      radial-gradient(circle at 35% 27%,#d7f6ff 0 8%,transparent 9%),
-      radial-gradient(circle at 50% 50%,#43bff1 0 34%,#0878b6 36% 68%,#063f68 70%);
-    box-shadow:0 0 0 3px #152129,0 3px 0 rgba(0,0,0,.45);
-  }
 
-  html[data-sheet-mode="pokedex"] .brand-mark::before{
-    display:none;
-  }
 
   html[data-sheet-mode="pokedex"] .brand,
   html[data-sheet-mode="pokedex"] .brand small{
@@ -17957,7 +17933,6 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
     <span class="pocket-drawer-count" id="topPocketCount">0</span>
   </button>
   <div class="brand">
-    <div class="brand-mark"></div>
     <span>Pokémon RPG <small>Ficha Interativa - V5.0 • Jogador</small></span>
   </div>
 
