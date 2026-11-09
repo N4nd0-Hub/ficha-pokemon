@@ -141,6 +141,16 @@
 @container archive (max-width:720px){
   #page4 .encyclopedia-content{grid-template-columns:minmax(0,1fr)}
   #page4 .encyclopedia-list{height:240px}
+  #page4 .encyclopedia-alphabet.rules-mode{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #page4 .encyclopedia-rule-group-shortcut{
+    display:flex;align-items:center;gap:5px;
+    min-height:38px;padding:5px;
+    border:1px solid #427085;border-radius:4px;
+    background:#163a4c;color:#def5ff;
+    font:700 11px var(--dex-mono);text-align:left;overflow-wrap:anywhere;
+  }
+  #page4 .encyclopedia-rule-group-shortcut span{flex:none;color:#91e8ff}
+  #page4 .encyclopedia-rule-group-shortcut.active{border-color:#8fe3ff;background:#205b77}
   #page4 .pokedex-hinge{
     height:22px;
     flex-direction:row;
