@@ -38,6 +38,7 @@ CSS = r'''
   --cl-frame-dark:color-mix(in srgb,var(--accent2,#2f6fd0) 78%,#000000);
   --cl-banner:var(--accent,#d8343c);
   --cl-banner-dark:color-mix(in srgb,var(--accent,#d8343c) 62%,#000000);
+  --cl-accent-text:var(--cl-banner-dark);
   --cl-title:"Press Start 2P","Silkscreen",ui-monospace,monospace;
   --cl-pixel:"Silkscreen","Press Start 2P",ui-monospace,monospace;
   --cl-scan:repeating-linear-gradient(180deg,rgba(255,255,255,.10) 0 2px,transparent 2px 4px);
@@ -53,8 +54,9 @@ html[data-cl-scheme="dark"]{
   --cl-inset:color-mix(in srgb,var(--accent2,#2f6fd0) 8%,#11151c);
   --cl-line:color-mix(in srgb,var(--accent2,#2f6fd0) 30%,#3a4252);
   --cl-hl:color-mix(in srgb,var(--accent2,#2f6fd0) 25%,#3a4252);
+  --cl-accent-text:color-mix(in srgb,var(--cl-banner) 35%,#eef2f8);
   --cl-text:#eef2f8;
-  --cl-muted:#a3adbd;
+  --cl-muted:#b4bece;
   --cl-frame:color-mix(in srgb,var(--accent2,#2f6fd0) 75%,#9ab0d0);
   --cl-frame-dark:color-mix(in srgb,var(--accent2,#2f6fd0) 70%,#000000);
 }
@@ -308,7 +310,7 @@ $P .panel>.panel-head::before{
   border:2px solid var(--cl-ink)!important;
   border-radius:4px!important;
   background:var(--cl-card)!important;
-  color:var(--cl-banner-dark)!important;
+  color:var(--cl-accent-text)!important;
   font:700 10px var(--cl-pixel)!important;
   box-shadow:0 2px 0 var(--cl-ink)!important;
   transform:none!important;
@@ -345,7 +347,7 @@ $P .combat-info-card>.combat-card-head .combat-card-icon{
   border:2px solid var(--cl-ink)!important;
   border-radius:4px!important;
   background:var(--cl-card)!important;
-  color:var(--cl-banner-dark)!important;
+  color:var(--cl-accent-text)!important;
 }
 $P :is(.general-stack-toggle,.combat-collapse-btn,.misc-option-toggle){
   border:2px solid var(--cl-ink)!important;
@@ -547,7 +549,7 @@ $P .page-intro .page-intro-mark{
   box-shadow:0 3px 0 var(--cl-ink)!important;
 }
 $P .page-intro :is(.page-intro-kicker){
-  color:var(--cl-banner-dark)!important;
+  color:var(--cl-accent-text)!important;
   font-family:var(--cl-pixel)!important;
   font-weight:700;
 }
@@ -628,7 +630,7 @@ $G .general-stack-ability>.panel-body::before,$G .general-stack-ability>.panel-b
 $G .cl-ability-label{
   grid-column:1!important;grid-row:1!important;
   justify-self:start!important;
-  color:var(--cl-banner-dark);
+  color:var(--cl-accent-text);
   font:700 11px var(--cl-pixel);
   letter-spacing:.1em;
 }
@@ -779,7 +781,7 @@ $G #memoryMoves .move-card{
   padding:0!important;
   border:3px solid var(--cl-ink)!important;
   border-radius:10px!important;
-  background:linear-gradient(90deg,var(--move-type,#888) 0 10px,#fff 10px)!important;
+  background:linear-gradient(90deg,var(--move-type,#888) 0 10px,var(--cl-card) 10px)!important;
   box-shadow:0 3px 0 var(--cl-ink)!important;
   cursor:pointer;
   outline:none;

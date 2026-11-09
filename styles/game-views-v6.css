@@ -236,7 +236,7 @@ html body #page1 #sumScreen{
 }
 #sumScreen .sum-no{font:700 10px var(--cl-pixel);color:var(--cl-muted)}
 #sumScreen .sum-name{flex:1;min-width:0;font:400 13px var(--cl-title);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#sumScreen .sum-lv{font:400 11px var(--cl-title);color:var(--cl-banner-dark)}
+#sumScreen .sum-lv{font:400 11px var(--cl-title);color:var(--cl-accent-text)}
 
 #sumScreen .sum-stage{
   position:relative;
@@ -396,7 +396,7 @@ html body #page1 #sumScreen .radar-wrap{margin:0!important}
   display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;
   padding:9px 14px 9px 26px;
   border:3px solid var(--cl-ink);border-radius:10px;
-  background:linear-gradient(90deg,var(--t) 0 10px,#fff 10px);
+  background:linear-gradient(90deg,var(--t) 0 10px,var(--cl-card) 10px);
   color:var(--cl-text);
   text-align:left;
   box-shadow:0 3px 0 var(--cl-ink);
@@ -405,7 +405,7 @@ html body #page1 #sumScreen .radar-wrap{margin:0!important}
 }
 #sumScreen .sum-move b{font:400 11px var(--cl-title);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sumScreen .sum-move-pow{font:700 11px var(--cl-pixel);color:var(--cl-muted)}
-#sumScreen .sum-move.active{background:linear-gradient(90deg,var(--t) 0 10px,color-mix(in srgb,var(--t) 22%,#fff) 10px);box-shadow:0 3px 0 var(--cl-ink),0 0 0 3px #ffd040}
+#sumScreen .sum-move.active{background:linear-gradient(90deg,var(--t) 0 10px,color-mix(in srgb,var(--t) 16%,var(--cl-card)) 10px);box-shadow:0 3px 0 var(--cl-ink),0 0 0 3px #ffd040}
 #sumScreen .sum-move.active::before{content:"▶";position:absolute;left:12px;color:var(--cl-banner);font-size:11px;animation:clNudge .5s steps(2) infinite}
 #sumScreen .sum-move.empty{display:block;padding:14px;background:var(--cl-paper2);font:700 11px var(--cl-pixel);cursor:default}
 #sumScreen .sum-move-detail{display:grid;gap:10px}
@@ -612,7 +612,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 
 .tc-back-body section.wide{grid-column:span 3/span 3}
 .tc-bag{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px}
-.tc-bag span{display:grid;place-items:center;padding:4px;border:2px solid var(--cl-ink);border-radius:8px;background:var(--cl-card)}
+.tc-bag span{display:grid;place-items:center;padding:4px;border:2px solid var(--cl-ink);border-radius:8px;background:var(--cl-card);color:var(--cl-text)}
 .tc-bag img{width:32px;height:32px;image-rendering:pixelated}
 .tc-bag b{font:700 10px var(--cl-pixel)}
 .tc-notes{margin:0;white-space:pre-wrap;font-size:13px;line-height:1.5;max-height:160px;overflow:auto}
@@ -756,7 +756,7 @@ html body #page2.bt-active .combat-center{max-width:1100px;width:100%;justify-se
 }
 .bt-die.wide{width:64px}
 .bt-die.done{animation:btLand .3s cubic-bezier(.34,1.56,.64,1)}
-.bt-die.max{background:#ffd040}
+.bt-die.max{background:#ffd040;color:#302300}
 @keyframes btShake{50%{transform:rotate(-8deg) translateY(-2px)}}
 @keyframes btLand{from{transform:scale(1.35)}}
 .bt-dice-total{font:700 13px var(--cl-pixel)}
