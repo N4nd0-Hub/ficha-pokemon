@@ -88,6 +88,26 @@
   const SHOP=Object.fromEntries(SHOPS.map(x=>[x.id,x]));
   const NO_GEAR={pct:10,hp:2};
 
+  /* Pixel art oficial dos itens (sprites da PokéAPI, os mesmos da Bolsa). */
+  const SPRITE_BY_KEY={
+    pokeball:"poke-ball",greatball:"great-ball",ultraball:"ultra-ball",premierball:"premier-ball",
+    potion:"potion",antidote:"antidote",berry:"oran-berry",bicycle:"bicycle"
+  };
+  SYLPHORA.forEach(x=>{if(x.key.startsWith("sy-"))SPRITE_BY_KEY[x.key]=x.name.toLowerCase().replace(/[^a-z0-9]+/g,"-");});
+  const officialCache=new Map();
+  function spriteSlug(i){
+    if(i.sprite===false||i.sprite==="none")return "";
+    if(i.sprite)return i.sprite;
+    if(i.key&&SPRITE_BY_KEY[i.key])return SPRITE_BY_KEY[i.key];
+    const name=String(i.name||"");
+    if(!officialCache.has(name)){
+      const hit=typeof officialItemByQuery==="function"?officialItemByQuery(name):null;
+      officialCache.set(name,hit?.apiName?String(hit.apiName):"");
+    }
+    return officialCache.get(name);
+  }
+  const spriteUrl=slug=>`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${encodeURIComponent(slug)}.png`;
+
   function data(){
     const t=typeof ensureTrainerData==="function"?ensureTrainerData():(state.trainer||(state.trainer={}));
     if(!t.inventory||typeof t.inventory!=="object")t.inventory={};
@@ -112,6 +132,7 @@
     i.desc=String(i.desc??"").slice(0,1200);
     i.large=!!i.large;i.usable=!!i.usable;i.backpack=!!i.backpack;i.rare=!!i.rare;
     if(i.shopId!=null)i.shopId=String(i.shopId);
+    if(i.sprite!=null&&i.sprite!==false)i.sprite=String(i.sprite).toLowerCase().replace(/[^a-z0-9-]+/g,"-").slice(0,60);
     if(i.rest&&typeof i.rest==="object"){
       const pct=int(i.rest.pct,0,100);
       i.rest={pct,hp:i.rest.hp==null||i.rest.hp===""?null:int(i.rest.hp,0,999)};
@@ -124,7 +145,9 @@
     ...inv.shop.filter(s=>(s.shopId||"elysius")===shopId)
   ];
 
-  function iconHtml(icon){
+  function iconHtml(icon,item){
+    const slug=item?spriteSlug(item):"";
+    if(slug)return `<img class="inv-sprite" src="${esc(spriteUrl(slug))}" alt="" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${iconHtml(icon)}</span>`;
     const m=/^ball:(poke|great|ultra|premier)$/.exec(icon||"");
     if(m)return `<span class="inv-ball inv-ball-${m[1]}" aria-hidden="true"></span>`;
     return `<span class="inv-emoji" aria-hidden="true">${esc(icon||"📦")}</span>`;
@@ -153,7 +176,7 @@
     const c=CAT[i.category];
     return `<article class="inv-item${i.qty<=0?" is-empty":""}" style="--inv-c:${c.color}" data-id="${esc(i.id)}">
       <div class="inv-item-top">
-        <div class="inv-icon">${iconHtml(i.icon)}</div>
+        <div class="inv-icon">${iconHtml(i.icon,i)}</div>
         <div class="inv-item-name">
           <b>${esc(i.name)}</b>
           <span class="inv-tags">
@@ -213,7 +236,7 @@
           const poor=s.price>t.money;
           const progress=s.premier?`<em class="inv-tag rest">PREMIER ${inv.premierProgress}/10</em>`:"";
           return `<div class="inv-shop-row" data-shop="${esc(s.id)}">
-            <div class="inv-icon sm">${iconHtml(s.icon)}</div>
+            <div class="inv-icon sm">${iconHtml(s.icon,s)}</div>
             <div class="inv-shop-info">
               <b>${esc(s.name)}${s.large?` <em class="inv-tag big">GRANDE</em>`:""}${s.rare?` <em class="inv-tag big">RARO</em>`:""}${progress}${owned&&owned.qty?` <em class="inv-tag own">TEM ×${owned.qty}</em>`:""}</b>
               <small>${esc(s.desc).replace(/\n/g," · ")}</small>
@@ -257,7 +280,8 @@
       <div class="inv-editor-head"><b>${editor.mode==="edit"?"Editar item":editor.target==="shop"?"Novo item da loja":"Novo item personalizado"}</b></div>
       <div class="inv-editor-grid">
         <label class="wide"><span>Nome</span><input name="name" required maxlength="80" value="${esc(e.name)}" placeholder="Ex.: Lanterna, Corda, Mapa de Elysius"></label>
-        <label><span>Ícone</span><input name="icon" maxlength="16" value="${esc(e.icon)}" placeholder="📦"></label>
+        <label><span>Ícone (emoji)</span><input name="icon" maxlength="16" value="${esc(e.icon)}" placeholder="📦"></label>
+        <label><span>Pixel art (nome do item em inglês)</span><input name="sprite" maxlength="60" value="${esc(e.sprite||"")}" placeholder="ex.: rare-candy"></label>
         <label><span>Categoria</span><select name="category">${CATS.map(c=>`<option value="${c.id}"${c.id===e.category?" selected":""}>${c.label}</option>`).join("")}</select></label>
         ${editor.target==="shop"?"":`<label><span>Quantidade</span><input name="qty" type="number" min="0" max="9999" value="${e.qty}"></label>`}
         <label><span>Preço (₽)</span><input name="price" type="number" min="0" value="${e.price}"></label>
@@ -478,6 +502,7 @@
     const fields={
       name:String(v("name")||"").trim()||"Item",
       icon:String(v("icon")||"").trim()||"📦",
+      sprite:String(v("sprite")||"").trim()||null,
       category:v("category"),
       qty:editor.target==="shop"?1:int(v("qty"),0,9999),
       price:int(v("price"),0,99999999),
