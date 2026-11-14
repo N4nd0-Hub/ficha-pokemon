@@ -191,6 +191,7 @@
       </div>
       ${pr&&!pr.immune?`<p class="bt-roll-matrix">
         <span>${STAT[pr.offKey]} ${pr.offStat} <i>Q${pr.offQ}</i></span><span>vs</span><span>${STAT[pr.defKey]} alvo ${pr.defStat} <i>Q${pr.defQ}</i></span><span>→</span><b>QD ${esc(pr.qd)}</b>
+        ${DM().ladderHtml?DM().ladderHtml(pr):""}
         <small>Poder efetivo ${pr.effectiveBP}${pr.hits>1?` (${pr.hits} acertos)`:""} · ${pr.count} dado${pr.count>1?"s":""}${pr.effectiveness!==1?` · efetividade ×${String(pr.effectiveness).replace(".",",")}`:""}${pr.levelBonus?` · nível +${pr.levelBonus}`:""}</small>
       </p>`:""}
       ${desc?`<p class="bt-roll-desc">${esc(desc)}</p>`:""}

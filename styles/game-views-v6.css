@@ -889,3 +889,30 @@ html body #page2 [data-bt-panel="party"] #combatPartyList{display:grid!important
 .bt-die.stab{background:#ffe8c8}
 .bt-die[data-sides="d100"]::after{display:none}
 @media (max-width:640px){.dm-target{grid-template-columns:1fr 1fr}.dm-target label:last-child{grid-column:1/-1}}
+
+/* ---- QD ladder + explicação ---- */
+.dm-ladder{display:flex;flex-wrap:wrap;gap:3px;margin:6px 0 2px}
+.dm-ladder span{flex:1 1 0;min-width:34px;text-align:center;padding:3px 2px;border:2px solid var(--line,#5a6378);border-radius:4px;font-size:11px;line-height:1.15;opacity:.55;background:rgba(255,255,255,.04)}
+.dm-ladder span.is-base{opacity:.9;border-style:dashed}
+.dm-ladder span.is-final{opacity:1;background:var(--accent,#e8b730);color:#1b1b1b;border-color:#1b1b1b;font-weight:700;transform:translateY(-2px)}
+.dm-ladder.static span{opacity:1}
+.dm-ladder.static span b{font-size:12px}
+.dm-ladder-note{display:block;font-size:11px;opacity:.85;margin-bottom:4px}
+.dm-help{margin-top:10px;border:2px solid var(--line,#5a6378);border-radius:6px;background:rgba(0,0,0,.08)}
+.dm-help>summary{cursor:pointer;padding:7px 10px;font-weight:700;font-size:13px;list-style:none}
+.dm-help>summary::-webkit-details-marker{display:none}
+.dm-help>summary::after{content:"▸";float:right;transition:transform .15s}
+.dm-help[open]>summary::after{transform:rotate(90deg)}
+.dm-help-body{padding:2px 10px 10px;font-size:12.5px;line-height:1.45}
+.dm-help-body section{margin-top:8px}
+.dm-help-body h5{margin:0 0 3px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;opacity:.85}
+.dm-help-body p{margin:0 0 4px}
+.dm-help-body ul{margin:2px 0 0;padding-left:18px}
+.dm-help-example{font-weight:600;margin-top:6px!important}
+.dm-qtable{width:100%;border-collapse:collapse;font-size:11px;margin:4px 0;display:block;overflow-x:auto}
+.dm-qtable th,.dm-qtable td{border:1px solid var(--line,#5a6378);padding:2px 4px;text-align:center;white-space:nowrap}
+.dm-qtable th{text-align:left}
+.derived-box.dm-derived span{font-size:11px;line-height:1.25}
+.dm-ladder{display:grid;grid-template-columns:repeat(8,minmax(0,1fr))}
+.dm-ladder span{min-width:0}
+@media (max-width:560px){.dm-ladder{grid-template-columns:repeat(4,minmax(0,1fr))}.dm-qtable{font-size:10px}}
