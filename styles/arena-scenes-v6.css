@@ -1,0 +1,182 @@
+/* ============================================================
+   V6 — Cenários de combate em pixel art
+   Imagens em assets/arenas (geradas por scripts/build-arena-scenes.py).
+   A cena e a plataforma são ampliadas sem suavizar; o Pokémon e
+   a interface continuam com a renderização normal.
+   ============================================================ */
+
+html body .combat-screen[data-arena]{
+  --arena-scene:url("../assets/arenas/standard.png");
+  --arena-platform:url("../assets/arenas/standard-platform.png");
+  background:var(--arena-scene) center 62% / cover no-repeat,#77b9e8!important;
+  image-rendering:pixelated;
+  transition:none;
+}
+html body .combat-screen[data-arena]>*{image-rendering:auto}
+
+html body .combat-screen[data-arena="desert"]{--arena-scene:url("../assets/arenas/desert.png");--arena-platform:url("../assets/arenas/desert-platform.png")}
+html body .combat-screen[data-arena="water"]{--arena-scene:url("../assets/arenas/water.png");--arena-platform:url("../assets/arenas/water-platform.png")}
+html body .combat-screen[data-arena="night"]{--arena-scene:url("../assets/arenas/night.png");--arena-platform:url("../assets/arenas/night-platform.png")}
+html body .combat-screen[data-arena="rain"]{--arena-scene:url("../assets/arenas/rain.png");--arena-platform:url("../assets/arenas/rain-platform.png")}
+html body .combat-screen[data-arena="forest"]{--arena-scene:url("../assets/arenas/forest.png");--arena-platform:url("../assets/arenas/forest-platform.png")}
+html body .combat-screen[data-arena="sky"]{--arena-scene:url("../assets/arenas/sky.png");--arena-platform:url("../assets/arenas/sky-platform.png")}
+html body .combat-screen[data-arena="cave"]{--arena-scene:url("../assets/arenas/cave.png");--arena-platform:url("../assets/arenas/cave-platform.png")}
+html body .combat-screen[data-arena="volcanic"]{--arena-scene:url("../assets/arenas/volcanic.png");--arena-platform:url("../assets/arenas/volcanic-platform.png")}
+
+/* Luz suave por cima, sem as linhas antigas */
+html body .combat-screen[data-arena]::before{
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.14),transparent 55%),
+    radial-gradient(ellipse at 50% 120%,rgba(0,0,0,.22),transparent 60%)!important;
+  z-index:0;
+}
+
+/* Plataforma de batalha */
+html body .combat-screen[data-arena] .combat-platform{
+  width:min(64%,600px)!important;
+  height:auto!important;
+  aspect-ratio:128/40;
+  bottom:3%!important;
+  border-radius:0!important;
+  background:var(--arena-platform) center / 100% 100% no-repeat!important;
+  transform:none!important;
+  image-rendering:pixelated;
+  filter:none!important;
+  opacity:1!important;
+}
+
+/* ---------- Camada animada (usa o elemento .combat-screen-grid) ---------- */
+html body .combat-screen[data-arena] .combat-screen-grid{
+  inset:0!important;
+  z-index:1!important;
+  opacity:1!important;
+  overflow:hidden;
+  background:none!important;
+  pointer-events:none!important;
+  image-rendering:pixelated;
+}
+html body .combat-screen[data-arena] .combat-screen-grid::before,
+html body .combat-screen[data-arena] .combat-screen-grid::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  background-repeat:repeat;
+  image-rendering:pixelated;
+  will-change:transform,opacity;
+}
+
+/* Nuvens passando: Padrão, Água e Céu */
+html body .combat-screen:is([data-arena="standard"],[data-arena="water"],[data-arena="sky"]) .combat-screen-grid::before{
+  left:0;top:2%;
+  width:200%;height:38%;
+  background-image:url("../assets/arenas/fx-clouds.png");
+  background-size:auto 100%;
+  background-repeat:repeat-x;
+  opacity:.8;
+  animation:arenaDrift 90s linear infinite;
+}
+html body .combat-screen[data-arena="sky"] .combat-screen-grid::after{
+  left:0;bottom:6%;
+  width:200%;height:30%;
+  background-image:url("../assets/arenas/fx-clouds.png");
+  background-size:auto 100%;
+  background-repeat:repeat-x;
+  opacity:.55;
+  animation:arenaDrift 45s linear infinite reverse;
+}
+
+/* Brilhos na água */
+html body .combat-screen[data-arena="water"] .combat-screen-grid::after{
+  left:0;right:0;top:50%;bottom:0;
+  background-image:url("../assets/arenas/fx-sparkle.png");
+  background-size:320px 160px;
+  animation:arenaTwinkle 1.6s steps(2) infinite;
+}
+
+/* Estrelas piscando */
+html body .combat-screen[data-arena="night"] .combat-screen-grid::before{
+  left:0;right:0;top:0;height:46%;
+  background-image:url("../assets/arenas/fx-stars.png");
+  background-size:320px 160px;
+  animation:arenaTwinkle 2.4s steps(2) infinite;
+}
+/* Vaga-lumes */
+html body .combat-screen[data-arena="night"] .combat-screen-grid::after{
+  left:0;right:0;top:0;height:200%;
+  background-image:url("../assets/arenas/fx-glint.png");
+  background-size:240px 120px;
+  opacity:.7;
+  animation:arenaRise 18s linear infinite;
+}
+
+/* Folhas caindo na floresta */
+html body .combat-screen[data-arena="forest"] .combat-screen-grid::before{
+  left:-50%;top:-100%;width:200%;height:200%;
+  background-image:url("../assets/arenas/fx-leaves.png");
+  background-size:320px 240px;
+  animation:arenaFall 16s linear infinite;
+}
+
+/* Areia levada pelo vento */
+html body .combat-screen[data-arena="desert"] .combat-screen-grid::before{
+  left:0;top:40%;width:200%;height:60%;
+  background-image:url("../assets/arenas/fx-dust.png");
+  background-size:320px 240px;
+  opacity:.75;
+  animation:arenaDrift 14s linear infinite;
+}
+
+/* Cristais cintilando na caverna */
+html body .combat-screen[data-arena="cave"] .combat-screen-grid::before{
+  left:0;right:0;top:0;bottom:30%;
+  background-image:url("../assets/arenas/fx-glint.png");
+  background-size:320px 160px;
+  animation:arenaTwinkle 2s steps(2) infinite;
+}
+
+/* Brasas subindo no vulcão */
+html body .combat-screen[data-arena="volcanic"] .combat-screen-grid::before{
+  left:0;right:0;top:0;height:200%;
+  background-image:url("../assets/arenas/fx-embers.png");
+  background-size:320px 240px;
+  animation:arenaRise 9s linear infinite;
+}
+html body .combat-screen[data-arena="volcanic"] .combat-screen-grid::after{
+  inset:0;
+  background:radial-gradient(ellipse at 55% 100%,rgba(255,110,30,.28),transparent 60%);
+  animation:arenaGlow 3s ease-in-out infinite alternate;
+}
+
+/* Chuva: mantém a chuva atual, mais fina e na diagonal dos jogos */
+html body .combat-screen[data-arena="rain"]::after{
+  opacity:.45!important;
+  background:repeating-linear-gradient(105deg,transparent 0 22px,rgba(220,238,255,.7) 22px 24px,transparent 24px 46px)!important;
+}
+
+@keyframes arenaDrift{to{transform:translateX(-50%)}}
+@keyframes arenaTwinkle{50%{opacity:.25}}
+@keyframes arenaRise{to{transform:translateY(-50%)}}
+@keyframes arenaFall{to{transform:translate(25%,50%)}}
+@keyframes arenaGlow{from{opacity:.5}to{opacity:1}}
+
+@media (prefers-reduced-motion: reduce){
+  html body .combat-screen[data-arena] .combat-screen-grid::before,
+  html body .combat-screen[data-arena] .combat-screen-grid::after{animation:none!important}
+}
+
+/* Ordem das camadas: cenário < plataforma < Pokémon < controles */
+html body .combat-screen[data-arena] .combat-platform{z-index:1!important}
+html body .combat-screen[data-arena] .combat-arena-picker{z-index:12!important}
+
+@media (max-width:640px){
+  html body .combat-screen[data-arena] .combat-arena-picker{
+    left:8px!important;bottom:8px!important;
+    grid-template-columns:20px auto!important;
+    gap:5px!important;
+    padding:4px 6px!important;
+  }
+  html body .combat-screen[data-arena] .combat-arena-picker small{display:none}
+  html body .combat-screen[data-arena] .combat-arena-picker-icon{width:20px!important;height:20px!important;font-size:10px!important}
+  html body .combat-screen[data-arena] .combat-arena-picker select{min-width:0!important;font-size:12px!important}
+  html body .combat-screen[data-arena] .combat-platform{width:86%!important;bottom:2%!important}
+}
