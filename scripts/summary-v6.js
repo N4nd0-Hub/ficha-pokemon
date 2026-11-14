@@ -176,9 +176,11 @@
       <div class="sum-move-stats">
         <span class="cl-move-cat ${cat}">${CAT[cat]}</span>
         <span><small>PODER</small><b>${Number(m.power)>0?Number(m.power):"—"}</b></span>
-        <span><small>DADOS</small><b>${dice&&dice!=="—"?dice:"—"}</b></span>
+        ${(()=>{const dm=window.hhDamageMatrix,pr=dm?.enabled()?dm.profile(m,p):null;
+          return pr?`<span title="${esc(pr.expression)}"><small>DANO 🧪</small><b>${esc(pr.short)}</b></span><span><small>QD</small><b>${esc(pr.qd)}</b></span>`
+                   :`<span><small>DADOS</small><b>${dice&&dice!=="—"?dice:"—"}</b></span>`;})()}
         <span><small>PRECISÃO</small><b>${Number(m.accuracy)>0?Number(m.accuracy)+"%":"—"}</b></span>
-        ${bonus?`<span><small>BÔNUS</small><b>${esc(bonus)}</b></span>`:""}
+        ${bonus&&!window.hhDamageMatrix?.enabled()?`<span><small>BÔNUS</small><b>${esc(bonus)}</b></span>`:""}
       </div>
       <p class="sum-dialog">${esc(desc||"Sem descrição registrada.")}${Number(m.effectChance)>0?` <em>(Efeito ${Number(m.effectChance)}%)</em>`:""}</p>`;
   }
@@ -296,6 +298,7 @@
   }
 
   document.addEventListener("hh:render",render);
+  document.addEventListener("hh:matrixchange",render);
   document.addEventListener("hh:pokemonchange",render);
   let t=0;
   page.addEventListener("input",event=>{

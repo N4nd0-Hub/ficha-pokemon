@@ -54,6 +54,7 @@
     </div>
     <div class="bt-panels">
       <div class="bt-panel" data-bt-panel="fight">
+        <div class="bt-matrix" id="btMatrix"></div>
         <div class="bt-moves" id="btMoves"></div>
         <div class="bt-roll" id="btRoll" hidden></div>
       </div>
@@ -129,7 +130,10 @@
     try{const info=effectiveMoveAccuracy(m);const n=parseInt(String(info.label).replace(/\D/g,""),10);if(n>0)return n;}catch(e){}
     return Number(m.accuracy)>0?Number(m.accuracy):0;
   }
+  const DM=()=>window.hhDamageMatrix;
+  const matrixOn=()=>!!DM()?.enabled();
   function renderMoves(){
+    DM()?.mountPanel(box.querySelector("#btMatrix"));
     const list=activeMoves();
     const el=box.querySelector("#btMoves");
     if(!list.length){
@@ -144,6 +148,7 @@
         <b>${esc(m.name||"—")}</b>
         <span class="bt-move-meta">${typeBadge(t)}<span class="cl-move-cat ${cat}">${CAT[cat]}</span></span>
         <span class="bt-move-nums"><em>PODER ${Number(m.power)>0?Number(m.power):"—"}</em><em>PREC ${acc?acc+"%":"—"}</em></span>
+        ${matrixOn()?(()=>{const pr=DM().profile(m);return pr?`<span class="bt-move-dmg" title="${esc(pr.expression)}">🎲 ${esc(pr.short)} <i>${esc(pr.qd.toUpperCase())}</i></span>`:"";})():""}
       </button>`;
     }).join("");
   }
@@ -162,18 +167,41 @@
     const bonus=parseBonus(bonusText);
     return {base,bonus,bonusText,acc:accuracyOf(m)};
   }
-  function chooseMove(id){
+  function chooseMove(id,{quiet=false}={}){
     const m=activeMoves().find(x=>String(x.id)===String(id));
     if(!m)return;
     chosen=m.id;
     renderMoves();
-    sfx("select");
     const plan=rollPlan(m);
     const desc=typeof translateMoveEffectPt==="function"?translateMoveEffectPt(m.description||""):(m.description||"");
-    say(`${name()} usou ${(m.name||"").toUpperCase()}!`);
-    flashSprite("attack");
+    if(!quiet){
+      sfx("select");
+      say(`${name()} usou ${(m.name||"").toUpperCase()}!`);
+      flashSprite("attack");
+    }
     const roll=box.querySelector("#btRoll");
     roll.hidden=false;
+    const pr=matrixOn()?DM().profile(m):null;
+    if(matrixOn()){
+      const STAT={atk:"ATK",spa:"SP.ATK",def:"DEF",spd:"SP.DEF"};
+      roll.innerHTML=`
+      <div class="bt-roll-head">
+        <b>${esc(m.name)}</b>
+        <span>${pr?esc(pr.expression):"Sem dano"}</span>
+      </div>
+      ${pr&&!pr.immune?`<p class="bt-roll-matrix">
+        <span>${STAT[pr.offKey]} ${pr.offStat} <i>Q${pr.offQ}</i></span><span>vs</span><span>${STAT[pr.defKey]} alvo ${pr.defStat} <i>Q${pr.defQ}</i></span><span>→</span><b>QD ${esc(pr.qd)}</b>
+        <small>Poder efetivo ${pr.effectiveBP}${pr.hits>1?` (${pr.hits} acertos)`:""} · ${pr.count} dado${pr.count>1?"s":""}${pr.effectiveness!==1?` · efetividade ×${String(pr.effectiveness).replace(".",",")}`:""}${pr.levelBonus?` · nível +${pr.levelBonus}`:""}</small>
+      </p>`:""}
+      ${desc?`<p class="bt-roll-desc">${esc(desc)}</p>`:""}
+      <div class="bt-roll-actions">
+        <button type="button" data-bt-roll="acc">🎯 ACERTO (d100 ≤ ${plan.acc||"—"})</button>
+        ${pr&&!pr.immune?`<button type="button" data-bt-roll="dmg">🎲 DANO (${esc(pr.short)})</button><button type="button" data-bt-roll="crit">💥 CRÍTICO</button>`:""}
+        <button type="button" data-bt-roll="edit">✎ EDITAR GOLPE</button>
+      </div>
+      <div class="bt-dice" id="btDice"></div>`;
+      return;
+    }
     roll.innerHTML=`
       <div class="bt-roll-head">
         <b>${esc(m.name)}</b>
@@ -187,14 +215,15 @@
       </div>
       <div class="bt-dice" id="btDice"></div>`;
   }
-  function animateDice(values,{sides=6,label,total,verdict}){
+  function animateDice(values,{sides=6,label,total,verdict,groups=null}){
     const tray=box.querySelector("#btDice");
     if(!tray)return;
-    tray.innerHTML=`<div class="bt-dice-row">${values.map(()=>`<span class="bt-die${sides===100?" wide":""}">?</span>`).join("")}</div><div class="bt-dice-total"></div>`;
+    const sideOf=i=>Array.isArray(sides)?sides[i]:sides;
+    tray.innerHTML=`<div class="bt-dice-row">${values.map((_,i)=>`<span class="bt-die${sideOf(i)===100?" wide":""}${groups?.[i]==="stab"?" stab":""}" data-sides="d${sideOf(i)}">?</span>`).join("")}</div><div class="bt-dice-total"></div>`;
     const dice=[...tray.querySelectorAll(".bt-die")];
     const totalEl=tray.querySelector(".bt-dice-total");
     const finish=()=>{
-      dice.forEach((el,i)=>{el.textContent=values[i];el.classList.add("done");if(sides===6&&values[i]===6)el.classList.add("max");});
+      dice.forEach((el,i)=>{el.textContent=values[i];el.classList.add("done");if(sideOf(i)!==100&&values[i]===sideOf(i))el.classList.add("max");});
       totalEl.innerHTML=`${label}: <b>${total}</b>${verdict?` <span class="${verdict.cls}">${verdict.text}</span>`:""}`;
       sfx(verdict?.cls==="miss"?"error":"page");
     };
@@ -202,7 +231,7 @@
     let ticks=0;
     const spin=setInterval(()=>{
       ticks++;
-      dice.forEach(el=>{el.textContent=d(sides);});
+      dice.forEach((el,i)=>{el.textContent=d(sideOf(i));});
       if(ticks%2===0)sfx("type");
       if(ticks>=12){clearInterval(spin);finish();}
     },55);
@@ -214,7 +243,19 @@
     animateDice([v],{sides:100,label:"Acerto",total:v,verdict:{cls:hit?"hit":"miss",text:hit?"ACERTOU!":"ERROU!"}});
     setTimeout(()=>say(hit?`O ataque de ${name()} acertou!`:`O ataque de ${name()} errou!`),reduceMotion()?0:700);
   }
+  function rollMatrix(m,critical){
+    const pr=DM().profile(m);
+    if(!pr)return;
+    const r=DM().roll(pr,{critical:critical?"natural":"none"});
+    const values=r.dice.map(x=>x.value);
+    const maxes=r.dice.filter(x=>x.value===x.sides).length;
+    const label=`Dano${critical?" crítico":""}${pr.levelBonus?` (inclui +${pr.levelBonus} fixos)`:""}`;
+    animateDice(values,{sides:r.dice.map(x=>x.sides),groups:r.dice.map(x=>x.group),label,total:r.total,
+      verdict:critical?{cls:"hit",text:"CRÍTICO!"}:maxes?{cls:"hit",text:`${maxes}× máximo`}:null});
+    setTimeout(()=>say(`${(m.name||"").toUpperCase()} causou ${r.total} de dano${critical?" com um acerto crítico":""}!`),reduceMotion()?0:700);
+  }
   function rollDamage(m){
+    if(matrixOn()){rollMatrix(m,false);return;}
     const plan=rollPlan(m);
     const n=plan.base+plan.bonus.dice;
     const values=Array.from({length:n},()=>d(6));
@@ -266,6 +307,7 @@
       if(!move)return;
       if(r.dataset.btRoll==="acc")rollAccuracy(move);
       if(r.dataset.btRoll==="dmg")rollDamage(move);
+      if(r.dataset.btRoll==="crit")rollMatrix(move,true);
       if(r.dataset.btRoll==="edit")document.querySelector(`#activeMoves .move-card[data-move-id="${CSS.escape(String(move.id))}"] .btn.edit`)?.click();
     }
   });
@@ -279,6 +321,17 @@
   if(typeof window.renderCombatPage==="function"){
     const original=window.renderCombatPage;
     window.renderCombatPage=function(){const r=original.apply(this,arguments);refresh();return r;};
+  }
+  document.addEventListener("hh:matrixchange",()=>{
+    renderMoves();
+    if(chosen)chooseMoveQuiet(chosen);
+  });
+  function chooseMoveQuiet(id){
+    const m=activeMoves().find(x=>String(x.id)===String(id));
+    if(!m)return;
+    const tray=box.querySelector("#btDice")?.innerHTML||"";
+    chooseMove(id,{quiet:true});
+    const dice=box.querySelector("#btDice");if(dice)dice.innerHTML=tray;
   }
   document.addEventListener("hh:pagechange",e=>{if(e.detail?.to==="page2")setTimeout(()=>say(idleText()),250);});
 
