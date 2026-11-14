@@ -198,3 +198,15 @@ html[data-cl-scheme="dark"] .inv-bonus-note{color:#7ee0ad}
 .inv-icon{overflow:visible}
 .inv-item:hover .inv-sprite{animation:invHop .45s steps(3)}
 @keyframes invHop{50%{transform:translateY(-3px)}}
+
+/* Ícones em pixel art (sem emoji) */
+.inv-px{display:inline-block;width:18px;height:18px;flex:0 0 auto;vertical-align:-4px;image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.25))}
+.inv-btn .inv-px{width:20px;height:20px;margin:-3px 0}
+.inv-shop-picker .inv-px{width:20px;height:20px;margin:-3px 2px -3px 0}
+.inv-shop-group h4 .inv-px{width:16px;height:16px}
+.inv-px-item{width:32px;height:32px}
+.inv-icon.sm .inv-px-item{width:26px;height:26px}
+.inv-title-icon{background:var(--cl-scan),linear-gradient(180deg,#fff,#e9ecf4)!important;font-size:0!important}
+.inv-px-title{width:34px;height:34px;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.25))}
+.inv-wrap:hover .inv-px-title{animation:invHop .6s steps(3)}
+.inv-weight{display:inline-flex;align-items:center;gap:6px}

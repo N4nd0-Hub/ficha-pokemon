@@ -21,14 +21,51 @@
   const money=v=>`${Math.max(0,Math.round(Number(v)||0)).toLocaleString("pt-BR")}₽`;
   const int=(v,min=0,max=999999)=>Math.max(min,Math.min(max,Math.trunc(Number(v)||0)));
 
+  /* ---------- Ícones em pixel art (16×16) ---------- */
+  const PX_PAL={"o": "#181a24", "w": "#ffffff", "g": "#d4d8e2", "s": "#8a90a0", "r": "#e0393e", "R": "#a0242a", "p": "#ff9a9a", "b": "#3d7be0", "B": "#24468f", "c": "#9fd0ff", "y": "#f2c230", "Y": "#b88a10", "e": "#fff1a8", "G": "#2a9a63", "h": "#6fdc9c", "H": "#1a6a43", "n": "#b07a40", "N": "#6a4420", "t": "#e8b878", "v": "#8a5ad0", "V": "#5a3496", "l": "#c9a6ff", "k": "#2fb0c0", "K": "#1a7080", "q": "#a8f0f8", "f": "#ff8a2a", "F": "#c04a10"};
+  const PX={"bag":["......oooo......",".....o....o.....",".....o....o.....","...oooooooooo...","..orrrrrrrrrRo..",".orppprrrrrrRRo.",".orprrrrrrrrrRo.",".ooooooyyooooRo.",".orrrroyeyorrRo.",".orrrrooyoorrRo.",".orrrrrrrrrrrRo.",".oRrrrrrrrrrRRo.",".oRRRRRRRRRRRRo.",".onoooooooooono.","..o..........o..","................"],
+    "ball":["................",".....oooooo.....","...oorrrrrroo...","..orpprrrrrrRo..",".orppprrrrrrRRo.",".orprrrrrrrrrRo.","orrrrrooorrrrRRo","oooooowwwoooooRo","ogggggowooggggso","owwwwwooowwwwwso",".owwwwwwwwwwwso.",".owwwwwwwwwwsso.","..owwwwwwwwsso..","...oosssssoo....",".....oooooo.....","................"],
+    "potion":["................","......oooo......",".....osgggo.....","......oooo......","......owwo......","......owwo......",".....oowwoo.....","....ovvvvvvo....","...ovllvvvvVo...","...ovlvvvvvVo...","...owwwwwwwwo...","...owsswssswo...","...owwwwwwwwo...","...ovvvvvvvVo...","....oVVVVVVo....",".....oooooo....."],
+    "shoe":["................","................","....oooo........","...obbbbo.......","...obcbbo.......","...obbbboooo....","...obbbbwbwbo...","...obcbbbbbbbo..","..obbbbbbbbbbbo.","..obbbbbbbbbbbbo","..oBBBBBBBBBBBBo","..owwwwwwwwwwwwo","..orrrrrrrrrrrro","...oooooooooooo.","................","................"],
+    "tent":["................",".......oo.......","......orRo......",".....orrrRo.....","....orrorrRo....","....orrorrRo....","...orrrorrrRo...","...orrooorrRo...","..orrroNorrrRo..","..orrroNNorrRo..",".orrrroNNNorrRo.",".orrroNNNNNorRo.","orrrroNNNNNorrRo","oooooooooooooooo","GhGGhGGGhGGhGGhG","................"],
+    "compass":["................",".....oooooo.....","...ooyyyyyyoo...","..oyyoooooooYo..","..oyowwwrwwoYo..",".oyowwwrrwwwoYo.",".oyowwwrrwwwoYo.",".oyowwwoowwwoYo.",".oyowwwssswwoYo.",".oyowwwsswwwoYo.","..oyowwwswwoYo..","..oYyoooooooYo..","...ooYYYYYYoo...",".....oooooo.....","................","................"],
+    "gem":["................","................","....oooooooo....","...olcllvvvVo...","..olllllvvvVVo..",".oooooooooooooo.",".ollllcvvvvvVVo.","..olllcvvvvVVo..","...ollcvvvVVo...","....olcvvvVo....",".....olvvVo.....","......olVo......",".......oo.......","................","................","................"],
+    "key":["................","................","...oooo.........","..oyeyyo........",".oyeooyyo.......",".oyo..oyo.......",".oyo..oyoooooooo",".oyyooyyyyyyyyYo","..oyyyyYooooyoYo","...ooooo...oYoYo","............o.o.","................","................","................","................","................"],
+    "cart":["................","oo..............","oso.............",".ososooooooooooo","..oswwwwwwwwwwso","..oswGGwGGwGGwso","...oswGGwGGwGso.","...oswwwwwwwwso.","....osssssssso..","....osoooooooo..",".....ossssssso..","......oooooooo..",".....ooo...ooo..",".....oso...oso..",".....ooo...ooo..","................"],
+    "moon":["................","......ooooo.....","....ooyyyyo..e..","...oyyyyyo..eee.","..oyyyyyo....e..","..oyeyyo........",".oyeyyyo........",".oyeyyyo.....e..",".oyyyyyyo.......",".oyyyyyyyo......","..oyyyyyyyooooo.","..oYyyyyyyyyyo..","...oYYyyyyyYo...","....ooYYYYYo....","......ooooo.....","................"],
+    "coin":["................","......oooo......",".....oNNNNo.....","......onno......",".....oonnoo.....","...oonnnnnnoo...","..onnttnnnnnNo..",".onntoooonnnNNo.",".onntoyyyonnnNo.",".onnnoyooonnnNo.",".onnnoyyyonnnNo.",".onnnoooyonnnNo.",".onnnoyyyonnNNo.","..oNnooooonNNo..","...ooNNNNNNoo...",".....oooooo....."],
+    "mart":["................",".oooooooooooooo.",".obbbbbbbbbbbbo.","obcbbbbbbbbbbbBo","oBBBBBBBBBBBBBBo","oooooooooooooooo",".owwwwwwwwwwwwo.",".owoooowwoooowo.",".owoqcowwocqowo.",".owoccowwoccowo.",".owoooowwoooowo.",".owwwwoooowwwwo.",".owwwwobbowwwwo.",".owwwwobbowwwwo.","oooooooooooooooo","................"],
+    "plus":["................","................","......oooo......","......ohho......","......ohho......","......ohho......","..ooooohhooooo..","..ohhhhhhhhhho..","..ohhhhhhhhhho..","..ooooohhooooo..","......ohho......","......ohho......","......ohho......","......oooo......","................","................"]};
+  const pxCache=new Map();
+  function px(name,cls="inv-px"){
+    const rows=PX[name];
+    if(!rows)return "";
+    const key=name+"|"+cls;
+    if(pxCache.has(key))return pxCache.get(key);
+    let rects="";
+    rows.forEach((row,y)=>{
+      let x=0;
+      while(x<16){
+        const ch=row[x];
+        if(ch==="."){x++;continue;}
+        let w=1;while(x+w<16&&row[x+w]===ch)w++;
+        rects+=`<rect x="${x}" y="${y}" width="${w}" height="1" fill="${PX_PAL[ch]}"/>`;
+        x+=w;
+      }
+    });
+    const svg=`<svg class="${cls}" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false">${rects}</svg>`;
+    pxCache.set(key,svg);
+    return svg;
+  }
+
   const CATS=[
-    {id:"balls",label:"Poké Balls",icon:"◓",color:"#e0393e"},
-    {id:"consumables",label:"Consumíveis",icon:"💊",color:"#2a9a63"},
-    {id:"trainer",label:"Treinador",icon:"👟",color:"#e39a12"},
-    {id:"camping",label:"Acampamento",icon:"🏕️",color:"#a0703a"},
-    {id:"exploration",label:"Exploração",icon:"🧭",color:"#2f9fb0"},
-    {id:"held",label:"Held Items",icon:"💎",color:"#8a5ad0"},
-    {id:"other",label:"Outros",icon:"🔑",color:"#6a6fd0"}
+    {id:"balls",label:"Poké Balls",icon:"px:ball",color:"#e0393e"},
+    {id:"consumables",label:"Consumíveis",icon:"px:potion",color:"#2a9a63"},
+    {id:"trainer",label:"Treinador",icon:"px:shoe",color:"#e39a12"},
+    {id:"camping",label:"Acampamento",icon:"px:tent",color:"#a0703a"},
+    {id:"exploration",label:"Exploração",icon:"px:compass",color:"#2f9fb0"},
+    {id:"held",label:"Held Items",icon:"px:gem",color:"#8a5ad0"},
+    {id:"other",label:"Outros",icon:"px:key",color:"#6a6fd0"}
   ];
   const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
 
@@ -42,12 +79,12 @@
     {key:"berry",name:"Berry",icon:"🍒",category:"consumables",price:100,usable:true,desc:"Pequenos efeitos: cura 5 HP ou 1 status leve."},
     {key:"food",name:"Comida Comum",icon:"🥪",category:"consumables",price:50,usable:true,desc:"Para o treinador. Evita desgaste em viagens longas."},
     {key:"pokefood",name:"Comida Pokémon Pré-preparada",icon:"🥫",category:"consumables",price:200,usable:true,desc:"Recupera 5 HP e melhora a Felicidade em +5."},
-    {key:"runningshoes",name:"Sapatos de Corrida",icon:"👟",category:"trainer",price:5000,desc:"+25 em Testes de Corpo para viagens longas ou correr.\nCusta 5 de Vida/Esforço por uso contínuo."},
+    {key:"runningshoes",name:"Sapatos de Corrida",icon:"px:shoe",category:"trainer",price:5000,desc:"+25 em Testes de Corpo para viagens longas ou correr.\nCusta 5 de Vida/Esforço por uso contínuo."},
     {key:"bicycle",name:"Bicicleta",icon:"🚲",category:"trainer",price:10000,desc:"+50 em Testes de Corpo para viagens longas.\nNão consome Vida/Esforço."},
-    {key:"tent",name:"Barraca Simples",icon:"🛌",category:"camping",price:500,large:true,rest:{pct:50,hp:5},desc:"Protege da chuva e frio leve.\nTreinador recupera +50% da Vida/Esforço ao dormir.\nPokémon recuperam +5 HP extra durante o descanso.\nCapacidade: 1 pessoa e 1 Pokémon pequeno."},
-    {key:"tentplus",name:"Barraca Avançada",icon:"⛺",category:"camping",price:1200,large:true,rest:{pct:100,hp:10},desc:"Melhor proteção contra clima adverso.\nTreinador recupera 100% da Vida/Esforço ao dormir.\nPokémon recuperam +10 HP extra durante o descanso.\nCapacidade: 2 pessoas e 2 Pokémon pequenos."},
+    {key:"tent",name:"Barraca Simples",icon:"px:tent",category:"camping",price:500,large:true,rest:{pct:50,hp:5},desc:"Protege da chuva e frio leve.\nTreinador recupera +50% da Vida/Esforço ao dormir.\nPokémon recuperam +5 HP extra durante o descanso.\nCapacidade: 1 pessoa e 1 Pokémon pequeno."},
+    {key:"tentplus",name:"Barraca Avançada",icon:"px:tent",category:"camping",price:1200,large:true,rest:{pct:100,hp:10},desc:"Melhor proteção contra clima adverso.\nTreinador recupera 100% da Vida/Esforço ao dormir.\nPokémon recuperam +10 HP extra durante o descanso.\nCapacidade: 2 pessoas e 2 Pokémon pequenos."},
     {key:"campkit",name:"Kit de Acampamento",icon:"🔥",category:"camping",price:400,large:true,desc:"Fogueira portátil, utensílios de cozinha e itens básicos.\nPermite cozinhar Comida Pokémon ou preparar Berries.\n+5 de Felicidade para Pokémon que compartilham a refeição."},
-    {key:"bigbag",name:"Mochila Grande",icon:"🎒",category:"camping",price:1000,backpack:true,desc:"Aumenta o limite de inventário: leva Itens Grandes sem causar sobrepeso."},
+    {key:"bigbag",name:"Mochila Grande",icon:"px:bag",category:"camping",price:1000,backpack:true,desc:"Aumenta o limite de inventário: leva Itens Grandes sem causar sobrepeso."},
     {key:"blanket",name:"Manta de Sobrevivência",icon:"🛡️",category:"camping",price:200,rest:{pct:25,hp:null},desc:"Pode ser usada sem barraca.\nRecupera apenas 25% da Vida/Esforço durante o sono.\nRisco narrativo: pode sofrer penalidade em clima extremo."}
   ];
   /* PokéMart de Sylphora */
@@ -82,8 +119,8 @@
     {key:"sy-sitrusberry",name:"Sitrus Berry",icon:"🍊",category:"held",price:2000,desc:"Recupera 25% do HP ao cair abaixo da metade."}
   ];
   const SHOPS=[
-    {id:"elysius",name:"Loja Inicial de Elysius",icon:"💰",items:ELYSIUS,note:"Cada treinador começa com <b>12.000₽</b> para gastar livremente.",starter:true},
-    {id:"sylphora",name:"PokéMart de Sylphora",icon:"🏬",items:SYLPHORA,note:"Cura, captura, exploração e Held Items. A cada <b>10 Poké Balls</b> compradas aqui você ganha <b>1 Premier Ball</b>."}
+    {id:"elysius",name:"Loja Inicial de Elysius",icon:"px:coin",items:ELYSIUS,note:"Cada treinador começa com <b>12.000₽</b> para gastar livremente.",starter:true},
+    {id:"sylphora",name:"PokéMart de Sylphora",icon:"px:mart",items:SYLPHORA,note:"Cura, captura, exploração e Held Items. A cada <b>10 Poké Balls</b> compradas aqui você ganha <b>1 Premier Ball</b>."}
   ];
   const SHOP=Object.fromEntries(SHOPS.map(x=>[x.id,x]));
   const NO_GEAR={pct:10,hp:2};
@@ -132,6 +169,8 @@
     i.desc=String(i.desc??"").slice(0,1200);
     i.large=!!i.large;i.usable=!!i.usable;i.backpack=!!i.backpack;i.rare=!!i.rare;
     if(i.shopId!=null)i.shopId=String(i.shopId);
+    const oldEmoji={runningshoes:"👟",tent:"🛌",tentplus:"⛺",bigbag:"🎒"},newPx={runningshoes:"px:shoe",tent:"px:tent",tentplus:"px:tent",bigbag:"px:bag"};
+    if(i.key&&oldEmoji[i.key]===i.icon)i.icon=newPx[i.key];
     if(i.sprite!=null&&i.sprite!==false)i.sprite=String(i.sprite).toLowerCase().replace(/[^a-z0-9-]+/g,"-").slice(0,60);
     if(i.rest&&typeof i.rest==="object"){
       const pct=int(i.rest.pct,0,100);
@@ -145,9 +184,11 @@
     ...inv.shop.filter(s=>(s.shopId||"elysius")===shopId)
   ];
 
+  const pxOr=(icon,cls)=>/^px:/.test(icon||"")?px(icon.slice(3),cls):esc(icon||"");
   function iconHtml(icon,item){
     const slug=item?spriteSlug(item):"";
     if(slug)return `<img class="inv-sprite" src="${esc(spriteUrl(slug))}" alt="" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${iconHtml(icon)}</span>`;
+    if(/^px:/.test(icon||""))return px(icon.slice(3),"inv-px inv-px-item");
     const m=/^ball:(poke|great|ultra|premier)$/.exec(icon||"");
     if(m)return `<span class="inv-ball inv-ball-${m[1]}" aria-hidden="true"></span>`;
     return `<span class="inv-emoji" aria-hidden="true">${esc(icon||"📦")}</span>`;
@@ -167,7 +208,7 @@
     const large=owned.filter(i=>i.large);
     const hasBag=owned.some(i=>i.backpack);
     if(large.length&&!hasBag)return {cls:"warn",text:`⚠ Sobrepeso: ${large.length} ${large.length>1?"itens":"item"} grande${large.length>1?"s":""} sem Mochila Grande`};
-    if(hasBag)return {cls:"ok",text:"🎒 Mochila Grande: itens grandes liberados"};
+    if(hasBag)return {cls:"ok",text:"Mochila Grande: itens grandes liberados",icon:"bag"};
     return {cls:"",text:"Mochila comum: itens grandes causam sobrepeso"};
   }
 
@@ -212,7 +253,7 @@
     const hiddenHere=inv.hiddenShop.filter(id=>id.startsWith(inv.shopId+":")).length;
     return `<div class="inv-shop">
       <div class="inv-shop-picker" role="tablist" aria-label="Lojas">
-        ${SHOPS.map(x=>`<button type="button" role="tab" data-shoppick="${x.id}" class="${x.id===inv.shopId?"on":""}" aria-selected="${x.id===inv.shopId}">${x.icon} ${esc(x.name)}</button>`).join("")}
+        ${SHOPS.map(x=>`<button type="button" role="tab" data-shoppick="${x.id}" class="${x.id===inv.shopId?"on":""}" aria-selected="${x.id===inv.shopId}">${pxOr(x.icon)} ${esc(x.name)}</button>`).join("")}
       </div>
       <div class="inv-shop-head">
         <div><small>LOJA</small><b>${esc(shop?.name||"Loja")}</b></div>
@@ -227,10 +268,10 @@
       </div>
       <div class="inv-chips small">
         <button type="button" data-shopcat="all" class="${shopCat==="all"?"on":""}">Tudo</button>
-        ${CATS.map(c=>`<button type="button" data-shopcat="${c.id}" class="${shopCat===c.id?"on":""}">${c.icon} ${c.label}</button>`).join("")}
+        ${CATS.map(c=>`<button type="button" data-shopcat="${c.id}" class="${shopCat===c.id?"on":""}">${pxOr(c.icon)} ${c.label}</button>`).join("")}
       </div>
       ${groups.length?groups.map(g=>`<div class="inv-shop-group" style="--inv-c:${g.c.color}">
-        <h4>${g.c.icon} ${esc(g.c.label)}</h4>
+        <h4>${pxOr(g.c.icon)} ${esc(g.c.label)}</h4>
         ${g.rows.map(s=>{
           const owned=inv.items.find(i=>sameItem(i,s));
           const poor=s.price>t.money;
@@ -254,7 +295,7 @@
 
   function restHtml(inv){
     const owned=inv.items.filter(i=>i.qty>0&&i.rest);
-    const options=[...owned.map(i=>({id:i.id,name:i.name,icon:i.icon,...i.rest})),{id:"none",name:"Sem equipamento",icon:"🌙",...NO_GEAR}];
+    const options=[...owned.map(i=>({id:i.id,name:i.name,icon:i.icon,...i.rest})),{id:"none",name:"Sem equipamento",icon:"px:moon",...NO_GEAR}];
     options.sort((a,b)=>b.pct-a.pct);
     const pick=options.find(o=>o.id===restPick)||options[0];
     const kit=inv.items.some(i=>i.qty>0&&/kit de acampamento/i.test(i.name));
@@ -262,7 +303,7 @@
     return `<div class="inv-rest">
       <div class="inv-rest-head"><small>MECÂNICA DE DESCANSO</small><b>Onde o grupo vai dormir?</b></div>
       <div class="inv-chips">
-        ${options.map(o=>`<button type="button" data-restpick="${esc(o.id)}" class="${o.id===pick.id?"on":""}">${/^ball:/.test(o.icon)?"":esc(o.icon)} ${esc(o.name)}</button>`).join("")}
+        ${options.map(o=>`<button type="button" data-restpick="${esc(o.id)}" class="${o.id===pick.id?"on":""}">${/^ball:/.test(o.icon)?"":pxOr(o.icon)} ${esc(o.name)}</button>`).join("")}
       </div>
       <div class="inv-rest-result">
         <div class="inv-rest-meter"><span style="width:${pick.pct}%"></span><b>${pick.pct}%</b></div>
@@ -310,7 +351,7 @@
     wrap.innerHTML=`
       <header class="inv-head">
         <div class="inv-title">
-          <span class="inv-title-icon">🎒</span>
+          <span class="inv-title-icon">${px("bag","inv-px inv-px-title")}</span>
           <div><small>TREINADOR</small><b>Inventário de Viagem</b><span>Equipamentos e itens que não vão na Bolsa de combate</span></div>
         </div>
         <label class="inv-wallet"><span>CARTEIRA</span><div><b>₽</b><input type="number" min="0" step="1" value="${int(t.money,0,999999999)}" data-inv="money" aria-label="Dinheiro do treinador"></div></label>
@@ -318,24 +359,24 @@
       <div class="inv-status">
         <span><b>${total}</b> itens</span>
         <span>Valor guardado <b>${money(value)}</b></span>
-        <span class="inv-weight ${w.cls}">${w.text}</span>
+        <span class="inv-weight ${w.cls}">${w.icon?px(w.icon):""}${w.text}</span>
       </div>
       <div class="inv-toolbar">
         <div class="inv-chips">
           <button type="button" data-filter="all" class="${filter==="all"?"on":""}">Tudo <i>${inv.items.length}</i></button>
-          ${CATS.map(c=>`<button type="button" data-filter="${c.id}" class="${filter===c.id?"on":""}" style="--inv-c:${c.color}">${c.icon} ${c.label} <i>${counts[c.id]}</i></button>`).join("")}
+          ${CATS.map(c=>`<button type="button" data-filter="${c.id}" class="${filter===c.id?"on":""}" style="--inv-c:${c.color}">${pxOr(c.icon)} ${c.label} <i>${counts[c.id]}</i></button>`).join("")}
         </div>
         <div class="inv-main-actions">
-          <button type="button" class="inv-btn shop${shopOpen?" on":""}" data-inv="shop" aria-expanded="${shopOpen}">🛒 LOJA</button>
-          <button type="button" class="inv-btn rest${restOpen?" on":""}" data-inv="rest" aria-expanded="${restOpen}">🌙 DESCANSO</button>
-          <button type="button" class="inv-btn" data-inv="new">＋ ITEM</button>
+          <button type="button" class="inv-btn shop${shopOpen?" on":""}" data-inv="shop" aria-expanded="${shopOpen}">${px("cart")} LOJA</button>
+          <button type="button" class="inv-btn rest${restOpen?" on":""}" data-inv="rest" aria-expanded="${restOpen}">${px("moon")} DESCANSO</button>
+          <button type="button" class="inv-btn" data-inv="new">${px("plus")} ITEM</button>
         </div>
       </div>
       ${editor?editorHtml():""}
       ${restOpen?restHtml(inv):""}
       ${shopOpen?shopHtml(inv,t):""}
       <div class="inv-grid">
-        ${items.length?items.map(itemCard).join(""):`<div class="inv-empty">${inv.items.length?"Nada nesta categoria.":"Inventário vazio. Abra a <b>🛒 LOJA</b> para comprar os itens iniciais ou crie um <b>＋ ITEM</b> personalizado."}</div>`}
+        ${items.length?items.map(itemCard).join(""):`<div class="inv-empty">${inv.items.length?"Nada nesta categoria.":"Inventário vazio. Abra a <b>LOJA</b> para comprar os itens iniciais ou crie um <b>＋ ITEM</b> personalizado."}</div>`}
       </div>`;
     if(keepFocus==="money")wrap.querySelector("[data-inv=money]")?.focus();
   }
