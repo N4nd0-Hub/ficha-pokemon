@@ -102,7 +102,7 @@
     const immune=eff===0;
     const expression=immune?"Imune • 0 HP":`${baseExpression}${stab?` + ${stab}d6 STAB`:""}${levelBonus?` + ${levelBonus} fixos`:""}`;
     const short=immune?"Imune":`${QD_DICE[qd].map(x=>`${count}d${x}`).join("+")}${stab?` +${stab}d6`:""}${levelBonus?` +${levelBonus}`:""}`;
-    return {count,qd,sides:QD_DICE[qd],hits,effectiveBP,offKey,defKey,offStat,defStat,offQ,defQ,gap,effectiveness:eff,stab,levelBonus,immune,baseExpression,expression,short};
+    return {baseQd:qdFromGap(gap),baseCount:bpDice,count,qd,sides:QD_DICE[qd],hits,effectiveBP,offKey,defKey,offStat,defStat,offQ,defQ,gap,effectiveness:eff,stab,levelBonus,immune,baseExpression,expression,short};
   }
 
   /* Rola um perfil. critical: "none" | "natural". */
@@ -124,6 +124,59 @@
     document.dispatchEvent(new CustomEvent("hh:matrixchange"));
   }
 
+  /* ---------- Régua da QD (d4 → d20) ---------- */
+  function ladderHtml(pr){
+    if(!pr||pr.immune)return "";
+    const base=QDS.indexOf(pr.baseQd),fin=QDS.indexOf(pr.qd);
+    const note=fin>base?"▲ super efetivo: sobe 1 degrau e +1 dado":fin<base?"▼ resistido: desce 1 degrau e −1 dado":pr.effectiveness>1?"no topo (d20): só ganha +1 dado":pr.effectiveness>0&&pr.effectiveness<1?"no piso (d4): só perde 1 dado":"";
+    return `<div class="dm-ladder" aria-label="Escala de QD">
+      ${QDS.map((q,i)=>`<span class="${i===fin?"is-final":i===base?"is-base":""}">${q}</span>`).join("")}
+    </div>${note?`<small class="dm-ladder-note">${note}</small>`:""}`;
+  }
+
+  /* ---------- Explicação ---------- */
+  function exampleLine(){
+    const p=typeof current!=="undefined"?current:null;
+    if(!p)return "";
+    const cfg=settings(),atk=offensiveStat(p,"atk"),spa=offensiveStat(p,"spa");
+    const line=(label,v,def,defLabel)=>{const g=quality(v)-quality(def);return `<li><b>${label} ${v}</b> (Q${quality(v)}) contra <b>${defLabel} ${def}</b> (Q${quality(def)}) → diferença ${g>0?"+":""}${g} → <b>${qdFromGap(g)}</b></li>`;};
+    return `<p class="dm-help-example">Agora, com ${escapeHtml(p.name||"seu Pokémon")}:</p><ul>${line("ATK",atk,cfg.targetDef,"DEF do alvo")}${line("SP.ATK",spa,cfg.targetSpd,"SP.DEF do alvo")}</ul>`;
+  }
+  const escapeHtml=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+  function helpHtml(open){
+    return `<details class="dm-help"${open?" open":""}>
+      <summary>❓ Como funciona a QD (dado de qualidade)</summary>
+      <div class="dm-help-body">
+        <section>
+          <h5>1 · Quantos dados</h5>
+          <p>Vem do <b>Poder</b> do golpe: até 20 → 1 dado · 21–40 → 2 · 41–60 → 3 · 61–80 → 4 · 81–100 → 5 · 101+ → 6.
+          Technician, Tough Claws e Mega Launcher aumentam o Poder; golpes de vários acertos somam o Poder de cada acerto.</p>
+        </section>
+        <section>
+          <h5>2 · Qualidade do atributo</h5>
+          <table class="dm-qtable"><tr><th>Atributo</th><td>≤49</td><td>50–75</td><td>76–100</td><td>101–125</td><td>126–150</td><td>151–175</td><td>176–200</td><td>201–225</td><td>226+</td></tr>
+          <tr><th>Qualidade</th><td>Q0</td><td>Q1</td><td>Q2</td><td>Q3</td><td>Q4</td><td>Q5</td><td>Q6</td><td>Q7</td><td>Q8</td></tr></table>
+          <p>Golpe <b>físico</b> usa seu ATK contra a DEF do alvo; <b>especial</b> usa SP.ATK contra SP.DEF. Os estágios de combate contam: um +1 em ATK pode subir sua Qualidade.</p>
+        </section>
+        <section>
+          <h5>3 · Qual dado (QD)</h5>
+          <p>Sua Qualidade <b>menos</b> a Qualidade do alvo:</p>
+          <div class="dm-ladder static"><span>abaixo de 0<br><b>d4</b></span><span>0<br><b>d6</b></span><span>+1<br><b>d8</b></span><span>+2<br><b>d10</b></span><span>+3<br><b>d12</b></span><span>+4<br><b>d12+d4</b></span><span>+5<br><b>d12+d6</b></span><span>+6<br><b>d20</b></span></div>
+          ${exampleLine()}
+        </section>
+        <section>
+          <h5>4 · Efetividade sobe ou desce</h5>
+          <p><b>Super efetivo</b> (×2 ou ×4): +1 dado e a QD <b>sobe um degrau</b>. <b>Resistido</b> (×½ ou ×¼): −1 dado (mínimo 1) e a QD <b>desce um degrau</b>. <b>Imune</b>: nenhum dano. A QD não passa de d20 nem fica abaixo de d4.</p>
+        </section>
+        <section>
+          <h5>5 · O que soma por fora</h5>
+          <p><b>STAB</b> (golpe do seu tipo): +1d6 · com Tera do mesmo tipo: +2d6 · com Adaptability: 1 + metade dos dados do Poder.
+          <b>Nível</b>: + nível ÷ 5 de dano fixo. <b>Crítico</b>: os dados da QD saem no valor máximo (o STAB continua rolado).</p>
+        </section>
+      </div>
+    </details>`;
+  }
+
   /* ---------- Painel da calculadora (inserido pela batalha) ---------- */
   function panelHtml(){
     const cfg=settings();
@@ -137,8 +190,10 @@
         <label><span>DEF do alvo</span><input type="number" min="1" max="999" inputmode="numeric" data-dm="targetDef" value="${cfg.targetDef}"><em>Qualidade ${quality(cfg.targetDef)}</em></label>
         <label><span>SP.DEF do alvo</span><input type="number" min="1" max="999" inputmode="numeric" data-dm="targetSpd" value="${cfg.targetSpd}"><em>Qualidade ${quality(cfg.targetSpd)}</em></label>
         <label><span>Efetividade</span><select data-dm="effectiveness">${EFFECTIVENESS.map(e=>`<option value="${e.v}"${e.v===cfg.effectiveness?" selected":""}>${e.label}</option>`).join("")}</select></label>
-      </div>`:""}`;
+      </div>
+      ${helpHtml(helpOpen)}`:""}`;
   }
+  let helpOpen=false;
   function mountPanel(host){
     if(!host)return null;
     let el=host.querySelector(".dm-panel");
@@ -149,6 +204,7 @@
       el.addEventListener("click",e=>{
         if(e.target.closest('[data-dm="toggle"]')){set({enabled:!settings().enabled});window.hhClassicSfx?.select?.();}
       });
+      el.addEventListener("toggle",e=>{if(e.target.matches(".dm-help"))helpOpen=e.target.open;},true);
       el.addEventListener("change",e=>{
         const f=e.target.closest("[data-dm]");
         if(!f||f.dataset.dm==="toggle")return;
@@ -161,8 +217,45 @@
     return el;
   }
 
+  /* ---------- Quadro de atributos (aba STATUS) ---------- */
+  const DERIVED={
+    atkBonus:{key:"atk",label:"ATK",off:true,vs:"targetDef",vsLabel:"DEF do alvo",sub:"Ataque físico"},
+    spaBonus:{key:"spa",label:"SP.ATK",off:true,vs:"targetSpd",vsLabel:"SP.DEF do alvo",sub:"Ataque especial"},
+    defReduce:{key:"def",label:"DEF",off:false,sub:"Defesa física"},
+    spdReduce:{key:"spd",label:"SP.DEF",off:false,sub:"Defesa especial"}
+  };
+  function paintDerived(){
+    const p=typeof current!=="undefined"?current:null;
+    if(!p)return;
+    const on=enabled(),cfg=settings();
+    Object.entries(DERIVED).forEach(([id,info])=>{
+      const b=document.getElementById(id);
+      const box=b?.closest(".derived-box");
+      const span=box?.querySelector("span");
+      if(!b||!span)return;
+      if(!span.dataset.original)span.dataset.original=span.textContent;
+      box.classList.toggle("dm-derived",on);
+      if(!on){span.textContent=span.dataset.original;return;}
+      const v=offensiveStat(p,info.key),q=quality(v);
+      const stage=typeof combatStageTotal==="function"?combatStageTotal(p,info.key):0;
+      b.textContent=`${info.label} ${v} · Q${q}${stage?` (${stage>0?"+":""}${stage})`:""}`;
+      if(info.off){
+        const g=q-quality(cfg[info.vs]);
+        span.textContent=`${info.sub} · QD ${qdFromGap(g)} contra ${info.vsLabel} ${cfg[info.vs]}`;
+      }else{
+        span.textContent=`${info.sub} · atacante Q${q} rola d6, Q${q+1} rola d8`;
+      }
+    });
+  }
+  if(typeof window.updateDerived==="function"){
+    const originalDerived=window.updateDerived;
+    window.updateDerived=function(){const r=originalDerived.apply(this,arguments);paintDerived();return r;};
+  }
+  document.addEventListener("hh:matrixchange",()=>{if(typeof window.updateDerived==="function"&&typeof current!=="undefined"&&current)window.updateDerived();else paintDerived();});
+
   settings();
-  window.hhDamageMatrix={enabled,settings,set,profile,roll,quality,mountPanel,QDS,QD_DICE};
+  window.hhDamageMatrix={enabled,settings,set,profile,roll,quality,mountPanel,ladderHtml,QDS,QD_DICE};
+  paintDerived();
   // Telas que já desenharam antes deste script carregar se atualizam.
   document.dispatchEvent(new CustomEvent("hh:matrixchange"));
 })();

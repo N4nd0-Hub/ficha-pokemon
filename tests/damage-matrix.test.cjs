@@ -7,13 +7,19 @@ const path=require('node:path');
 
 const SOURCE=fs.readFileSync(path.join(__dirname,'../scripts/damage-matrix-v6.js'),'utf8');
 
-function load(pokemon,matrix={}){
+function fakeBox(label){
+  const span={textContent:label,dataset:{}};
+  const box={classList:{on:false,toggle(c,v){this.on=v;}},querySelector:()=>span};
+  const b={textContent:'',closest:()=>box};
+  return {b,span,box};
+}
+function load(pokemon,matrix={},boxes={}){
   const ctx={
     state:{damageMatrix:{enabled:true,targetDef:100,targetSpd:100,effectiveness:1,...matrix}},
     current:pokemon,
     normalizeTypeName:t=>t?String(t)[0].toUpperCase()+String(t).slice(1).toLowerCase():'',
     combatEffectiveStat:(p,k)=>p.stats[k],
-    document:{dispatchEvent(){}},
+    document:{_l:[],dispatchEvent(){this._l.forEach(f=>f());},addEventListener(t,f){this._l.push(f);},getElementById:id=>boxes[id]?.b||null},
     CustomEvent:function(){},
     Math
   };
@@ -92,4 +98,24 @@ test('Rolagem fica dentro dos limites e o crítico natural maximiza a QD',()=>{
   const crit=dm.roll(p,{critical:'natural'});
   assert.ok(crit.dice.filter(d=>d.group==='qd').every(d=>d.value===8));
   assert.ok(crit.total>=40+1+7);
+});
+
+test('Quadro de STATUS mostra Qualidade e QD com a Matrix ligada e volta ao normal desligada',()=>{
+  const boxes={atkBonus:fakeBox('Bônus físico'),spaBonus:fakeBox('Bônus especial'),defReduce:fakeBox('Redução física'),spdReduce:fakeBox('Redução especial')};
+  const dm=load(blaziken(),{targetDef:100},boxes);
+  assert.equal(boxes.atkBonus.b.textContent,'ATK 120 · Q3');
+  assert.match(boxes.atkBonus.span.textContent,/QD d8 contra DEF do alvo 100/);
+  assert.equal(boxes.defReduce.b.textContent,'DEF 70 · Q1');
+  assert.equal(boxes.atkBonus.box.classList.on,true);
+  dm.set({enabled:false});
+  assert.equal(boxes.atkBonus.span.textContent,'Bônus físico');
+  assert.equal(boxes.atkBonus.box.classList.on,false);
+});
+
+test('Régua mostra o degrau base e o final quando a efetividade muda a QD',()=>{
+  const dm=load(blaziken(),{effectiveness:2});
+  const html=dm.ladderHtml(dm.profile(move('Flamethrower','Fire','Special',90)));
+  assert.match(html,/is-final">d10</);
+  assert.match(html,/is-base">d8</);
+  assert.match(html,/sobe 1 degrau/);
 });
