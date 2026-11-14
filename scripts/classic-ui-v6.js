@@ -180,10 +180,22 @@
      MENU DE PÁGINAS — nomes, transição e Q / E
      ============================================================ */
   const PAGE_LABEL={page1:"Pokémon",pageTrainer:"Treinador",page2:"Batalha",page3:"Arquivo",page4:"Pokédex"};
+  const PAGE_SHORT={page1:"Pokémon",pageTrainer:"Trein.",page2:"Batalha",page3:"Arquivo",page4:"Dex"};
+  const PAGE_SUB={page1:"Ficha",pageTrainer:"Card",page2:"Combate",page3:"Treino e itens",page4:"Enciclopédia"};
   function labelTabs(){
     document.querySelectorAll(".sheet-navigation .tab.pokedex-hardware-key").forEach(tab=>{
       const label=PAGE_LABEL[tab.dataset.page]||String(tab.title||"").split("•").pop().trim();
       tab.dataset.clLabel=label;
+      if(!tab.querySelector(".nb-text")){
+        const text=document.createElement("span");
+        text.className="nb-text";
+        text.innerHTML=`<b></b><small></small><i></i>`;
+        tab.appendChild(text);
+      }
+      const t=tab.querySelector(".nb-text");
+      t.children[0].textContent=label;
+      t.children[1].textContent=PAGE_SUB[tab.dataset.page]||"";
+      t.children[2].textContent=PAGE_SHORT[tab.dataset.page]||label;
     });
     const tabs=document.querySelector(".sheet-navigation .page-tabs");
     if(tabs&&!document.querySelector(".cl-lr-hint")){
