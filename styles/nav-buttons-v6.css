@@ -1,0 +1,153 @@
+/* ============================================================
+   V6 — Botões do menu de páginas (Pokémon / Treinador / ...)
+   Cada página tem sua cor de ícone, como os ícones do menu START.
+   ============================================================ */
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key{--nb:#e0393e;--nb-dark:color-mix(in srgb,var(--nb) 62%,#000)}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab[data-page="pageTrainer"]{--nb:#e39a12}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab[data-page="page2"]{--nb:#ea5f1f}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab[data-page="page3"]{--nb:#2a9a63}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab[data-page="page4"]{--nb:#2f74d4}
+
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .page-tabs{gap:10px!important}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key{
+  min-height:50px!important;
+  padding:6px 14px 6px 8px!important;
+  gap:10px!important;
+  border-radius:12px!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0) 55%),
+    var(--cl-card)!important;
+  box-shadow:
+    inset 0 -4px 0 color-mix(in srgb,var(--nb) 70%,transparent),
+    inset 0 2px 0 rgba(255,255,255,.18),
+    0 4px 0 var(--cl-ink)!important;
+  transition:transform .12s ease,box-shadow .12s ease,background-color .12s ease!important;
+  cursor:pointer;
+}
+/* Ícone: badge quadrado-arredondado na cor da página */
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key .hardware-symbol,
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key .dex-key-lens{
+  width:32px!important;height:32px!important;
+  border-radius:9px!important;
+  border:2px solid var(--cl-ink)!important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--nb) 80%,#fff),var(--nb) 55%,var(--nb-dark))!important;
+  color:#fff!important;
+  font-size:16px!important;
+  text-shadow:1px 1px 0 rgba(0,0,0,.45);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25)!important;
+  transition:transform .15s ease;
+}
+/* Lente da Pokédex */
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key .dex-key-lens{
+  border-radius:50%!important;
+  background:
+    radial-gradient(circle at 35% 30%,#fff 0 3px,transparent 4px),
+    radial-gradient(circle at 50% 50%,#7fc4ff 0 30%,#2f74d4 55%,#173f82 100%)!important;
+  box-shadow:0 0 0 2px #fff inset,inset 0 -3px 0 rgba(0,0,0,.25)!important;
+}
+/* Nome + subtítulo */
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key::after{content:none!important;display:none!important}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key>.nb-text{
+  display:flex!important;flex-direction:column;align-items:flex-start;gap:3px;
+  text-align:left;line-height:1;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key>.nb-text b{
+  font:700 12px var(--cl-pixel);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key>.nb-text small{
+  font:600 10px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em;white-space:nowrap;
+  color:var(--cl-muted);text-shadow:none;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key.active>.nb-text small{color:rgba(255,255,255,.85)}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key>.nb-text i{display:none;font-style:normal}
+
+/* Cursor ▶ vira uma seta acima do botão ativo */
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key::before{
+  content:"▼"!important;
+  left:50%!important;top:-15px!important;
+  transform:translateX(-50%)!important;
+  color:var(--nb)!important;
+  font-size:11px!important;
+  text-shadow:0 2px 0 var(--cl-ink);
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key.active::before{opacity:1;animation:nbBob .9s ease-in-out infinite!important}
+
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key:hover{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 55%),
+    color-mix(in srgb,var(--nb) 12%,var(--cl-card))!important;
+  transform:translateY(-2px)!important;
+  box-shadow:
+    inset 0 -4px 0 var(--nb),
+    inset 0 2px 0 rgba(255,255,255,.18),
+    0 6px 0 var(--cl-ink)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key:hover :is(.hardware-symbol,.dex-key-lens){transform:rotate(-8deg) scale(1.08)}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key:active{
+  transform:translateY(3px)!important;
+  box-shadow:inset 0 -2px 0 var(--nb),0 1px 0 var(--cl-ink)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key:focus-visible{outline:3px solid var(--nb)!important;outline-offset:3px}
+
+/* Ativo: botão inteiro na cor da página */
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key.active{
+  background:
+    var(--cl-scan),
+    linear-gradient(180deg,color-mix(in srgb,var(--nb) 82%,#fff),var(--nb) 50%,var(--nb-dark))!important;
+  color:#fff!important;
+  text-shadow:2px 2px 0 rgba(0,0,0,.35);
+  transform:translateY(-2px)!important;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.35),
+    inset 0 -3px 0 rgba(0,0,0,.22),
+    0 6px 0 var(--cl-ink),
+    0 8px 18px -6px color-mix(in srgb,var(--nb) 70%,transparent)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key.active .hardware-symbol{
+  background:#fff!important;
+  color:var(--nb-dark)!important;
+  text-shadow:none;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key.active .dex-key-lens{box-shadow:0 0 0 2px #fff inset,0 0 10px 2px rgba(127,196,255,.8)!important}
+
+@keyframes nbBob{50%{transform:translate(-50%,-3px)}}
+@media (prefers-reduced-motion:reduce){
+  html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key.active::before{animation:none!important}
+}
+
+/* Q / E */
+html:not([data-sheet-mode="pokedex"]) .cl-lr-hint kbd{border-radius:6px;padding:3px 7px}
+
+/* Telas pequenas: grade de botões, sem subtítulo */
+@media (max-width:720px){
+  html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .page-tabs{
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    width:100%!important;gap:6px!important;
+  }
+  html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key{
+    flex-direction:column!important;justify-content:center!important;
+    gap:4px!important;padding:7px 2px 8px!important;min-width:0!important;
+  }
+  html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key>.nb-text{align-items:center}
+  html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key>.nb-text :is(b,small){display:none}
+  html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key>.nb-text i{display:block;font:700 9px var(--cl-pixel);letter-spacing:0;text-transform:uppercase;white-space:nowrap}
+  html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab.pokedex-hardware-key :is(.hardware-symbol,.dex-key-lens){width:28px!important;height:28px!important}
+  html:not([data-sheet-mode="pokedex"]) .cl-lr-hint{display:none}
+}
+
+/* Ícone da página Pokémon: Poké Ball desenhada */
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab[data-page="page1"] .hardware-symbol{
+  font-size:0!important;
+  border-radius:50%!important;
+  background:
+    radial-gradient(circle at 50% 50%,#fff 0 3px,var(--cl-ink) 3.5px 5.5px,transparent 6px),
+    linear-gradient(180deg,#ef4b4f 0 44%,var(--cl-ink) 44% 56%,#f4f4f4 56% 100%)!important;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.2)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab[data-page="page1"].active .hardware-symbol{
+  background:
+    radial-gradient(circle at 50% 50%,#fff 0 3px,var(--cl-ink) 3.5px 5.5px,transparent 6px),
+    linear-gradient(180deg,#ef4b4f 0 44%,var(--cl-ink) 44% 56%,#f4f4f4 56% 100%)!important;
+  box-shadow:0 0 0 2px #fff,0 0 10px 2px rgba(255,255,255,.5)!important;
+}
