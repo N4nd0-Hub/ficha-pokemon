@@ -27870,6 +27870,18 @@ function syncMobileNavigation(pageId=currentVisiblePageId()){
   });
 }
 
+function scrollSheetHeadIntoView(){
+  const head=document.querySelector(".sheet-head");
+  if(!head)return;
+  /* O cabeçalho do site fica fixo no topo: desconta a altura dele para os
+     botões de página continuarem visíveis depois da troca. */
+  const topbar=document.querySelector(".topbar");
+  const bar=topbar&&getComputedStyle(topbar).position!=="static"&&getComputedStyle(topbar).position!=="relative"?topbar.getBoundingClientRect().height:0;
+  const rect=head.getBoundingClientRect();
+  if(rect.top>=bar&&rect.top<window.innerHeight*.5)return;
+  window.scrollTo({top:Math.max(0,rect.top+window.scrollY-bar-12),behavior:"smooth"});
+}
+
 function setActiveSheetPage(pageId,{scroll=true}={}){
   const tab=document.querySelector(`.tab[data-page="${pageId}"]`);
   const page=document.getElementById(pageId);
@@ -27889,7 +27901,7 @@ function setActiveSheetPage(pageId,{scroll=true}={}){
     if(isMobileLayout()){
       window.scrollTo({top:0,behavior:"smooth"});
     }else{
-      document.querySelector(".sheet-head")?.scrollIntoView({behavior:"smooth",block:"start"});
+      scrollSheetHeadIntoView();
     }
   }
 }
