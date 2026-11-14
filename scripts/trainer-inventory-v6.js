@@ -26,6 +26,8 @@
     {id:"consumables",label:"Consumíveis",icon:"💊",color:"#2a9a63"},
     {id:"trainer",label:"Treinador",icon:"👟",color:"#e39a12"},
     {id:"camping",label:"Acampamento",icon:"🏕️",color:"#a0703a"},
+    {id:"exploration",label:"Exploração",icon:"🧭",color:"#2f9fb0"},
+    {id:"held",label:"Held Items",icon:"💎",color:"#8a5ad0"},
     {id:"other",label:"Outros",icon:"🔑",color:"#6a6fd0"}
   ];
   const CAT=Object.fromEntries(CATS.map(c=>[c.id,c]));
@@ -48,6 +50,42 @@
     {key:"bigbag",name:"Mochila Grande",icon:"🎒",category:"camping",price:1000,backpack:true,desc:"Aumenta o limite de inventário: leva Itens Grandes sem causar sobrepeso."},
     {key:"blanket",name:"Manta de Sobrevivência",icon:"🛡️",category:"camping",price:200,rest:{pct:25,hp:null},desc:"Pode ser usada sem barraca.\nRecupera apenas 25% da Vida/Esforço durante o sono.\nRisco narrativo: pode sofrer penalidade em clima extremo."}
   ];
+  /* PokéMart de Sylphora */
+  const SYLPHORA=[
+    {key:"sy-potion",name:"Potion",icon:"🧪",category:"consumables",price:350,usable:true,desc:"Cura 20 HP."},
+    {key:"sy-superpotion",name:"Super Potion",icon:"🧪",category:"consumables",price:700,usable:true,desc:"Cura 50 HP."},
+    {key:"sy-hyperpotion",name:"Hyper Potion",icon:"🧪",category:"consumables",price:1200,usable:true,desc:"Cura 120 HP."},
+    {key:"sy-maxpotion",name:"Max Potion",icon:"🧪",category:"consumables",price:2500,usable:true,desc:"Cura totalmente."},
+    {key:"sy-fullrestore",name:"Full Restore",icon:"💖",category:"consumables",price:3000,usable:true,desc:"Cura totalmente e remove status."},
+    {key:"sy-antidote",name:"Antidote",icon:"💉",category:"consumables",price:100,usable:true,desc:"Cura Poison."},
+    {key:"sy-paralyzeheal",name:"Paralyze Heal",icon:"⚡",category:"consumables",price:200,usable:true,desc:"Cura Paralysis."},
+    {key:"sy-awakening",name:"Awakening",icon:"⏰",category:"consumables",price:200,usable:true,desc:"Cura Sleep."},
+    {key:"sy-burnheal",name:"Burn Heal",icon:"🧯",category:"consumables",price:250,usable:true,desc:"Cura Burn."},
+    {key:"sy-iceheal",name:"Ice Heal",icon:"🧊",category:"consumables",price:250,usable:true,desc:"Cura Freeze."},
+    {key:"sy-fullheal",name:"Full Heal",icon:"✨",category:"consumables",price:600,usable:true,desc:"Cura todos os status."},
+    {key:"sy-revive",name:"Revive",icon:"💠",category:"consumables",price:1500,usable:true,desc:"Revive com 50% do HP."},
+    {key:"sy-maxrevive",name:"Max Revive",icon:"🔷",category:"consumables",price:4000,usable:true,rare:true,desc:"Revive com HP total.\nRaro, não é vendido normalmente."},
+    {key:"pokeball",name:"Poké Ball",icon:"ball:poke",category:"balls",price:200,usable:true,premier:true,desc:"Chance básica de captura.\nA cada 10 compradas aqui, ganha 1 Premier Ball."},
+    {key:"greatball",name:"Great Ball",icon:"ball:great",category:"balls",price:600,usable:true,desc:"Chance de captura melhorada."},
+    {key:"ultraball",name:"Ultra Ball",icon:"ball:ultra",category:"balls",price:1200,usable:true,desc:"Chance de captura alta."},
+    {key:"premierball",name:"Premier Ball",icon:"ball:premier",category:"balls",price:0,usable:true,bonus:true,desc:"Bônus: vem grátis a cada 10 Poké Balls compradas."},
+    {key:"sy-escaperope",name:"Escape Rope",icon:"🪢",category:"exploration",price:550,usable:true,desc:"Escapa de cavernas e masmorras."},
+    {key:"sy-repel",name:"Repel",icon:"🌫️",category:"exploration",price:350,usable:true,desc:"Evita encontros por 1 Viagem Longa."},
+    {key:"sy-superrepel",name:"Super Repel",icon:"🌫️",category:"exploration",price:500,usable:true,desc:"Evita encontros por 2 Viagens Longas."},
+    {key:"sy-maxrepel",name:"Max Repel",icon:"🌫️",category:"exploration",price:700,usable:true,desc:"Evita encontros por 3 Viagens Longas."},
+    {key:"sy-focussash",name:"Focus Sash",icon:"🎗️",category:"held",price:4000,desc:"Sobrevive a um golpe fatal com 5 HP."},
+    {key:"sy-leftovers",name:"Leftovers",icon:"🍎",category:"held",price:4500,desc:"Recupera 1d6 HP por turno."},
+    {key:"sy-choiceband",name:"Choice Band",icon:"🎀",category:"held",price:5000,desc:"+2d6 Attack, mas preso a 1 golpe."},
+    {key:"sy-choicespecs",name:"Choice Specs",icon:"👓",category:"held",price:5000,desc:"+2d6 Sp.Atk, mas preso a 1 golpe."},
+    {key:"sy-choicescarf",name:"Choice Scarf",icon:"🧣",category:"held",price:5000,desc:"+25 Speed, mas preso a 1 golpe."},
+    {key:"sy-rockyhelmet",name:"Rocky Helmet",icon:"⛑️",category:"held",price:3800,desc:"Atacante físico sofre 1d6 de dano."},
+    {key:"sy-sitrusberry",name:"Sitrus Berry",icon:"🍊",category:"held",price:2000,desc:"Recupera 25% do HP ao cair abaixo da metade."}
+  ];
+  const SHOPS=[
+    {id:"elysius",name:"Loja Inicial de Elysius",icon:"💰",items:ELYSIUS,note:"Cada treinador começa com <b>12.000₽</b> para gastar livremente.",starter:true},
+    {id:"sylphora",name:"PokéMart de Sylphora",icon:"🏬",items:SYLPHORA,note:"Cura, captura, exploração e Held Items. A cada <b>10 Poké Balls</b> compradas aqui você ganha <b>1 Premier Ball</b>."}
+  ];
+  const SHOP=Object.fromEntries(SHOPS.map(x=>[x.id,x]));
   const NO_GEAR={pct:10,hp:2};
 
   function data(){
@@ -57,6 +95,9 @@
     if(!Array.isArray(inv.items))inv.items=[];
     if(!Array.isArray(inv.shop))inv.shop=[];
     if(!Array.isArray(inv.hiddenShop))inv.hiddenShop=[];
+    inv.hiddenShop=inv.hiddenShop.map(k=>String(k).includes(":")?String(k):"elysius:"+k);
+    if(!SHOP[inv.shopId]&&!inv.shop.some(x=>x.shopId===inv.shopId))inv.shopId="elysius";
+    inv.premierProgress=int(inv.premierProgress,0,9);
     inv.items=inv.items.filter(i=>i&&typeof i==="object").map(clean);
     inv.shop=inv.shop.filter(i=>i&&typeof i==="object").map(clean);
     return {t,inv};
@@ -69,7 +110,8 @@
     i.qty=int(i.qty??1,0,9999);
     i.price=int(i.price,0,99999999);
     i.desc=String(i.desc??"").slice(0,1200);
-    i.large=!!i.large;i.usable=!!i.usable;i.backpack=!!i.backpack;
+    i.large=!!i.large;i.usable=!!i.usable;i.backpack=!!i.backpack;i.rare=!!i.rare;
+    if(i.shopId!=null)i.shopId=String(i.shopId);
     if(i.rest&&typeof i.rest==="object"){
       const pct=int(i.rest.pct,0,100);
       i.rest={pct,hp:i.rest.hp==null||i.rest.hp===""?null:int(i.rest.hp,0,999)};
@@ -77,13 +119,13 @@
     }else i.rest=null;
     return i;
   }
-  const shopList=inv=>[
-    ...ELYSIUS.filter(s=>!inv.hiddenShop.includes(s.key)).map(s=>({...s,id:"elysius:"+s.key,builtin:true})),
-    ...inv.shop
+  const shopList=(inv,shopId=inv.shopId)=>[
+    ...(SHOP[shopId]?.items||[]).map(s=>({...s,id:shopId+":"+s.key,builtin:true})).filter(s=>!inv.hiddenShop.includes(s.id)),
+    ...inv.shop.filter(s=>(s.shopId||"elysius")===shopId)
   ];
 
   function iconHtml(icon){
-    const m=/^ball:(poke|great|ultra)$/.exec(icon||"");
+    const m=/^ball:(poke|great|ultra|premier)$/.exec(icon||"");
     if(m)return `<span class="inv-ball inv-ball-${m[1]}" aria-hidden="true"></span>`;
     return `<span class="inv-emoji" aria-hidden="true">${esc(icon||"📦")}</span>`;
   }
@@ -106,6 +148,7 @@
     return {cls:"",text:"Mochila comum: itens grandes causam sobrepeso"};
   }
 
+  const holder=()=>typeof current!=="undefined"&&current?current:null;
   function itemCard(i){
     const c=CAT[i.category];
     return `<article class="inv-item${i.qty<=0?" is-empty":""}" style="--inv-c:${c.color}" data-id="${esc(i.id)}">
@@ -130,6 +173,7 @@
           <button type="button" data-inv="inc" aria-label="Aumentar">＋</button>
         </div>
         ${i.usable?`<button type="button" class="inv-btn use" data-inv="use"${i.qty<=0?" disabled":""}>${i.category==="balls"?"LANÇAR":"USAR"}</button>`:""}
+        ${i.category==="held"&&holder()?`<button type="button" class="inv-btn use" data-inv="equip"${i.qty<=0?" disabled":""} title="Equipar como item segurado de ${esc(holder().name)}">DAR A ${esc(String(holder().name||"POKÉMON").toUpperCase())}</button>`:""}
         <span class="inv-spacer"></span>
         <button type="button" class="inv-icon-btn" data-inv="edit" title="Editar item" aria-label="Editar ${esc(i.name)}">✎</button>
         <button type="button" class="inv-icon-btn danger" data-inv="del" title="Remover item" aria-label="Remover ${esc(i.name)}">🗑</button>
@@ -140,13 +184,18 @@
   function shopHtml(inv,t){
     const list=shopList(inv).filter(s=>shopCat==="all"||s.category===shopCat);
     const groups=CATS.map(c=>({c,rows:list.filter(s=>s.category===c.id)})).filter(g=>g.rows.length);
-    const empty=t.money<=0&&!inv.items.length;
+    const shop=SHOP[inv.shopId];
+    const empty=shop?.starter&&t.money<=0&&!inv.items.length;
+    const hiddenHere=inv.hiddenShop.filter(id=>id.startsWith(inv.shopId+":")).length;
     return `<div class="inv-shop">
+      <div class="inv-shop-picker" role="tablist" aria-label="Lojas">
+        ${SHOPS.map(x=>`<button type="button" role="tab" data-shoppick="${x.id}" class="${x.id===inv.shopId?"on":""}" aria-selected="${x.id===inv.shopId}">${x.icon} ${esc(x.name)}</button>`).join("")}
+      </div>
       <div class="inv-shop-head">
-        <div><small>LOJA</small><b>Loja Inicial de Elysius</b></div>
+        <div><small>LOJA</small><b>${esc(shop?.name||"Loja")}</b></div>
         <div class="inv-shop-wallet">Carteira <b>${money(t.money)}</b></div>
       </div>
-      <p class="inv-shop-note">Cada treinador começa com <b>12.000₽</b> para gastar livremente. Comprar desconta da carteira e guarda o item no inventário.</p>
+      <p class="inv-shop-note">${shop?.note||""} Comprar desconta da carteira e guarda o item no inventário.</p>
       <div class="inv-shop-tools">
         ${empty?`<button type="button" class="inv-btn" data-inv="startmoney">💰 Receber os 12.000₽ iniciais</button>`:""}
         ${lastBuy?`<button type="button" class="inv-btn ghost" data-inv="undo">↶ Desfazer: ${esc(lastBuy.name)} ×${lastBuy.qty}</button>`:""}
@@ -162,20 +211,21 @@
         ${g.rows.map(s=>{
           const owned=inv.items.find(i=>sameItem(i,s));
           const poor=s.price>t.money;
+          const progress=s.premier?`<em class="inv-tag rest">PREMIER ${inv.premierProgress}/10</em>`:"";
           return `<div class="inv-shop-row" data-shop="${esc(s.id)}">
             <div class="inv-icon sm">${iconHtml(s.icon)}</div>
             <div class="inv-shop-info">
-              <b>${esc(s.name)}${s.large?` <em class="inv-tag big">GRANDE</em>`:""}${owned&&owned.qty?` <em class="inv-tag own">TEM ×${owned.qty}</em>`:""}</b>
+              <b>${esc(s.name)}${s.large?` <em class="inv-tag big">GRANDE</em>`:""}${s.rare?` <em class="inv-tag big">RARO</em>`:""}${progress}${owned&&owned.qty?` <em class="inv-tag own">TEM ×${owned.qty}</em>`:""}</b>
               <small>${esc(s.desc).replace(/\n/g," · ")}</small>
             </div>
-            <span class="inv-price">${money(s.price)}</span>
+            <span class="inv-price">${s.bonus?"BÔNUS":money(s.price)}</span>
             <input type="number" min="1" max="99" value="1" data-shopqty aria-label="Quantidade">
-            <button type="button" class="inv-btn buy" data-inv="buy"${poor?` title="Dinheiro insuficiente"`:""}>COMPRAR</button>
+            ${s.bonus?`<span class="inv-bonus-note">grátis</span>`:`<button type="button" class="inv-btn buy" data-inv="buy"${poor?` title="Dinheiro insuficiente"`:""}>COMPRAR</button>`}
             <button type="button" class="inv-icon-btn" data-inv="give" title="Adicionar sem pagar">🎁</button>
             <button type="button" class="inv-icon-btn danger" data-inv="shopdel" title="${s.builtin?"Esconder da loja":"Remover da loja"}">✕</button>
           </div>`;}).join("")}
       </div>`).join(""):`<div class="inv-empty">Nenhum item nesta seção da loja.</div>`}
-      ${inv.hiddenShop.length?`<button type="button" class="inv-link" data-inv="restoreshop">Mostrar de novo os ${inv.hiddenShop.length} item(ns) escondidos da Loja de Elysius</button>`:""}
+      ${hiddenHere?`<button type="button" class="inv-link" data-inv="restoreshop">Mostrar de novo os ${hiddenHere} item(ns) escondidos desta loja</button>`:""}
     </div>`;
   }
 
@@ -301,6 +351,8 @@
     if(f){filter=f.dataset.filter;sfx("select");render();return;}
     const sc=event.target.closest("[data-shopcat]");
     if(sc){shopCat=sc.dataset.shopcat;sfx("select");render();return;}
+    const sp=event.target.closest("[data-shoppick]");
+    if(sp){const {inv}=data();inv.shopId=sp.dataset.shoppick;shopCat="all";sfx("page");commit();return;}
     const rp=event.target.closest("[data-restpick]");
     if(rp){restPick=rp.dataset.restpick;sfx("select");render();return;}
     const b=event.target.closest("[data-inv]");
@@ -320,10 +372,15 @@
     }
     if(act==="cancel"){editor=null;sfx("cancel");render();return;}
     if(act==="startmoney"){t.money=12000;syncMoney();refreshCard();sfx("page");toast("💰 12.000₽ na carteira");commit();return;}
-    if(act==="restoreshop"){inv.hiddenShop=[];sfx("select");commit();return;}
+    if(act==="restoreshop"){inv.hiddenShop=inv.hiddenShop.filter(id=>!id.startsWith(inv.shopId+":"));sfx("select");commit();return;}
     if(act==="undo"&&lastBuy){
       const it=inv.items.find(i=>i.id===lastBuy.id);
       if(it){it.qty=Math.max(0,it.qty-lastBuy.qty);if(!it.qty&&lastBuy.created)inv.items=inv.items.filter(i=>i!==it);}
+      if(lastBuy.premier){
+        const pb=inv.items.find(i=>i.key==="premierball");
+        if(pb){pb.qty=Math.max(0,pb.qty-lastBuy.premier.bonus);if(!pb.qty&&lastBuy.premier.created)inv.items=inv.items.filter(i=>i!==pb);}
+        inv.premierProgress=lastBuy.premier.before;
+      }
       t.money=int(t.money+lastBuy.cost,0,999999999);
       toast(`↶ Compra desfeita: +${money(lastBuy.cost)}`);
       lastBuy=null;syncMoney();refreshCard();sfx("cancel");commit();return;
@@ -336,12 +393,24 @@
       const it=addToInventory(shopItem,qty);
       t.money=int(t.money-cost,0,999999999);
       lastBuy=act==="buy"?{id:it.id,qty,cost,name:shopItem.name,created:!existed}:null;
+      let bonusText="";
+      if(act==="buy"&&shopItem.premier){
+        const before=inv.premierProgress,total=before+qty,bonus=Math.floor(total/10);
+        inv.premierProgress=total%10;
+        const premierSrc=(SHOP[inv.shopId]?.items||[]).find(x=>x.key==="premierball");
+        if(bonus&&premierSrc){
+          const hadPremier=inv.items.some(i=>i.key==="premierball");
+          addToInventory(premierSrc,bonus);
+          bonusText=` + ${bonus} Premier Ball${bonus>1?"s":""} grátis`;
+          lastBuy.premier={bonus,before,created:!hadPremier};
+        }else lastBuy.premier={bonus:0,before,created:false};
+      }
       syncMoney();refreshCard();sfx("page");
-      toast(act==="buy"?`🛒 ${shopItem.name} ×${qty} por ${money(cost)}`:`🎁 ${shopItem.name} ×${qty} adicionado`);
+      toast(act==="buy"?`🛒 ${shopItem.name} ×${qty} por ${money(cost)}${bonusText}`:`🎁 ${shopItem.name} ×${qty} adicionado`);
       commit();return;
     }
     if(shopItem&&act==="shopdel"){
-      if(shopItem.builtin)inv.hiddenShop.push(shopItem.key);
+      if(shopItem.builtin)inv.hiddenShop.push(shopItem.id);
       else inv.shop=inv.shop.filter(s=>s.id!==shopItem.id);
       sfx("cancel");commit();return;
     }
@@ -356,6 +425,28 @@
         setTimeout(commit,260);
       }else commit();
       return;
+    }
+    if(act==="equip"&&item.qty>0){
+      const p=holder();
+      if(!p)return;
+      const previous=p.heldItem||"";
+      const official=typeof officialItemByQuery==="function"?officialItemByQuery(item.name):null;
+      if(official&&typeof registerOfficialItem==="function")registerOfficialItem(official.name,{equip:true});
+      else{
+        p.heldItem=item.name;
+        if(!p.itemText)p.itemText=item.desc;
+        if(typeof syncHeldItemFields==="function")syncHeldItemFields(p);
+        if(typeof renderCombatPage==="function")renderCombatPage();
+      }
+      item.qty-=1;
+      if(previous&&previous.toLowerCase()!==item.name.toLowerCase()){
+        const back=inv.items.find(i=>i.name.toLowerCase()===previous.toLowerCase());
+        if(back)back.qty=int(back.qty+1,0,9999);
+      }
+      sfx("page");
+      toast(`💎 ${p.name||"Pokémon"} agora segura ${item.name}${previous&&previous.toLowerCase()!==item.name.toLowerCase()?` · ${previous} ${inv.items.some(i=>i.name.toLowerCase()===previous.toLowerCase())?"voltou ao inventário":"foi retirado"}`:""}`);
+      if(typeof debouncedSave==="function")debouncedSave();
+      commit();return;
     }
     if(act==="edit"){editor={mode:"edit",target:"items",id:item.id,item:JSON.parse(JSON.stringify(item))};sfx("page");render();wrap.querySelector(".inv-editor")?.scrollIntoView({block:"nearest",behavior:"smooth"});return;}
     if(act==="del"){
@@ -400,7 +491,7 @@
       if(item)Object.assign(item,fields),clean(item);
       toast(`✎ ${fields.name} salvo`);
     }else if(editor.target==="shop"){
-      inv.shop.push(clean({...fields,id:newId()}));
+      inv.shop.push(clean({...fields,id:newId(),shopId:inv.shopId}));
       shopOpen=true;toast(`🛒 ${fields.name} na loja`);
     }else{
       inv.items.push(clean({...fields,id:newId()}));
@@ -420,6 +511,6 @@
     const original=window.renderTrainerPage;
     window.renderTrainerPage=function(){const r=original.apply(this,arguments);render();return r;};
   }
-  window.hhTrainerInventory={render,catalog:ELYSIUS,data};
+  window.hhTrainerInventory={render,shops:SHOPS,data};
   render();
 })();

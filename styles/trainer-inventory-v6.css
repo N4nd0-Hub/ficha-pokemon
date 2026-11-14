@@ -81,6 +81,8 @@ html[data-cl-scheme="dark"] .inv-weight.warn{color:#ffb08a}
 .inv-ball::after{content:"";position:absolute;left:50%;top:50%;width:34%;height:34%;transform:translate(-50%,-50%);border:2px solid #181a24;border-radius:50%;background:#fff}
 .inv-ball-poke{--ball-top:#e8393e}
 .inv-ball-great{--ball-top:#2f74d4;background:linear-gradient(180deg,#2f74d4 0 20%,#e8393e 20% 30%,#2f74d4 30% 45%,#181a24 45% 56%,#f4f4f4 56%)}
+.inv-ball-premier{--ball-top:#f4f4f4;background:linear-gradient(180deg,#f4f4f4 0 45%,#e8393e 45% 56%,#f4f4f4 56%)}
+.inv-ball-premier::after{border-color:#e8393e}
 .inv-ball-ultra{--ball-top:#2b2b33;background:linear-gradient(90deg,transparent 0 20%,#f2c230 20% 34%,transparent 34% 66%,#f2c230 66% 80%,transparent 80%) top/100% 45% no-repeat,linear-gradient(180deg,#2b2b33 0 45%,#181a24 45% 56%,#f4f4f4 56%)}
 
 /* ---------- Cartões de item ---------- */
@@ -178,3 +180,12 @@ html[data-cl-scheme="dark"] .inv-weight.warn{color:#ffb08a}
   .inv-editor-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .inv-editor-grid label.wide,.inv-editor-grid label.check{grid-column:1/-1}
 }
+
+/* Seletor de lojas */
+.inv-shop-picker{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px}
+.inv-shop-picker button{padding:8px 14px;border:2px solid var(--cl-ink);border-radius:10px 10px 4px 4px;background:var(--cl-card);color:var(--cl-text);font:700 11px var(--cl-pixel);letter-spacing:.04em;cursor:pointer;box-shadow:0 3px 0 var(--cl-ink);transition:transform .1s}
+.inv-shop-picker button:hover{transform:translateY(-1px)}
+.inv-shop-picker button.on{background:var(--cl-scan),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner) 80%,#fff),var(--cl-banner));color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35)}
+.inv-bonus-note{font:700 10px var(--cl-pixel);color:#1f7a4c;padding:0 6px}
+html[data-cl-scheme="dark"] .inv-bonus-note{color:#7ee0ad}
+@media (max-width:720px){.inv-shop-picker button{flex:1 1 auto}}
