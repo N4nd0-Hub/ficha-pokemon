@@ -177,3 +177,10 @@ html body #page1 .pokemon-happiness-box[data-hv6] .happiness-number{width:72px!i
   html body #page1 .general-happiness-strip[data-tier] .general-happiness-label>span:last-child{display:block!important}
   html body #page1 .general-happiness-strip[data-tier] .general-happiness-label>span:last-child>*{display:block!important}
 }
+
+/* Camada do coração/marcas por cima da barra */
+.hv-track{position:relative;margin-top:10px;isolation:isolate}
+html body #page1 .pokemon-happiness-box[data-hv6] .hv-track>.happiness-bar.hv-bar{margin-top:0!important;position:relative!important;z-index:0}
+.hv-overlay{position:absolute;top:0;bottom:0;left:5px;right:5px;pointer-events:none;z-index:5}
+.hv-overlay .hv-ticks{inset:-4px 0}
+.hv-overlay .hv-marker{left:clamp(0px,var(--hv-pct,0%),100%);z-index:6}
