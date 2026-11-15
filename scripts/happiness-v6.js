@@ -72,10 +72,18 @@
   const bar=box.querySelector(".happiness-bar");
   if(bar&&!bar.querySelector(".hv-ticks")){
     bar.classList.add("hv-bar");
-    bar.insertAdjacentHTML("beforeend",`
-      <div class="hv-ticks">${TIERS.slice(1).map(t=>`<i style="left:${t.min/255*100}%"></i>`).join("")}</div>
-      <div class="hv-marker">${heartSvg("#ff4f7e","#ffb3c7","#c42a57","")}</div>`);
-    bar.insertAdjacentHTML("afterend",`<div class="hv-scale">${TIERS.map(t=>{
+    /* Marcas e coração ficam numa camada própria por cima da barra,
+       para nenhum tema esconder (overflow/z-index da barra). */
+    const track=document.createElement("div");
+    track.className="hv-track";
+    bar.before(track);
+    track.appendChild(bar);
+    track.insertAdjacentHTML("beforeend",`
+      <div class="hv-overlay">
+        <div class="hv-ticks">${TIERS.slice(1).map(t=>`<i style="left:${t.min/255*100}%"></i>`).join("")}</div>
+        <div class="hv-marker">${heartSvg("#ff4f7e","#ffb3c7","#c42a57","")}</div>
+      </div>`);
+    track.insertAdjacentHTML("afterend",`<div class="hv-scale">${TIERS.map(t=>{
       const w=(Math.min(t.max+1,256)-t.min)/256*100;
       return `<span data-tier="${t.id}" style="flex-basis:${w}%;--hv-c:${t.color}">${t.label}</span>`;
     }).join("")}</div>`);
