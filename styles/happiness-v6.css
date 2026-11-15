@@ -1,0 +1,179 @@
+/* ============================================================
+   V6 — Barra de Felicidade (Vínculo do Pokémon)
+   ============================================================ */
+html body #page1 .general-happiness-strip[data-tier]{
+  --hv-c:#f27aa5;
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 0% 50%,color-mix(in srgb,var(--hv-c) 22%,transparent),transparent 55%),
+    var(--cl-card,var(--panel))!important;
+  transition:background .4s ease;
+}
+/* Corações flutuando no fundo quando o vínculo é alto */
+html body #page1 .general-happiness-strip[data-tier]::before{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:
+    radial-gradient(circle at 12% 120%,color-mix(in srgb,var(--hv-c) 55%,transparent) 0 3px,transparent 4px),
+    radial-gradient(circle at 34% 130%,color-mix(in srgb,var(--hv-c) 45%,transparent) 0 2px,transparent 3px),
+    radial-gradient(circle at 58% 125%,color-mix(in srgb,var(--hv-c) 50%,transparent) 0 3px,transparent 4px),
+    radial-gradient(circle at 82% 135%,color-mix(in srgb,var(--hv-c) 45%,transparent) 0 2px,transparent 3px);
+}
+html body #page1 .general-happiness-strip:is([data-tier="t4"],[data-tier="t5"])::before{opacity:1;animation:hvFloat 5s linear infinite}
+
+/* ---------- Coração grande ---------- */
+html body #page1 .general-happiness-strip .general-happiness-symbol.hv-heart{
+  position:relative!important;
+  display:grid!important;place-items:center!important;
+  width:52px!important;height:52px!important;min-width:52px!important;
+  padding:6px!important;
+  border:2px solid var(--cl-ink,#181a24)!important;
+  border-radius:12px!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.12),transparent 50%),
+    color-mix(in srgb,var(--hv-c) 16%,var(--cl-paper2,#1d2433))!important;
+  box-shadow:0 3px 0 var(--cl-ink,#181a24),inset 0 0 0 2px rgba(255,255,255,.06)!important;
+  font-size:0!important;color:transparent!important;
+}
+.hv-heart svg{width:40px;height:36px;display:block;image-rendering:pixelated}
+.hv-heart-fill{
+  position:absolute;inset:6px;display:grid;place-items:center;
+  clip-path:inset(calc(100% - var(--hv-pct,0%)) 0 0 0);
+  transition:clip-path .45s cubic-bezier(.3,1.4,.5,1);
+  animation:hvBeat var(--hv-beat,1.2s) ease-in-out infinite;
+}
+.general-happiness-strip[data-tier="t0"] .hv-heart-fill{animation:none}
+
+/* ---------- Título e frase ---------- */
+html body #page1 .general-happiness-strip .general-happiness-label small{color:var(--hv-c)!important;transition:color .3s}
+.hv-line{display:block;margin-top:4px;font-style:normal;font-size:12px;line-height:1.3;color:var(--cl-muted,#9aa3b5);max-width:220px}
+
+/* ---------- Cabeçalho da barra ---------- */
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-head{flex-wrap:wrap!important;gap:8px!important}
+.hv-tier{
+  display:inline-flex;align-items:center;padding:3px 10px;margin-right:auto;
+  border:2px solid var(--cl-ink,#181a24);border-radius:999px;
+  background:var(--hv-c);color:#fff;
+  font:700 10px var(--cl-pixel,var(--pixel-font));letter-spacing:.08em;text-transform:uppercase;
+  text-shadow:1px 1px 0 rgba(0,0,0,.4);box-shadow:0 2px 0 var(--cl-ink,#181a24);
+  transition:background .3s;
+}
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-number-wrap{gap:5px!important}
+.hv-step{
+  min-width:34px;height:30px;padding:0 6px;
+  border:2px solid var(--cl-ink,#181a24);border-radius:8px;
+  background:var(--cl-card,#232a3a);color:var(--cl-text,#fff);
+  font:700 11px var(--cl-pixel,var(--pixel-font));cursor:pointer;
+  box-shadow:0 3px 0 var(--cl-ink,#181a24);transition:transform .08s,box-shadow .08s,background .1s;
+}
+.hv-step[data-hv-step^="-"]{color:#8fb2ff}
+.hv-step:not([data-hv-step^="-"]){color:#ff7aa2}
+.hv-step:hover:not(:disabled){background:color-mix(in srgb,var(--hv-c) 20%,var(--cl-card,#232a3a));transform:translateY(-1px)}
+.hv-step:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--cl-ink,#181a24)}
+.hv-step:disabled{opacity:.35;cursor:not-allowed}
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-number{
+  width:64px!important;min-width:64px!important;height:30px!important;min-height:30px!important;
+  border:2px solid var(--cl-ink,#181a24)!important;border-radius:8px!important;
+  background:var(--cl-inset,#0f1420)!important;color:#fff!important;
+  font:700 14px var(--cl-pixel,var(--pixel-font))!important;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.35)!important;
+}
+
+/* ---------- Barra ---------- */
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-bar.hv-bar{
+  position:relative!important;
+  height:22px!important;margin-top:10px!important;padding:3px!important;
+  overflow:visible!important;
+  border:2px solid var(--cl-ink,#181a24)!important;border-radius:8px!important;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 calc(100%/51 - 1px),rgba(0,0,0,.35) calc(100%/51 - 1px) calc(100%/51)),
+    linear-gradient(180deg,#2a3040,#1a1f2b)!important;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.4),0 3px 0 var(--cl-ink,#181a24)!important;
+}
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-bar.hv-bar::after{display:none!important}
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-fill{
+  position:relative!important;height:100%!important;border-radius:4px!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.45) 0 30%,transparent 30% 70%,rgba(0,0,0,.18) 70%),
+    linear-gradient(90deg,#8fb2ff 0%,#f6a6c1 40%,#f27aa5 65%,#ec4f86 85%,#ff3d6e 100%)!important;
+  box-shadow:0 0 12px color-mix(in srgb,var(--hv-c) 60%,transparent)!important;
+  transition:width .45s cubic-bezier(.3,1.3,.5,1)!important;
+  overflow:hidden!important;
+}
+/* Blocos e brilho correndo */
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-fill::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent 0 9px,rgba(0,0,0,.18) 9px 10px);
+}
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-fill::after{
+  content:"";position:absolute;top:0;bottom:0;width:40px;left:-50px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  animation:hvShine 3.2s ease-in-out infinite;
+}
+.pokemon-happiness-box[data-tier="t0"] .happiness-fill::after{animation:none!important;display:none}
+.hv-ticks{position:absolute;inset:-4px 3px;pointer-events:none}
+.hv-ticks i{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--cl-ink,#181a24);opacity:.7}
+.hv-ticks i::after{content:"";position:absolute;left:-2px;top:-3px;width:6px;height:6px;background:var(--cl-ink,#181a24);transform:rotate(45deg)}
+.hv-marker{
+  position:absolute;top:50%;
+  left:clamp(3px, calc(var(--hv-pct,0%) - 0px), calc(100% - 3px));
+  width:24px;height:22px;margin:-12px 0 0 -12px;pointer-events:none;
+  transition:left .45s cubic-bezier(.3,1.3,.5,1);
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.45));
+  animation:hvBob 1.4s ease-in-out infinite;
+}
+.hv-marker svg{width:24px;height:22px;display:block;image-rendering:pixelated}
+
+/* ---------- Escala de vínculo ---------- */
+.hv-scale{display:flex;margin-top:8px;gap:0}
+.hv-scale span{
+  flex:0 0 auto;min-width:0;padding:3px 2px 0;
+  border-top:3px solid color-mix(in srgb,var(--hv-c) 45%,transparent);
+  font:700 9px var(--cl-pixel,var(--pixel-font));letter-spacing:.02em;text-transform:uppercase;text-align:center;
+  color:var(--cl-muted,#8a93a6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:color .3s,border-color .3s;
+}
+.hv-scale span[data-tier="t5"]{flex-basis:auto!important;min-width:0;overflow:visible;text-align:right;padding-left:4px;border-top-color:transparent}
+.hv-scale span[data-tier="t5"]::before{content:"♥ ";color:var(--hv-c)}
+.hv-scale span.on{color:var(--hv-c);border-top-color:var(--hv-c)}
+.hv-scale span[data-tier="t5"].on{border-top-color:transparent}
+
+/* ---------- Animações ---------- */
+.pokemon-happiness-box.hv-up .hv-marker{animation:hvPop .5s ease}
+.general-happiness-strip.hv-up .hv-heart{animation:hvPop .5s ease}
+.pokemon-happiness-box.hv-down .hv-marker{animation:hvShake .4s ease}
+.general-happiness-strip.hv-down .hv-heart{animation:hvShake .4s ease}
+@keyframes hvBeat{0%,100%{transform:scale(1)}12%{transform:scale(1.14)}24%{transform:scale(.98)}36%{transform:scale(1.08)}}
+@keyframes hvBob{50%{transform:translateY(-2px)}}
+@keyframes hvPop{40%{transform:scale(1.35) translateY(-4px)}}
+@keyframes hvShake{25%{transform:translateX(-3px)}50%{transform:translateX(3px)}75%{transform:translateX(-2px)}}
+@keyframes hvShine{0%,55%{left:-50px}100%{left:calc(100% + 10px)}}
+@keyframes hvFloat{from{background-position:0 0,0 0,0 0,0 0}to{background-position:0 -90px,0 -110px,0 -80px,0 -120px}}
+@media (prefers-reduced-motion:reduce){
+  .hv-heart-fill,.hv-marker,.pokemon-happiness-box[data-hv6] .happiness-fill::after,.general-happiness-strip::before{animation:none!important}
+}
+
+/* Tema claro */
+html[data-cl-scheme="light"] body #page1 .pokemon-happiness-box[data-hv6] .happiness-bar.hv-bar{
+  background:
+    repeating-linear-gradient(90deg,transparent 0 calc(100%/51 - 1px),rgba(0,0,0,.12) calc(100%/51 - 1px) calc(100%/51)),
+    linear-gradient(180deg,#d9dce5,#c3c8d4)!important;
+}
+html[data-cl-scheme="light"] body #page1 .pokemon-happiness-box[data-hv6] .happiness-number{background:#fff!important;color:#23262e!important}
+
+@media (max-width:720px){
+  .hv-line{max-width:none}
+  .hv-scale span{font-size:7px}
+  .hv-step{min-width:30px;padding:0 4px}
+}
+html body #page1 .pokemon-happiness-box[data-hv6] #happinessValue[hidden]{display:none!important}
+html body #page1 .pokemon-happiness-box[data-hv6] .happiness-number{width:72px!important;min-width:72px!important;font-size:13px!important;padding:2px 4px!important}
+@media (max-width:720px){
+  .hv-scale span:not(.on){color:transparent}
+  .hv-scale span.on{overflow:visible;position:relative;z-index:1}
+}
+@media (max-width:720px){
+  html body #page1 .general-happiness-strip[data-tier] .general-happiness-label{display:flex!important;flex-direction:row!important;align-items:center!important;gap:12px!important}
+  html body #page1 .general-happiness-strip[data-tier] .general-happiness-label>span:last-child{display:block!important}
+  html body #page1 .general-happiness-strip[data-tier] .general-happiness-label>span:last-child>*{display:block!important}
+}
