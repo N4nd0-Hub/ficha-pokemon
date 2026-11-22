@@ -22,8 +22,12 @@
   const int=(v,min=0,max=999999)=>Math.max(min,Math.min(max,Math.trunc(Number(v)||0)));
 
   /* ---------- Ícones em pixel art (16×16) ---------- */
-  const PX_PAL={"o": "#181a24", "w": "#ffffff", "g": "#d4d8e2", "s": "#8a90a0", "r": "#e0393e", "R": "#a0242a", "p": "#ff9a9a", "b": "#3d7be0", "B": "#24468f", "c": "#9fd0ff", "y": "#f2c230", "Y": "#b88a10", "e": "#fff1a8", "G": "#2a9a63", "h": "#6fdc9c", "H": "#1a6a43", "n": "#b07a40", "N": "#6a4420", "t": "#e8b878", "v": "#8a5ad0", "V": "#5a3496", "l": "#c9a6ff", "k": "#2fb0c0", "K": "#1a7080", "q": "#a8f0f8", "f": "#ff8a2a", "F": "#c04a10"};
-  const PX={"bag":["......oooo......",".....o....o.....",".....o....o.....","...oooooooooo...","..orrrrrrrrrRo..",".orppprrrrrrRRo.",".orprrrrrrrrrRo.",".ooooooyyooooRo.",".orrrroyeyorrRo.",".orrrrooyoorrRo.",".orrrrrrrrrrrRo.",".oRrrrrrrrrrRRo.",".oRRRRRRRRRRRRo.",".onoooooooooono.","..o..........o..","................"],
+  const PX_PAL={"o": "#181a24", "w": "#ffffff", "g": "#d4d8e2", "s": "#8a90a0", "r": "#e0393e", "R": "#a0242a", "p": "#ff9a9a", "b": "#3d7be0", "B": "#24468f", "c": "#9fd0ff", "y": "#f2c230", "Y": "#b88a10", "e": "#fff1a8", "G": "#2a9a63", "h": "#6fdc9c", "H": "#1a6a43", "n": "#b07a40", "N": "#6a4420", "t": "#e8b878", "v": "#8a5ad0", "V": "#5a3496", "l": "#c9a6ff", "k": "#2fb0c0", "K": "#1a7080", "q": "#a8f0f8", "f": "#ff8a2a", "F": "#c04a10", "L": "#b8bcc8", "S": "#5a6070", "D": "#3a3f4c", "x": "#2a1f3c", "X": "#120c1e", "Q": "#c9a6ff"};
+  const PX={"rock":["................","................","......oooo......","....ooLLsSoo....","...oLLLssSSSo...","..oLLssssSSSDo..","..oLsssssSSSDo..",".oLsssssSSSSDDo.",".oLssssSSSSSDDo.",".osssssSSSSDDDo.",".oSssSSSSSDDDDo.","..oSSSSSDDDDDo..","...ooDDDDDDoo...",".....oooooo.....","................","................"],
+    "shard":["................","........oo......",".......oQxo.....","......oQxxXo....",".....oQxxxXo....","....oQvxxxXXo...","...oQvxxxxXXo...","...oQxxxxXXXo...","..oQvxxxxXXXXo..","..oQxxxxXXXXXo..","..oQxxxxXXXXo...","...oxxxXXXXo....","....oxXXXXo.....",".....oXXoo......","......oo........","................"],
+    "box":["................","................","...oooooooooo...","..ottttttttttno.",".otttttttttttno.","oooooooooooooonn","onnnnnnnnnnnnNNo","onnnnnoooonnnNNo","onnnnnottonnnNNo","onnnnnoooonnnNNo","onnnnnnnnnnnnNNo","onnnnnnnnnnnnNNo","oNNNNNNNNNNNNNNo","oooooooooooooooo","................","................"],
+    "darkrock":["................","................","......oooo......","....oossDxoo....","...osssDDxxxo...","..ossDDDDxxxXo..","..osDDDDDxxxXo..",".osDDDDDxxxxXXo.",".osDDDDxxxxxXXo.",".oDDDDDxxxxXXXo.",".oxDDxxxxxXXXXo.","..oxxxxxXXXXXo..","...ooXXXXXXoo...",".....oooooo.....","................","................"],
+    "bag":["......oooo......",".....o....o.....",".....o....o.....","...oooooooooo...","..orrrrrrrrrRo..",".orppprrrrrrRRo.",".orprrrrrrrrrRo.",".ooooooyyooooRo.",".orrrroyeyorrRo.",".orrrrooyoorrRo.",".orrrrrrrrrrrRo.",".oRrrrrrrrrrRRo.",".oRRRRRRRRRRRRo.",".onoooooooooono.","..o..........o..","................"],
     "ball":["................",".....oooooo.....","...oorrrrrroo...","..orpprrrrrrRo..",".orppprrrrrrRRo.",".orprrrrrrrrrRo.","orrrrrooorrrrRRo","oooooowwwoooooRo","ogggggowooggggso","owwwwwooowwwwwso",".owwwwwwwwwwwso.",".owwwwwwwwwwsso.","..owwwwwwwwsso..","...oosssssoo....",".....oooooo.....","................"],
     "potion":["................","......oooo......",".....osgggo.....","......oooo......","......owwo......","......owwo......",".....oowwoo.....","....ovvvvvvo....","...ovllvvvvVo...","...ovlvvvvvVo...","...owwwwwwwwo...","...owsswssswo...","...owwwwwwwwo...","...ovvvvvvvVo...","....oVVVVVVo....",".....oooooo....."],
     "shoe":["................","................","....oooo........","...obbbbo.......","...obcbbo.......","...obbbboooo....","...obbbbwbwbo...","...obcbbbbbbbo..","..obbbbbbbbbbbo.","..obbbbbbbbbbbbo","..oBBBBBBBBBBBBo","..owwwwwwwwwwwwo","..orrrrrrrrrrrro","...oooooooooooo.","................","................"],
@@ -171,6 +175,8 @@
     if(i.shopId!=null)i.shopId=String(i.shopId);
     const oldEmoji={runningshoes:"👟",tent:"🛌",tentplus:"⛺",bigbag:"🎒"},newPx={runningshoes:"px:shoe",tent:"px:tent",tentplus:"px:tent",bigbag:"px:bag"};
     if(i.key&&oldEmoji[i.key]===i.icon)i.icon=newPx[i.key];
+    if(i.icon==="🪨")i.icon=/dark|sombr|escur/i.test(i.name)?"px:darkrock":/obsidian/i.test(i.name)?"px:shard":"px:rock";
+    if(i.icon==="📦")i.icon="px:box";
     if(i.sprite!=null&&i.sprite!==false)i.sprite=String(i.sprite).toLowerCase().replace(/[^a-z0-9-]+/g,"-").slice(0,60);
     if(i.rest&&typeof i.rest==="object"){
       const pct=int(i.rest.pct,0,100);
@@ -184,6 +190,7 @@
     ...inv.shop.filter(s=>(s.shopId||"elysius")===shopId)
   ];
 
+  const PICKER_ICONS=["box","rock","darkrock","shard","gem","key","potion","ball","compass","tent","shoe","bag","coin"];
   const pxOr=(icon,cls)=>/^px:/.test(icon||"")?px(icon.slice(3),cls):esc(icon||"");
   function iconHtml(icon,item){
     const slug=item?spriteSlug(item):"";
@@ -191,7 +198,8 @@
     if(/^px:/.test(icon||""))return px(icon.slice(3),"inv-px inv-px-item");
     const m=/^ball:(poke|great|ultra|premier)$/.exec(icon||"");
     if(m)return `<span class="inv-ball inv-ball-${m[1]}" aria-hidden="true"></span>`;
-    return `<span class="inv-emoji" aria-hidden="true">${esc(icon||"📦")}</span>`;
+    if(!icon)return px("box","inv-px inv-px-item");
+    return `<span class="inv-emoji" aria-hidden="true">${esc(icon)}</span>`;
   }
 
   /* ---------- Estado de tela ---------- */
@@ -229,7 +237,7 @@
         </div>
         <span class="inv-qty-badge">×${i.qty}</span>
       </div>
-      ${i.desc?`<p class="inv-desc">${esc(i.desc).replace(/\n/g,"<br>")}</p>`:""}
+      ${i.desc?`<p class="inv-desc">${esc(i.desc).replace(/\n/g,"<br>")}</p>`:`<p class="inv-desc empty">Sem descrição. Use ✎ para anotar o que este item faz.</p>`}
       <div class="inv-item-actions">
         <div class="inv-stepper">
           <button type="button" data-inv="dec" aria-label="Diminuir">−</button>
@@ -321,7 +329,12 @@
       <div class="inv-editor-head"><b>${editor.mode==="edit"?"Editar item":editor.target==="shop"?"Novo item da loja":"Novo item personalizado"}</b></div>
       <div class="inv-editor-grid">
         <label class="wide"><span>Nome</span><input name="name" required maxlength="80" value="${esc(e.name)}" placeholder="Ex.: Lanterna, Corda, Mapa de Elysius"></label>
-        <label><span>Ícone (emoji)</span><input name="icon" maxlength="16" value="${esc(e.icon)}" placeholder="📦"></label>
+        <label class="wide"><span>Ícone</span>
+          <span class="inv-icon-picker">
+            ${PICKER_ICONS.map(n=>`<button type="button" data-pick-icon="px:${n}" class="${e.icon==="px:"+n?"on":""}" title="${n}">${px(n)}</button>`).join("")}
+            <input name="icon" maxlength="16" value="${esc(e.icon)}" placeholder="ou emoji" aria-label="Ícone (px:nome ou emoji)">
+          </span>
+        </label>
         <label><span>Pixel art (nome do item em inglês)</span><input name="sprite" maxlength="60" value="${esc(e.sprite||"")}" placeholder="ex.: rare-candy"></label>
         <label><span>Categoria</span><select name="category">${CATS.map(c=>`<option value="${c.id}"${c.id===e.category?" selected":""}>${c.label}</option>`).join("")}</select></label>
         ${editor.target==="shop"?"":`<label><span>Quantidade</span><input name="qty" type="number" min="0" max="9999" value="${e.qty}"></label>`}
@@ -416,6 +429,12 @@
     if(f){filter=f.dataset.filter;sfx("select");render();return;}
     const sc=event.target.closest("[data-shopcat]");
     if(sc){shopCat=sc.dataset.shopcat;sfx("select");render();return;}
+    const pick=event.target.closest("[data-pick-icon]");
+    if(pick){
+      const form=pick.closest("[data-inv-form]");
+      if(form){form.elements.icon.value=pick.dataset.pickIcon;form.querySelectorAll("[data-pick-icon]").forEach(b=>b.classList.toggle("on",b===pick));sfx("select");}
+      return;
+    }
     const sp=event.target.closest("[data-shoppick]");
     if(sp){const {inv}=data();inv.shopId=sp.dataset.shoppick;shopCat="all";sfx("page");commit();return;}
     const rp=event.target.closest("[data-restpick]");
@@ -432,7 +451,7 @@
     if(act==="shop"){shopOpen=!shopOpen;sfx(shopOpen?"page":"cancel");render();return;}
     if(act==="rest"){restOpen=!restOpen;sfx(restOpen?"page":"cancel");render();return;}
     if(act==="new"||act==="newshop"){
-      editor={mode:"new",target:act==="newshop"?"shop":"items",item:clean({name:"",icon:"📦",category:filter!=="all"?filter:"other",qty:1,price:0,desc:""})};
+      editor={mode:"new",target:act==="newshop"?"shop":"items",item:clean({name:"",icon:"px:box",category:filter!=="all"?filter:"other",qty:1,price:0,desc:""})};
       editor.item.name="";sfx("page");render();wrap.querySelector(".inv-editor input[name=name]")?.focus();return;
     }
     if(act==="cancel"){editor=null;sfx("cancel");render();return;}
@@ -542,7 +561,7 @@
     const restPct=v("restPct"),restHp=v("restHp");
     const fields={
       name:String(v("name")||"").trim()||"Item",
-      icon:String(v("icon")||"").trim()||"📦",
+      icon:String(v("icon")||"").trim()||"px:box",
       sprite:String(v("sprite")||"").trim()||null,
       category:v("category"),
       qty:editor.target==="shop"?1:int(v("qty"),0,9999),

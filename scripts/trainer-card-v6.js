@@ -63,7 +63,8 @@
         <div class="tc-face tc-front"></div>
         <div class="tc-face tc-back"></div>
       </div>
-    </div>`;
+    </div>
+    <section class="tc-dossier" aria-label="Dossiê do treinador"></section>`;
   page.prepend(wrap);
   page.classList.add("tc-active");
 
@@ -135,6 +136,85 @@
       <footer class="tc-hint">◀ Clique para voltar à frente</footer>`;
   }
 
+  /* ---------- Dossiê: atributos, perícias e habilidades em detalhe ---------- */
+  const GRADE_INFO=typeof TRAINER_SKILL_GRADES!=="undefined"?TRAINER_SKILL_GRADES:{};
+  const GRADE_ORDER=["S","A","B","C","D","E"];
+  const pct=n=>`${Math.round(n*100)}%`;
+  function skillOdds(target,rule){
+    const p=Math.max(0,Math.min(100,target))/100;
+    if(rule.worst)return {label:"Chance de passar",value:pct(Math.pow(p,rule.dice))};
+    return {label:"Chance de ≥1 sucesso",value:pct(1-Math.pow(1-p,rule.dice))};
+  }
+  function costOf(text){
+    const m=String(text||"").match(/custo[^0-9−-]*[−-]?\s*(\d+)\s*de\s*(vida|corpo|mente|presen[çc]a|esp[ií]rito)/i);
+    return m?`${m[1]} de ${m[2][0].toUpperCase()}${m[2].slice(1).toLowerCase()}`:"";
+  }
+  function dossier(t){
+    const attrVal=k=>Math.max(0,Math.trunc(Number(t.attributes?.[k]||0)));
+    const attrCards=ATTRS.map(a=>{
+      const v=attrVal(a.key);
+      return `<article class="tcd-attr" style="--c:${ATTR_COLOR[a.key]||"#888"}">
+        <header><span class="tcd-attr-icon">${esc(a.icon||"")}</span><b>${esc(a.label)}</b><strong>${v}</strong></header>
+        <div class="tcd-meter"><i style="width:${Math.min(100,v)}%"></i></div>
+        <footer><span>${Math.floor(v/10)} ponto${Math.floor(v/10)===1?"":"s"}</span><span>Crítico ≤ ${Math.floor(v/4)}</span></footer>
+        <p>${esc(a.description||"")}</p>
+      </article>`;
+    }).join("");
+
+    const skills=[...(t.skills||[])].sort((a,b)=>GRADE_ORDER.indexOf(a.grade)-GRADE_ORDER.indexOf(b.grade));
+    const skillGroups=ATTRS.map(a=>({a,rows:skills.filter(s=>s.attribute===a.key)})).filter(g=>g.rows.length);
+    const skillHtml=skillGroups.length?skillGroups.map(({a,rows})=>{
+      const target=attrVal(a.key);
+      return `<div class="tcd-skill-group" style="--c:${ATTR_COLOR[a.key]||"#888"}">
+        <h5>${esc(a.icon||"")} ${esc(a.label)} <small>alvo ${target}</small></h5>
+        ${rows.map(s=>{
+          const rule=GRADE_INFO[s.grade]||{dice:1};
+          const odds=skillOdds(target,rule);
+          return `<div class="tcd-skill">
+            <span class="tc-grade g-${esc(s.grade)}">${esc(s.grade)}</span>
+            <div class="tcd-skill-main">
+              <b>${esc(s.name)} <span class="tcd-odds" title="${esc(odds.label)}">${odds.value}</span></b>
+              <small>${rule.dice}d100${rule.worst?" (fica o pior)":""} · sucesso ≤ ${target} · crítico ≤ ${Math.floor(target/4)}</small>
+              ${s.note?`<em>${esc(s.note)}</em>`:""}
+            </div>
+            <button type="button" class="tcd-roll" data-tcd-roll="${esc(s.id)}" title="Rolar ${esc(s.name)}">🎲</button>
+          </div>`;
+        }).join("")}
+      </div>`;
+    }).join(""):'<p class="tcd-empty">Nenhuma perícia. Use “Editar cartão” para criar.</p>';
+
+    const abilities=t.exclusiveAbilities||[];
+    const isCommand=a=>/^comando\s*[:\-–]/i.test(a.name)||/comando (de )?pok[eé]mon/i.test(a.description||"");
+    const abilityCard=(a,cmd)=>{
+      const label=ATTRS.find(x=>x.key===a.attribute)?.label||"";
+      const cost=costOf(a.name+" "+a.description);
+      const name=cmd?String(a.name).replace(/^comando\s*[:\-–]\s*/i,""):a.name;
+      return `<article class="tcd-ability${cmd?" is-command":""}" style="--c:${ATTR_COLOR[a.attribute]||"#888"}">
+        <header>
+          <b>${esc(name)}</b>
+          <span class="tcd-tags">${cost?`<em class="tcd-cost">♥ ${esc(cost)}</em>`:""}${label?`<em>${esc(label)}</em>`:""}</span>
+        </header>
+        <p>${esc(a.description||"Sem descrição.").replace(/\n/g,"<br>")}</p>
+      </article>`;
+    };
+    const cmds=abilities.filter(isCommand),others=abilities.filter(a=>!isCommand(a));
+    const total=ATTRS.reduce((sum,a)=>sum+attrVal(a.key),0);
+    return `
+      <header class="tcd-head">
+        <div><small>DOSSIÊ DO TREINADOR</small><b>${esc(t.name||"Treinador")}</b></div>
+        <div class="tcd-summary">
+          <span><strong>${total}</strong>atributos</span>
+          <span><strong>${(t.skills||[]).length}</strong>perícias</span>
+          <span><strong>${others.length}</strong>habilidades</span>
+          <span><strong>${cmds.length}</strong>comandos</span>
+        </div>
+      </header>
+      <section class="tcd-block"><h4>Atributos</h4><div class="tcd-attrs">${attrCards}</div></section>
+      <section class="tcd-block"><h4>Perícias</h4><p class="tcd-help">Teste: role os d100 da nota; cada dado ≤ atributo é um sucesso e ≤ ¼ do atributo é crítico. A porcentagem é a chance de tirar pelo menos 1 sucesso. 🎲 rola o teste.</p><div class="tcd-skills">${skillHtml}</div></section>
+      <section class="tcd-block"><h4>Habilidades de Treinador</h4>${others.length?`<div class="tcd-abilities">${others.map(a=>abilityCard(a,false)).join("")}</div>`:'<p class="tcd-empty">Nenhuma habilidade exclusiva.</p>'}</section>
+      ${cmds.length?`<section class="tcd-block"><h4>Comandos Exclusivos</h4><div class="tcd-abilities">${cmds.map(a=>abilityCard(a,true)).join("")}</div></section>`:""}`;
+  }
+
   function renderAppearance(appearance){
     Object.entries(CARD_COLORS).forEach(([key,fallback])=>{
       const saved=appearance?.[key];
@@ -153,7 +233,14 @@
     renderAppearance(t.cardAppearance);
     wrap.querySelector(".tc-front").innerHTML=front(t);
     wrap.querySelector(".tc-back").innerHTML=back(t);
+    wrap.querySelector(".tc-dossier").innerHTML=dossier(t);
   }
+  wrap.querySelector(".tc-dossier").addEventListener("click",event=>{
+    const b=event.target.closest("[data-tcd-roll]");
+    if(!b||typeof testTrainerSkill!=="function")return;
+    testTrainerSkill(b.dataset.tcdRoll);
+    sfx("select");
+  });
 
   const card=wrap.querySelector("#tcCard");
   const custom=wrap.querySelector(".tc-custom");

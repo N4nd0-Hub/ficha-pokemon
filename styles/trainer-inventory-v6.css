@@ -210,3 +210,31 @@ html[data-cl-scheme="dark"] .inv-bonus-note{color:#7ee0ad}
 .inv-px-title{width:34px;height:34px;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.25))}
 .inv-wrap:hover .inv-px-title{animation:invHop .6s steps(3)}
 .inv-weight{display:inline-flex;align-items:center;gap:6px}
+
+/* ---------- Visual mais rico dos cartões ---------- */
+.inv-grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.inv-item{padding:14px 14px 12px;gap:10px;border-width:3px;border-radius:14px;
+  background:
+    radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--inv-c) 14%,transparent),transparent 60%),
+    var(--cl-card);
+  box-shadow:inset 5px 0 0 var(--inv-c),0 4px 0 var(--cl-ink)}
+.inv-item:hover{box-shadow:inset 5px 0 0 var(--inv-c),0 6px 0 var(--cl-ink)}
+.inv-item .inv-icon{width:58px;height:58px;flex-basis:58px;border-width:3px;border-radius:14px;
+  background:
+    radial-gradient(circle at 50% 38%,rgba(255,255,255,.85),transparent 62%),
+    linear-gradient(180deg,color-mix(in srgb,var(--inv-c) 22%,#fff),color-mix(in srgb,var(--inv-c) 45%,var(--cl-card)));
+  box-shadow:inset 0 -4px 0 color-mix(in srgb,var(--inv-c) 55%,transparent),0 3px 0 var(--cl-ink)}
+.inv-item .inv-px-item{width:40px;height:40px}
+.inv-item .inv-emoji{font-size:30px}
+.inv-item-name b{font-size:16px;letter-spacing:.01em}
+.inv-qty-badge{font-size:14px;padding:4px 10px;border-radius:9px;box-shadow:0 2px 0 var(--cl-ink)}
+.inv-desc{border:2px dashed transparent;min-height:40px}
+.inv-desc.empty{border-color:var(--cl-line);background:transparent;color:var(--cl-muted);font-style:italic;font-size:12px}
+.inv-item-actions{padding-top:8px;border-top:2px dashed var(--cl-line)}
+.inv-icon-picker{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.inv-icon-picker button{display:grid;place-items:center;width:36px;height:36px;padding:0;border:2px solid var(--cl-ink);border-radius:8px;background:var(--cl-card);cursor:pointer;box-shadow:0 2px 0 var(--cl-ink)}
+.inv-icon-picker button .inv-px{width:24px;height:24px;margin:0}
+.inv-icon-picker button.on{background:var(--cl-banner);transform:translateY(-1px)}
+.inv-icon-picker input{flex:1 1 90px;min-width:80px}
+@media (max-width:720px){.inv-grid{grid-template-columns:minmax(0,1fr)}}
+.inv-editor-grid{align-items:start}
