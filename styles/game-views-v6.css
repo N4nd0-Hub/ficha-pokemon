@@ -578,14 +578,15 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
 .tc-photo img{width:100%;height:100%;object-fit:cover}
 .tc-photo-empty{font:400 30px var(--cl-title);color:#4a70b8}
 .tc-party{
-  display:grid;grid-template-columns:repeat(6,1fr);gap:6px;
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;
   padding:8px;
   border:3px solid var(--cl-ink);border-radius:10px;
   background:rgba(255,255,255,.35);
 }
-.tc-mon,.tc-ball{aspect-ratio:1;display:grid;place-items:center;border-radius:50%}
-.tc-mon{border:2px solid var(--cl-ink);background:radial-gradient(circle at 50% 65%,#fff 0 45%,#dff0e8 70%)}
-.tc-mon img{width:88%;height:88%;object-fit:contain}
+.tc-mon,.tc-ball{aspect-ratio:1;display:grid;place-items:center;border-radius:50%;min-width:0}
+.tc-mon{overflow:hidden;width:100%;border:2px solid var(--cl-ink);background:radial-gradient(circle at 50% 65%,#fff 0 45%,#dff0e8 70%)}
+/* Artes grandes (imagens enviadas pelo jogador) não podem esticar a coluna. */
+.tc-mon img{width:88%;height:88%;min-width:0;min-height:0;max-width:88%;max-height:88%;object-fit:contain}
 .tc-ball{
   width:60%;justify-self:center;
   border:2px solid rgba(0,0,0,.25);
@@ -598,7 +599,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
   color:#f0d8a0;
 }
 .tc-badgecase small{font:700 10px var(--cl-pixel);letter-spacing:.1em}
-.tc-badgecase>div{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-top:6px}
+.tc-badgecase>div{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:6px}
 .tc-badge{
   aspect-ratio:1;
   border-radius:50%;
@@ -639,7 +640,7 @@ html body #pageTrainer.tc-active:not(.tc-editing) .trainer-card-stage{display:no
   .tc-body{grid-template-columns:minmax(0,1fr) 96px}
   .tc-lines{grid-template-columns:84px minmax(0,1fr)}
   .tc-back-body{grid-template-columns:minmax(0,1fr)}
-  .tc-badgecase>div{grid-template-columns:repeat(4,1fr)}
+  .tc-badgecase>div{grid-template-columns:repeat(4,minmax(0,1fr))}
   .tc-head{flex-wrap:wrap}
 }
 @media (prefers-reduced-motion: reduce){
