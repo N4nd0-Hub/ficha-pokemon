@@ -1,0 +1,110 @@
+/* ============================================================
+   V6 — Botões da barra superior (estilo cartucho/menu dos jogos)
+   Face clara em qualquer tema, pastilha colorida com ícone e
+   sombra de "tecla" que afunda ao clicar.
+   ============================================================ */
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-btn{
+  position:relative;
+  display:inline-flex!important;align-items:center!important;gap:8px!important;
+  min-height:42px!important;
+  padding:5px 11px 5px 6px!important;
+  border:3px solid var(--cl-ink,#181a24)!important;
+  border-radius:11px!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.9) 0 2px,transparent 2px),
+    linear-gradient(180deg,#fffdf3,#f1ead2)!important;
+  color:#23262e!important;
+  font:700 10px var(--cl-pixel)!important;
+  letter-spacing:.04em!important;
+  text-transform:uppercase;
+  text-shadow:none!important;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.12),0 4px 0 var(--cl-ink,#181a24)!important;
+  cursor:pointer;
+  transition:transform .1s ease,box-shadow .1s ease,background .15s ease!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-btn:hover{
+  transform:translateY(-2px);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.9) 0 2px,transparent 2px),
+    linear-gradient(180deg,#fff,color-mix(in srgb,var(--tb-c) 14%,#f6f0da))!important;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.12),0 6px 0 var(--cl-ink,#181a24)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-btn:active{
+  transform:translateY(4px);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.15),0 0 0 var(--cl-ink,#181a24)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-btn:focus-visible{outline:3px solid #fff!important;outline-offset:2px}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-btn:disabled{opacity:.6;cursor:wait}
+
+/* Pastilha colorida do ícone */
+.topbar .tb-ico,
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-icon{
+  display:grid!important;place-items:center!important;
+  flex:0 0 28px;width:28px!important;height:28px!important;
+  border:2px solid var(--cl-ink,#181a24)!important;border-radius:8px!important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--tb-c) 72%,#fff),var(--tb-c) 60%,color-mix(in srgb,var(--tb-c) 70%,#000))!important;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25)!important;
+  transition:transform .15s ease;
+}
+.topbar .tb-ico svg{width:18px;height:18px;image-rendering:pixelated}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-icon svg{width:18px;height:18px;color:#fff!important;stroke:#fff}
+.topbar .tb-btn:hover :is(.tb-ico,.top-personalize-icon){transform:rotate(-8deg) scale(1.06)}
+.topbar .tb-label{white-space:nowrap}
+
+/* Cores de cada botão */
+.topbar .tb-btn{--tb-c:#5a6378}
+.topbar .tb-btn.tb-export{--tb-c:#2f74d4}
+.topbar .tb-btn.tb-import{--tb-c:#e3762a}
+.topbar .tb-btn.tb-extras{--tb-c:#e0393e}
+.topbar .tb-btn.tb-theme{--tb-c:#8a5ad0}
+.topbar .tb-btn.tb-scheme{--tb-c:#3d4fb0}
+.topbar .tb-btn.tb-sound{--tb-c:#2a9a63}
+
+/* Personalizar: título + tema atual */
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme :is(b,small,span:not(.top-personalize-icon)){color:#23262e!important;text-shadow:none!important}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-copy b{font:400 12px var(--cl-title,var(--cl-pixel))!important;letter-spacing:.02em}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-copy small{font:700 9px var(--cl-pixel)!important;color:#5d6270!important;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-arrow{color:#8a5ad0!important;font-size:14px}
+
+/* Lua/sol e som: botões quadrados, a face inteira é a pastilha */
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-square{
+  justify-content:center!important;
+  width:42px;min-width:42px!important;height:42px;padding:0!important;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--tb-c) 72%,#fff),var(--tb-c) 60%,color-mix(in srgb,var(--tb-c) 70%,#000))!important;
+  color:#fff!important;font-size:17px!important;
+  text-shadow:1px 1px 0 rgba(0,0,0,.4)!important;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.25),0 4px 0 var(--cl-ink,#181a24)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-square:hover{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--tb-c) 60%,#fff),color-mix(in srgb,var(--tb-c) 85%,#fff) 60%,var(--tb-c))!important;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.25),0 6px 0 var(--cl-ink,#181a24)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .topbar .tb-sound[aria-pressed="false"]{--tb-c:#6c7280;color:rgba(255,255,255,.7)!important}
+html:not([data-sheet-mode="pokedex"]) body .topbar .top-action-divider{width:3px!important;height:30px!important;border-radius:2px;background:rgba(0,0,0,.28)!important;box-shadow:1px 0 0 rgba(255,255,255,.25)}
+
+@media (prefers-reduced-motion:reduce){.topbar .tb-btn,.topbar .tb-ico{transition:none!important}}
+
+/* Painel de ferramentas do celular: botões ocupam a largura */
+@media (max-width:760px){
+  html:not([data-sheet-mode="pokedex"]) body .topbar .top-actions .tb-btn:not(.tb-square){width:100%;justify-content:flex-start!important}
+}
+
+/* Telas médias: Exportar/Importar/Extras viram só ícone para não cobrir o título */
+@media (min-width:761px) and (max-width:1240px){
+  html:not([data-sheet-mode="pokedex"]) body .topbar :is(.tb-export,.tb-import,.tb-extras){padding:5px 6px!important}
+  html:not([data-sheet-mode="pokedex"]) body .topbar :is(.tb-export,.tb-import,.tb-extras) .tb-label{
+    position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-copy small{display:none!important}
+}
+@media (min-width:761px) and (max-width:960px){
+  html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-copy{display:none!important}
+}
+html:not([data-sheet-mode="pokedex"]) body .topbar .brand{min-width:0;overflow:hidden}
+
+/* Celular: lua e som lado a lado */
+@media (max-width:760px){
+  html:not([data-sheet-mode="pokedex"]) body .topbar #mobileToolsPanel{flex-flow:row wrap!important;align-content:flex-start}
+  html:not([data-sheet-mode="pokedex"]) body .topbar #mobileToolsPanel>:not(.tb-square){flex:1 1 100%}
+  html:not([data-sheet-mode="pokedex"]) body .topbar #mobileToolsPanel>.tb-square{flex:0 0 auto}
+  html:not([data-sheet-mode="pokedex"]) body .topbar #mobileToolsPanel>.top-action-divider{display:none!important}
+}
