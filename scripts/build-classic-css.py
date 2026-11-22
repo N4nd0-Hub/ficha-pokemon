@@ -370,7 +370,7 @@ $S .sheet #pageTrainer .trainer-license-card{
   border-radius:16px!important;
   background:
     repeating-linear-gradient(135deg,transparent 0 18px,rgba(0,0,0,.025) 18px 36px),
-    linear-gradient(180deg,#fdfcf4,#eef0e0)!important;
+    linear-gradient(180deg,var(--cl-card),var(--cl-paper))!important;
   color:var(--cl-text)!important;
   box-shadow:0 0 0 3px var(--cl-ink),8px 8px 0 3px rgba(0,0,0,.4)!important;
   clip-path:none!important;
@@ -393,6 +393,7 @@ $S .sheet #pageTrainer .trainer-party-slot{
   background:linear-gradient(180deg,#d8f0ff,#f4fbff 62%,#cfe8c0 62%)!important;
   box-shadow:0 3px 0 var(--cl-ink)!important;
 }
+$S .sheet #pageTrainer .trainer-party-slot:is(.current,:has(img)) :is(b,strong,small,span,em){color:#1f2a20!important;text-shadow:0 1px 0 rgba(255,255,255,.7)!important}
 $S .sheet #pageTrainer .trainer-party-slot:not(.current):not(:has(img)){background:var(--cl-paper2)!important;border-style:dashed!important;box-shadow:none!important}
 $S .sheet #pageTrainer .trainer-party-slot.current{box-shadow:0 3px 0 var(--cl-ink),0 0 0 3px #ffd040!important}
 $S .sheet #pageTrainer .trainer-party-slot *{color:var(--cl-text)!important}
