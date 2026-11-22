@@ -151,3 +151,9 @@ html:not([data-sheet-mode="pokedex"]) body .sheet .sheet-navigation .tab[data-pa
     linear-gradient(180deg,#ef4b4f 0 44%,var(--cl-ink) 44% 56%,#f4f4f4 56% 100%)!important;
   box-shadow:0 0 0 2px #fff,0 0 10px 2px rgba(255,255,255,.5)!important;
 }
+
+/* Modo Pokédex usa os rótulos próprios do aparelho (VISOR, TREINADOR...):
+   os textos extras do menu clássico não podem aparecer lá. */
+html[data-sheet-mode="pokedex"] body .sheet .sheet-navigation .tab>span.nb-text,
+html[data-sheet-mode="pokedex"] body .sheet .sheet-navigation .page-tabs .tab.pokedex-hardware-key>span.nb-text,
+html[data-sheet-mode="pokedex"] body #app .sheet .sheet-navigation .page-tabs .tab.pokedex-hardware-key>span.nb-text{display:none!important}
