@@ -1,0 +1,161 @@
+/* ============================================================
+   V6 — Aparência: ícones em pixel, Personalizar compacto e
+   painel de personalização como gaveta lateral moderna.
+   ============================================================ */
+
+/* ---------- Ícones em pixel nos botões de página ---------- */
+.ap-px{display:block;image-rendering:pixelated}
+html body .sheet .sheet-navigation .tab .hardware-symbol.ap-has-px{font-size:0!important;color:transparent!important}
+html body .sheet .sheet-navigation .tab .hardware-symbol.ap-has-px .ap-px-nav{width:22px;height:22px;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.35))}
+html[data-sheet-mode="pokedex"] body .sheet .sheet-navigation .tab .hardware-symbol.ap-has-px .ap-px-nav{width:16px;height:16px}
+@media (max-width:720px){html body .sheet .sheet-navigation .tab .hardware-symbol.ap-has-px .ap-px-nav{width:18px;height:18px}}
+.sheet-import-port .sheet-import-port-icon.ap-has-px{display:grid!important;place-items:center!important;background:none!important;border:0!important;box-shadow:none!important}
+.sheet-import-port .sheet-import-port-icon.ap-has-px::before,.sheet-import-port .sheet-import-port-icon.ap-has-px::after{display:none!important}
+.sheet-import-port .ap-px-port{width:24px;height:24px;filter:drop-shadow(1px 2px 0 rgba(0,0,0,.35));transition:transform .2s steps(2)}
+.sheet-import-port:hover .ap-px-port{transform:translateY(-2px) rotate(-6deg)}
+
+/* ---------- Personalizar: botão quadrado igual ao sol/som ---------- */
+html:not([data-sheet-mode="pokedex"]) body .topbar #themeBtn.tb-btn.tb-theme.ap-compact{
+  flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:42px!important;padding:0!important;
+  justify-content:center!important;gap:0!important;
+  background:linear-gradient(180deg,color-mix(in srgb,#8a5ad0 72%,#fff),#8a5ad0 60%,color-mix(in srgb,#8a5ad0 70%,#000))!important;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.25),0 4px 0 var(--cl-ink,#181a24)!important;
+}
+html:not([data-sheet-mode="pokedex"]) body .topbar #themeBtn.tb-btn.tb-theme.ap-compact:hover{transform:translateY(-2px)}
+html body .topbar #themeBtn.ap-compact :is(.top-personalize-copy,.top-personalize-arrow){display:none!important}
+
+.topbar #themeBtn .ap-px-btn{width:24px;height:24px;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.4));transition:transform .25s steps(3)}
+.topbar #themeBtn:hover .ap-px-btn{transform:rotate(-12deg) scale(1.1)}
+/* Pokédex: mantém só o ícone também */
+html[data-sheet-mode="pokedex"] body .topbar #themeBtn.ap-compact{width:42px;min-width:42px;padding:0!important;justify-content:center}
+/* Celular (painel ⋮): mostra o nome ao lado do ícone */
+@media (max-width:760px){
+  html body .topbar #mobileToolsPanel #themeBtn.tb-btn.tb-theme.ap-compact{width:auto!important;max-width:none!important;min-width:0!important;flex:1 1 100%;padding:0 12px!important;justify-content:flex-start!important;gap:10px!important}
+  html body .topbar #mobileToolsPanel #themeBtn.ap-compact .top-personalize-copy{display:grid!important}
+  html body .topbar #mobileToolsPanel #themeBtn.ap-compact .top-personalize-copy :is(b,small){color:#fff!important;text-shadow:1px 1px 0 rgba(0,0,0,.35)!important}
+}
+
+/* ---------- Painel: gaveta lateral ---------- */
+html body #themeModal.ap-sheet{
+  --ap-bg:var(--cl-paper,#f6f4ea);--ap-card:var(--cl-card,#fff);--ap-line:var(--cl-line,#cfd3dc);
+  --ap-ink:var(--cl-ink,#181a24);--ap-text:var(--cl-text,#23262e);--ap-muted:var(--cl-muted,#6a7080);
+  place-items:stretch end!important;align-items:stretch!important;justify-items:end!important;
+  padding:0!important;background:rgba(8,10,16,.45)!important;backdrop-filter:blur(3px);
+}
+html body #themeModal.ap-sheet .modal{
+  width:min(480px,100vw)!important;max-width:none!important;height:100vh!important;height:100dvh!important;max-height:none!important;
+  margin:0!important;border-radius:18px 0 0 18px!important;
+  border:0!important;border-left:4px solid var(--ap-ink)!important;
+  background:var(--ap-bg)!important;color:var(--ap-text)!important;
+  box-shadow:-10px 0 40px rgba(0,0,0,.35)!important;
+  display:flex!important;flex-direction:column!important;overflow:hidden!important;
+}
+html body #themeModal.ap-sheet.open .modal{animation:apSlide .28s cubic-bezier(.2,.9,.3,1.1) both}
+@keyframes apSlide{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+html body #themeModal.ap-sheet .modal-head{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px;
+  padding:16px 18px!important;border:0!important;border-bottom:3px solid var(--ap-ink)!important;
+  background:var(--cl-scan),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner,#d8343c) 82%,#fff),var(--cl-banner,#d8343c) 60%,var(--cl-banner-dark,#9b1f26))!important;
+  color:#fff!important;
+}
+.ap-head-title{display:flex!important;align-items:center;gap:12px}
+.ap-head-icon{display:grid;place-items:center;width:42px;height:42px;border:3px solid var(--ap-ink);border-radius:12px;background:#fff;box-shadow:0 3px 0 var(--ap-ink)}
+.ap-head-icon .ap-px{width:28px;height:28px}
+.ap-head-title b{display:block;font:400 17px var(--cl-title,inherit);letter-spacing:.02em;text-shadow:2px 2px 0 rgba(0,0,0,.3)}
+.ap-head-title small{display:block;margin-top:3px;font-size:12px;opacity:.9}
+html body #themeModal.ap-sheet [data-close="themeModal"]{
+  width:38px;height:38px;padding:0!important;border:3px solid var(--ap-ink)!important;border-radius:10px!important;
+  background:#fff!important;color:var(--ap-ink)!important;font-size:16px!important;box-shadow:0 3px 0 var(--ap-ink)!important;cursor:pointer}
+html body #themeModal.ap-sheet [data-close="themeModal"]:hover{transform:translateY(-1px) rotate(90deg);transition:transform .2s}
+html body #themeModal.ap-sheet .modal-body{flex:1 1 auto!important;max-height:none!important;overflow:auto!important;padding:16px 18px 24px!important;background:var(--ap-bg)!important}
+
+/* Abas: controle segmentado */
+html body #themeModal.ap-sheet .appearance-modal-tabs{
+  position:sticky;top:-16px;z-index:2;display:grid!important;grid-template-columns:1fr 1fr;gap:4px!important;
+  margin:-16px -18px 16px!important;padding:12px 18px!important;background:var(--ap-bg)!important;border-bottom:2px solid var(--ap-line)}
+html body #themeModal.ap-sheet .appearance-modal-tab{
+  display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;
+  min-height:44px;padding:8px 12px!important;border:3px solid var(--ap-ink)!important;border-radius:12px!important;
+  background:var(--ap-card)!important;color:var(--ap-text)!important;box-shadow:0 3px 0 var(--ap-ink)!important;cursor:pointer}
+html body #themeModal.ap-sheet .appearance-modal-tab b{font:700 11px var(--cl-pixel,inherit)!important;letter-spacing:.05em;text-transform:uppercase}
+html body #themeModal.ap-sheet .appearance-modal-tab.active{
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cl-banner,#d8343c) 80%,#fff),var(--cl-banner,#d8343c))!important;color:#fff!important;
+  text-shadow:1px 1px 0 rgba(0,0,0,.35);transform:translateY(1px);box-shadow:0 2px 0 var(--ap-ink)!important}
+.ap-px-tab{width:20px;height:20px}
+.ap-lens{width:20px;height:20px;border:2px solid var(--ap-ink);border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 2px,transparent 3px),radial-gradient(circle,#7fc4ff 0 30%,#2f74d4 60%,#173f82);flex:0 0 20px}
+
+/* Seções */
+html body #themeModal.ap-sheet .appearance-section{
+  margin:0 0 18px!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
+html body #themeModal.ap-sheet .appearance-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:0 0 10px!important;padding:0 0 8px!important;border-bottom:3px solid var(--ap-line)}
+html body #themeModal.ap-sheet .appearance-section-head b{font:400 14px var(--cl-title,inherit)!important;color:var(--ap-text)!important}
+html body #themeModal.ap-sheet .appearance-section-head small{display:block;margin-top:3px;font-size:12px!important;color:var(--ap-muted)!important}
+html body #themeModal.ap-sheet .eyebrow{padding:3px 8px;border:2px solid var(--ap-ink);border-radius:999px;background:var(--ap-card);color:var(--ap-text)!important;font:700 9px var(--cl-pixel,inherit)!important;letter-spacing:.08em}
+
+/* Cartões de tema com mini-ficha */
+html body #themeModal.ap-sheet .theme-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+html body #themeModal.ap-sheet .theme-option.ap-theme{
+  position:relative;display:grid!important;gap:8px!important;align-content:start;padding:8px!important;min-height:0!important;text-align:left;
+  border:3px solid var(--ap-ink)!important;border-radius:14px!important;background:var(--ap-card)!important;color:var(--ap-text)!important;
+  box-shadow:0 4px 0 var(--ap-ink)!important;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+html body #themeModal.ap-sheet .theme-option.ap-theme:hover{transform:translateY(-3px);box-shadow:0 7px 0 var(--ap-ink)!important}
+html body #themeModal.ap-sheet .theme-option.ap-theme.active{outline:3px solid var(--p-a);outline-offset:2px}
+.ap-preview{width:100%!important;max-width:none!important;box-sizing:border-box;display:grid!important;justify-self:stretch;grid-template-rows:14px 1fr;height:78px;border:2px solid var(--ap-ink);border-radius:9px;overflow:hidden;background:var(--p-bg)}
+.ap-preview i{display:block;font-style:normal}
+.ap-bar{display:flex!important;align-items:center;gap:3px;padding:0 6px;background:linear-gradient(90deg,var(--p-a),color-mix(in srgb,var(--p-a) 70%,var(--p-b)))}
+.ap-bar>i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.85)}
+.ap-bar>i:nth-child(2){background:var(--p-b)}
+.ap-body{display:grid!important;grid-template-columns:34px 1fr;gap:6px;padding:7px;background:var(--p-bg2)}
+.ap-mon{display:grid!important;place-items:center;border:1px solid var(--p-line);border-radius:6px;background:var(--p-panel)}
+.ap-mon>i{width:16px;height:16px;border-radius:50%;background:linear-gradient(180deg,var(--p-a) 0 46%,var(--p-text) 46% 56%,var(--p-panel2) 56%);box-shadow:0 0 0 1px var(--p-text)}
+.ap-lines{display:grid!important;align-content:start;gap:5px;padding:5px;border:1px solid var(--p-line);border-radius:6px;background:var(--p-panel)}
+.ap-lines>i{height:5px;border-radius:3px;background:var(--p-text);opacity:.8}
+.ap-lines>i:nth-child(2){width:80%;background:var(--p-muted)}
+.ap-lines>i.short{width:55%;background:var(--p-muted)}
+.ap-lines>i.chip{width:40%;height:7px;background:var(--p-b);opacity:1}
+.ap-name{display:grid;gap:2px;padding:0 2px 2px}
+.ap-name b{font-size:13.5px;font-weight:800;color:var(--ap-text)}
+.ap-name small{font-size:11px;line-height:1.3;color:var(--ap-muted)}
+.ap-check{position:absolute;top:2px;right:2px;display:grid;place-items:center;width:24px;height:24px;border:2px solid var(--ap-ink);border-radius:50%;
+  background:var(--cl-banner,#d8343c);color:#fff;font:900 13px system-ui;opacity:0;transform:scale(.4);transition:opacity .15s,transform .2s cubic-bezier(.34,1.56,.64,1)}
+.active>.ap-check{opacity:1;transform:scale(1)}
+.ap-theme .ap-check{top:12px;right:12px}
+.ap-theme.active .ap-check{background:var(--p-a)}
+
+/* Cartões de fonte */
+html body #themeModal.ap-sheet .font-theme-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+html body #themeModal.ap-sheet .font-theme-option.ap-font{
+  position:relative;display:grid!important;grid-template-columns:52px minmax(0,1fr);align-items:center;gap:10px!important;padding:10px!important;text-align:left;
+  border:3px solid var(--ap-ink)!important;border-radius:12px!important;background:var(--ap-card)!important;color:var(--ap-text)!important;box-shadow:0 3px 0 var(--ap-ink)!important;cursor:pointer}
+html body #themeModal.ap-sheet .font-theme-option.ap-font:hover{transform:translateY(-2px)}
+html body #themeModal.ap-sheet .font-theme-option.ap-font.active{background:color-mix(in srgb,var(--cl-banner,#d8343c) 12%,var(--ap-card))!important}
+.ap-font-sample{display:grid;place-items:center;height:52px;border:2px solid var(--ap-ink);border-radius:10px;background:var(--ap-bg);font-size:22px;line-height:1;color:var(--ap-text)}
+.ap-font .ap-check{top:6px;right:6px}
+
+/* Painel Pokédex: mesmos cartões */
+html body #themeModal.ap-sheet :is(.sheet-mode-option,.pokedex-follow-option,.pokedex-color-editor,.appearance-pokedex-note){
+  border:3px solid var(--ap-ink)!important;border-radius:12px!important;background:var(--ap-card)!important;color:var(--ap-text)!important;box-shadow:0 3px 0 var(--ap-ink)!important}
+html body #themeModal.ap-sheet :is(.sheet-mode-option,.pokedex-follow-option,.appearance-pokedex-note) :is(b){color:var(--ap-text)!important}
+html body #themeModal.ap-sheet :is(.sheet-mode-option,.pokedex-follow-option,.appearance-pokedex-note) small{color:var(--ap-muted)!important}
+html body #themeModal.ap-sheet .pokedex-preset-grid button{border:3px solid var(--ap-ink)!important;border-radius:10px!important;box-shadow:0 3px 0 var(--ap-ink)!important}
+
+@media (max-width:560px){
+  html body #themeModal.ap-sheet{place-items:end stretch!important;align-items:end!important}
+  html body #themeModal.ap-sheet .modal{width:100vw!important;height:88dvh!important;border-radius:18px 18px 0 0!important;border-left:0!important;border-top:4px solid var(--ap-ink)!important}
+  @keyframes apSlide{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  html body #themeModal.ap-sheet .font-theme-grid{grid-template-columns:minmax(0,1fr)!important}
+}
+@media (prefers-reduced-motion:reduce){html body #themeModal.ap-sheet .modal{animation:none!important}}
+
+html body #themeModal.ap-sheet .theme-option.ap-theme>*{min-width:0}
+html body #themeModal.ap-sheet .theme-option.ap-theme .ap-name{width:100%}
+
+/* Ícone próprio do Personalizar (o ícone antigo pinta tudo de branco) */
+html:not([data-sheet-mode="pokedex"]) body .topbar #themeBtn.tb-btn.tb-theme.ap-compact>.top-personalize-icon,
+html body .topbar #themeBtn.ap-compact>.top-personalize-icon{display:none!important}
+html body .topbar #themeBtn .ap-btn-ico{display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px}
+html body .topbar #themeBtn .ap-btn-ico svg rect{stroke:none!important}
+html[data-sheet-mode="pokedex"] body .topbar #themeBtn .ap-btn-ico{margin:auto}
+html body #themeModal.ap-sheet .theme-option.ap-theme{grid-template-columns:minmax(0,1fr)!important}
+html body #themeModal.ap-sheet .pokedex-color-editor{padding:8px 10px!important;gap:10px}
+@media (max-width:560px){html body #themeModal.ap-sheet .appearance-modal-tab b{font-size:9px!important;letter-spacing:.02em}}
