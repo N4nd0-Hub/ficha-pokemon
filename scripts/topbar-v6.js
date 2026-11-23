@@ -20,8 +20,6 @@
   };
   /* Poké Ball (preenchida) com brilho: usada no botão de Pokémon extras */
   const BALL='<svg class="tb-svg ball" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="10" fill="#fff"/><path d="M2 12a10 10 0 0 1 20 0Z" fill="#ff5a60"/><path d="M5.3 7.6a7.6 7.6 0 0 1 4-3.1" fill="none" stroke="#ffc1c4" stroke-width="1.6" stroke-linecap="round"/><path d="M2 12h20" stroke="#181a24" stroke-width="2.2"/><circle cx="12" cy="12" r="10" fill="none" stroke="#181a24" stroke-width="2"/><circle cx="12" cy="12" r="3.8" fill="#181a24"/><circle cx="12" cy="12" r="2.1" fill="#fff"/><path d="m19.5 1.8.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6Z" fill="#ffe46b" stroke="#181a24" stroke-width=".6"/></svg>';
-  /* Poké Ball do botão Box & Bolsa: mesma da aba do navegador */
-  const BIG_BALL='<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="32" r="29" fill="#f4f5f7"/><path d="M3 32a29 29 0 0 1 58 0Z" fill="#e3262f"/><path d="M12 18a24 24 0 0 1 14-9" fill="none" stroke="#ff8a8f" stroke-width="4" stroke-linecap="round"/><path d="M3 32h58" stroke="#15181f" stroke-width="6"/><circle cx="32" cy="32" r="29" fill="none" stroke="#15181f" stroke-width="5"/><circle cx="32" cy="32" r="11" fill="#15181f"/><circle cx="32" cy="32" r="6.5" fill="#f4f5f7"/></svg>';
   function icon(name){
     if(name==="ball")return BALL;
     return `<svg class="tb-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${L[name]||""}</svg>`;
@@ -57,8 +55,6 @@
     }
     squareIcon("clSchemeBtn","tb-scheme",t=>t.includes("☾")?"moon":t.includes("◐")?"sun-moon":"sun");
     squareIcon("clSoundBtn","tb-sound",(t,b)=>b.getAttribute("aria-pressed")==="false"?"volume-x":"volume-2");
-    const shell=document.querySelector("#drawerToggle .pocket-ball-shell");
-    if(shell&&!shell.querySelector("svg")){shell.classList.add("tb-ball-shell");shell.innerHTML=BIG_BALL;}
     const port=document.querySelector(".sheet-import-port .sheet-import-port-icon");
     if(port&&port.dataset.icon!=="clipboard-paste"){port.dataset.icon="clipboard-paste";port.innerHTML=icon("clipboard-paste");port.classList.add("tb-port-ico");}
   }
