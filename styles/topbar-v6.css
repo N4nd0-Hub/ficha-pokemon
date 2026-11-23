@@ -46,7 +46,7 @@ html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-ic
   box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25)!important;
   transition:transform .15s ease;
 }
-.topbar .tb-ico svg{width:18px;height:18px}
+.topbar .tb-ico svg{width:18px;height:18px;image-rendering:pixelated}
 html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-icon svg{width:18px;height:18px;color:#fff!important;stroke:#fff}
 .topbar .tb-btn:hover :is(.tb-ico,.top-personalize-icon){transform:rotate(-8deg) scale(1.06)}
 .topbar .tb-label{white-space:nowrap}
@@ -108,25 +108,3 @@ html:not([data-sheet-mode="pokedex"]) body .topbar .brand{min-width:0;overflow:h
   html:not([data-sheet-mode="pokedex"]) body .topbar #mobileToolsPanel>.tb-square{flex:0 0 auto}
   html:not([data-sheet-mode="pokedex"]) body .topbar #mobileToolsPanel>.top-action-divider{display:none!important}
 }
-
-/* ---------- Ícones de traço (método da ficha de Runeterra) ---------- */
-.tb-svg{display:block;width:18px;height:18px;flex:0 0 auto;color:#fff;filter:drop-shadow(0 1px 0 rgba(0,0,0,.35));transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
-.tb-svg.ball{width:20px;height:20px;filter:drop-shadow(0 1px 0 rgba(0,0,0,.3))}
-.topbar .tb-btn:hover .tb-svg{transform:scale(1.15) rotate(-8deg)}
-.topbar .tb-btn.tb-import:hover .tb-svg{transform:translateY(-2px) scale(1.1)}
-.topbar .tb-btn.tb-export:hover .tb-svg{transform:translateY(2px) scale(1.1)}
-.topbar .tb-btn.tb-extras:hover .tb-svg{transform:rotate(-20deg) scale(1.15)}
-html:not([data-sheet-mode="pokedex"]) body .topbar .tb-square .tb-svg{width:20px;height:20px}
-html:not([data-sheet-mode="pokedex"]) body .topbar .tb-theme .top-personalize-icon .tb-svg{width:18px;height:18px;color:#fff!important;stroke:currentColor!important}
-.topbar .tb-btn.tb-extras .tb-ico{background:linear-gradient(180deg,#ffffff,#e9edf5)!important}
-@media (prefers-reduced-motion:reduce){.tb-svg{transition:none}}
-
-/* Modo Pokédex: os mesmos ícones, sem o estilo de cartucho */
-html[data-sheet-mode="pokedex"] .topbar .tb-ico{display:inline-grid;place-items:center;width:22px;height:22px;margin-right:6px;vertical-align:middle}
-html[data-sheet-mode="pokedex"] .topbar .tb-ico .tb-svg:not(.ball){color:currentColor;width:16px;height:16px;filter:none}
-html[data-sheet-mode="pokedex"] .topbar .tb-square .tb-svg{color:currentColor;width:18px;height:18px;filter:none;margin:auto}
-
-/* Botão DATA IMPORT do cabeçalho da ficha */
-.sheet-import-port .sheet-import-port-icon.tb-port-ico{display:grid!important;place-items:center!important;color:#fff}
-.sheet-import-port .sheet-import-port-icon.tb-port-ico .tb-svg{width:18px;height:18px;color:currentColor}
-.sheet-import-port:hover .sheet-import-port-icon.tb-port-ico .tb-svg{transform:rotate(-8deg) scale(1.12)}
