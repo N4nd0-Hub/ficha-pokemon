@@ -130,10 +130,3 @@ html[data-sheet-mode="pokedex"] .topbar .tb-square .tb-svg{color:currentColor;wi
 .sheet-import-port .sheet-import-port-icon.tb-port-ico{display:grid!important;place-items:center!important;color:#fff}
 .sheet-import-port .sheet-import-port-icon.tb-port-ico .tb-svg{width:18px;height:18px;color:currentColor}
 .sheet-import-port:hover .sheet-import-port-icon.tb-port-ico .tb-svg{transform:rotate(-8deg) scale(1.12)}
-
-/* Poké Ball do Box & Bolsa: SVG simétrico no lugar do desenho em CSS */
-html body .topbar #drawerToggle .pocket-ball-shell.tb-ball-shell{background:none!important;border:0!important;box-shadow:none!important;display:grid!important;place-items:center}
-html body .topbar #drawerToggle .pocket-ball-shell.tb-ball-shell::before,
-html body .topbar #drawerToggle .pocket-ball-shell.tb-ball-shell::after{display:none!important}
-html body .topbar #drawerToggle .pocket-ball-shell.tb-ball-shell svg{width:100%;height:100%;filter:drop-shadow(0 2px 0 rgba(0,0,0,.3));transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
-html body .topbar #drawerToggle:hover .pocket-ball-shell.tb-ball-shell svg{transform:rotate(-18deg)}
