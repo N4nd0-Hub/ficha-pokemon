@@ -135,6 +135,9 @@
       // rachadura na pedra
       [[CX+3,CY-11],[CX+4,CY-10],[CX+4,CY-9],[CX+5,CY-8],[CX+4,CY-7],[CX+5,CY-6]].forEach(([x,y])=>put(x,y,STONE[4]));
     }
+    return toSvg(px);
+  }
+  function toSvg(px){
     // monta o SVG juntando pixels vizinhos da mesma cor em linhas
     let out="";
     for(let y=0;y<H;y++){
@@ -150,11 +153,97 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${N} ${H}" shape-rendering="crispEdges">${out}</svg>`;
   }
 
+  /* ---------- Estilo grego: moeda de ouro em mármore com coroa de louros ---------- */
+  const MARBLE=["#ffffff","#f1ede4","#dcd5c6","#b9b09c"];
+  const BRONZE=["#c9b48a","#a08a5e","#7a6640","#54462a","#2e2618"];
+  function noise(x,y){const v=Math.sin(x*12.9898+y*78.233)*43758.5453;return v-Math.floor(v);}
+  function drawGreek(type,earned){
+    const px=new Map();
+    const put=(x,y,c)=>{if(x>=0&&y>=0&&x<N&&y<H&&c)px.set(x+","+y,c);};
+    const pal=TYPE[type]||TYPE.Normal;
+    const metal=earned?GOLD:BRONZE;
+    const R_OUT=14.2,R_BEAD=12.6,R_MAR=11.4,R_ENA=8.6;
+    // coroa de louros dourada envolvendo a moeda (só conquistada)
+    if(earned){
+      // folhas desenhadas à mão (diagonais), espelhadas para o lado direito
+      const UL=["LL..","LMM.",".MMD","..DD"],UR=["..LL",".MML","DMM.","DD.."];
+      const LC={L:"#fff0a0",M:"#e8b830",D:"#9a6a10"};
+      const left=new Map();
+      const stamp=(spr,ax,ay,x0,y0)=>spr.forEach((row,j)=>[...row].forEach((ch,i)=>{if(LC[ch])left.set((x0+i-ax)+","+(y0+j-ay),LC[ch]);}));
+      const R=17.4;
+      const pt=th=>[Math.round(CX-.5-Math.sin(th)*R*1.05),Math.round(CY-.5+Math.cos(th)*R)];
+      for(let d=14;d<=148;d+=2){const [x,y]=pt(d*Math.PI/180);left.set(x+","+y,"#7a4c08");}
+      for(let k=0;k<9;k++){
+        const [bx,by]=pt((24+k*15)*Math.PI/180);
+        stamp(UL,3,3,bx,by);
+        if(k>0&&k<8)stamp(UR,0,3,bx+1,by+1);
+      }
+      for(const [key,c] of left){const [x,y]=key.split(",").map(Number);put(x,y,c);put(N-1-x,y,c);}
+      // fita na base, presa nos galhos
+      for(let x=CX-4;x<=CX+3;x++){put(x,CY+17,"#b81e2a");put(x,CY+18,"#7a0e18");}
+      put(CX-6,CY+17,"#b81e2a");put(CX-7,CY+18,"#7a0e18");put(CX+5,CY+17,"#b81e2a");put(CX+6,CY+18,"#7a0e18");
+    }
+    for(let y=0;y<H;y++)for(let x=0;x<N;x++){
+      const dx=x+.5-CX,dy=y+.5-CY,d=Math.hypot(dx,dy);
+      if(d>R_OUT+1.1)continue;
+      const ang=(-dx-dy)/(Math.SQRT2*Math.max(d,.001));
+      if(d>R_OUT){put(x,y,earned?"#4a2a06":"#1e1a12");continue;}
+      if(d>R_BEAD){put(x,y,tone(metal,.55+ang*.4,x,y));continue;}
+      if(d>R_MAR){
+        // contas (pérolas) do aro, como nas moedas antigas
+        const a=Math.atan2(dy,dx),k=((a/(Math.PI*2))*28+28)%1;
+        put(x,y,k<.55?(ang>0?metal[0]:metal[1]):metal[3]);continue;
+      }
+      if(d>R_ENA){
+        // anel de mármore com veios
+        const vein=Math.abs(Math.sin(dx*.7+dy*.35+noise(x,y)*1.4))<.12;
+        const base=earned?MARBLE:STONE;
+        put(x,y,vein?base[3]:tone(base.slice(0,3),.6+ang*.3,x,y));continue;
+      }
+      // esmalte na cor do tipo, com degradê radial
+      const light=.58+ang*.22-Math.pow(d/R_ENA,2)*.3;
+      const g=earned?pal:STONE.slice(1);const st=g.length-1;
+      put(x,y,g[Math.max(0,Math.min(st,Math.round((1-light)*st)))]);
+    }
+    // símbolo em relevo dourado
+    const glyph=G[type]||G.Normal;const gx=CX-6,gy=CY-6;
+    const on=(i,j)=>glyph[j]?.[i]==="#";
+    for(let j=-1;j<=12;j++)for(let i=-1;i<=12;i++){
+      if(on(i,j)){
+        const lit=!on(i-1,j)||!on(i,j-1);
+        put(gx+i,gy+j,earned?(lit?GOLD[0]:GOLD[1]):(lit?STONE[0]:STONE[1]));continue;
+      }
+      if(on(i-1,j)||on(i,j-1))put(gx+i,gy+j,earned?GOLD[4]:STONE[4]);
+      else if(on(i+1,j)||on(i,j+1))put(gx+i,gy+j,earned?GOLD[3]:STONE[3]);
+    }
+    if(earned){
+      put(CX-8,CY-7,"#ffffff");put(CX-7,CY-8,"#ffffff");
+      // pequenas estrelas de luz (brilho divino)
+      [[5,6],[42,8],[24,2]].forEach(([x,y])=>{put(x,y,"#fffbe0");put(x-1,y,"#ffe27a");put(x+1,y,"#ffe27a");put(x,y-1,"#ffe27a");put(x,y+1,"#ffe27a");});
+    }else{
+      [[CX+4,CY-12],[CX+5,CY-11],[CX+5,CY-10],[CX+6,CY-9],[CX+5,CY-8]].forEach(([x,y])=>put(x,y,"#1e1a12"));
+    }
+    return toSvg(px);
+  }
+
   const cache=new Map();
-  function url(type,earned){
-    const key=(TYPE[type]?type:"Normal")+(earned?"+":"-");
-    if(!cache.has(key))cache.set(key,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(draw(TYPE[type]?type:"Normal",earned)));
+  const STYLES={greek:"Grego",celestial:"Celestial"};
+  let style=(()=>{try{return localStorage.getItem("hh_badge_style")||"greek";}catch(e){return "greek";}})();
+  if(!STYLES[style])style="greek";
+  document.documentElement.dataset.hbStyle=style;
+  function url(type,earned,st=style){
+    const t=TYPE[type]?type:"Normal";
+    const key=st+t+(earned?"+":"-");
+    if(!cache.has(key))cache.set(key,"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(st==="greek"?drawGreek(t,earned):draw(t,earned)));
     return cache.get(key);
+  }
+  function setStyle(st){
+    if(!STYLES[st]||st===style)return;
+    style=st;try{localStorage.setItem("hh_badge_style",st);}catch(e){}
+    document.querySelectorAll(".tc-badgecase>div .hb-slot").forEach(el=>el.querySelector("img")?.remove());
+    document.querySelectorAll(".trainer-badge-core.hb-core").forEach(el=>{delete el.dataset.hb;});
+    document.querySelectorAll(".tc-badgecase").forEach(el=>el.dataset.hbStyle=st);document.documentElement.dataset.hbStyle=st;
+    redecorate();
   }
   const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
   function img(b,cls="hb-badge"){
@@ -166,19 +255,21 @@
   function decorateCase(){
     const box=document.querySelector(".tc-badgecase>div");if(!box||typeof ensureTrainerData!=="function")return;
     const badges=(ensureTrainerData().badges||[]).slice(0,8);
-    const spans=[...box.querySelectorAll(".tc-badge")];
+    const spans=[...box.querySelectorAll(".tc-badge:not(.hb-empty)")];
     if(!spans.length||spans[0].querySelector("img"))return;
+    box.parentElement.dataset.hbStyle=style;
     spans.forEach((s,i)=>{
       const b=badges[i];if(!b)return;
       s.classList.add("hb-slot");
       s.innerHTML=`<i class="hb-glow" aria-hidden="true"></i>${img(b)}<small>${esc(b.name||"")}</small>`;
     });
     // completa o estojo com encaixes vazios até 8
-    for(let i=spans.length;i<8;i++)box.insertAdjacentHTML("beforeend",`<span class="tc-badge hb-slot hb-empty" aria-hidden="true"></span>`);
+    if(!box.querySelector(".hb-empty"))for(let i=spans.length;i<8;i++)box.insertAdjacentHTML("beforeend",`<span class="tc-badge hb-slot hb-empty" aria-hidden="true"></span>`);
     const caseEl=box.parentElement;
     const earned=badges.filter(b=>b.earned).length;
     const label=caseEl.querySelector("small");
-    if(label&&!caseEl.querySelector(".hb-count"))label.insertAdjacentHTML("afterend",`<b class="hb-count">${earned}/${Math.max(8,badges.length)}</b>`);
+    if(label&&!caseEl.querySelector(".hb-count"))label.insertAdjacentHTML("afterend",`<span class="hb-tools"><span class="hb-style" role="group" aria-label="Estilo das insígnias">${Object.entries(STYLES).map(([k,v])=>`<button type="button" data-hb-style="${k}" aria-pressed="${k===style}">${v}</button>`).join("")}</span><b class="hb-count">${earned}/${Math.max(8,badges.length)}</b></span>`);
+    caseEl.querySelectorAll("[data-hb-style]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.hbStyle===style)));
   }
 
   /* ---------- Editor de insígnias (Editar cartão) ---------- */
@@ -188,7 +279,7 @@
     grid.querySelectorAll(".trainer-badge-card").forEach((card,i)=>{
       const b=badges[i];const core=card.querySelector(".trainer-badge-core");
       if(!b||!core)return;
-      const key=(b.type||"Normal")+(b.earned?"+":"-");
+      const key=style+(b.type||"Normal")+(b.earned?"+":"-");
       if(core.dataset.hb===key)return;
       core.dataset.hb=key;core.classList.add("hb-core");
       core.innerHTML=img(b,"hb-badge hb-mini");
@@ -197,8 +288,19 @@
   }
 
   function run(){try{decorateCase();decorateEditor();}catch(e){}}
+  function redecorate(){
+    // recria as imagens do estojo no estilo novo
+    const box=document.querySelector(".tc-badgecase>div");
+    if(box&&typeof ensureTrainerData==="function"){
+      const badges=(ensureTrainerData().badges||[]).slice(0,8);
+      box.querySelectorAll(".hb-slot:not(.hb-empty)").forEach((s,i)=>{const b=badges[i];if(b)s.innerHTML=`<i class="hb-glow" aria-hidden="true"></i>${img(b)}<small>${esc(b.name||"")}</small>`;});
+    }
+    run();
+  }
+  // os botões ficam dentro do cartão: impede que o clique vire o cartão
+  document.addEventListener("click",e=>{const b=e.target.closest("button[data-hb-style]");if(!b)return;e.preventDefault();e.stopPropagation();setStyle(b.dataset.hbStyle);window.hhClassicSfx?.select?.();},true);
   const page=document.getElementById("pageTrainer");
   if(page)new MutationObserver(run).observe(page,{childList:true,subtree:true});
   run();
-  window.hhBadgeArt={url,img,draw,TYPES:Object.keys(TYPE)};
+  window.hhBadgeArt={url,img,draw,drawGreek,setStyle,STYLES,TYPES:Object.keys(TYPE),get style(){return style;}};
 })();
