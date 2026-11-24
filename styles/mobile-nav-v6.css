@@ -1,0 +1,65 @@
+/* ============================================================
+   V6 — Celular: rolagem e barra inferior
+   ============================================================ */
+@media (max-width:900px){
+  /* Rolagem: html e body viravam dois contêineres de rolagem
+     (overflow-x:hidden força overflow-y:auto) e o body tinha
+     overscroll-behavior-y:none, que bloqueava o arrasto do dedo.
+     clip corta o excesso lateral sem criar contêiner de rolagem. */
+  html{overflow-x:clip!important;overflow-y:visible!important}
+  html body{overflow-x:clip!important;overflow-y:visible!important;overscroll-behavior-y:auto!important}
+  html body.mobile-overlay-open{overflow:hidden!important}
+
+  :root{--mobile-nav-height:66px}
+
+  html body .mobile-bottom-nav.mn-v6{
+    display:grid!important;
+    grid-template-columns:repeat(7,minmax(0,1fr))!important;
+    gap:3px;
+    height:calc(var(--mobile-nav-height) + env(safe-area-inset-bottom))!important;
+    padding:6px 5px calc(6px + env(safe-area-inset-bottom))!important;
+    border-top:3px solid var(--cl-ink,#181a24)!important;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.07),transparent 40%),
+      var(--cl-panel,#262a36)!important;
+    box-shadow:0 -6px 18px rgba(0,0,0,.28)!important;
+    backdrop-filter:none!important;
+  }
+  html body .mn-v6 .mobile-nav-btn{
+    position:relative;
+    min-height:0!important;height:100%;
+    display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px!important;
+    padding:3px 0 2px!important;
+    border:2px solid transparent!important;border-radius:10px!important;
+    background:transparent!important;
+    color:#c9cdd8!important;
+    box-shadow:none!important;
+    transition:transform .12s ease,background-color .12s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  html body .mn-v6 .mobile-nav-btn .mn-ico{
+    display:grid!important;place-items:center;
+    width:30px!important;min-width:0!important;height:30px!important;
+    border:2px solid var(--cl-ink,#181a24);border-radius:9px;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--mn) 55%,#fff),var(--mn) 60%,color-mix(in srgb,var(--mn) 65%,#000));
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25),0 2px 0 var(--cl-ink,#181a24);
+    filter:saturate(.75) brightness(.92);
+    transition:transform .15s cubic-bezier(.3,1.6,.5,1),filter .15s;
+  }
+  html body .mn-v6 .mn-px{width:20px;height:20px;image-rendering:pixelated;filter:drop-shadow(1px 1px 0 rgba(0,0,0,.35))}
+  html body .mn-v6 .mobile-nav-btn b{
+    max-width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap;
+    font:400 8px/1 var(--cl-pixel,"Silkscreen",monospace)!important;
+    letter-spacing:0!important;text-transform:uppercase;
+  }
+  html body .mn-v6 .mobile-nav-btn:active .mn-ico{transform:translateY(2px);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -2px 0 rgba(0,0,0,.25),0 0 0 var(--cl-ink,#181a24)}
+  html body .mn-v6 .mobile-nav-btn.active{
+    background:var(--cl-card,#f4f4ec)!important;
+    border-color:var(--cl-ink,#181a24)!important;
+    color:var(--cl-text,#181a24)!important;
+    box-shadow:inset 0 -3px 0 var(--mn),0 2px 0 var(--cl-ink,#181a24)!important;
+    transform:translateY(-3px);
+  }
+  html body .mn-v6 .mobile-nav-btn.active .mn-ico{filter:none;transform:scale(1.06)}
+  @media (prefers-reduced-motion:reduce){html body .mn-v6 .mobile-nav-btn,html body .mn-v6 .mn-ico{transition:none}}
+}
