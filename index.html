@@ -17936,6 +17936,7 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
 <link rel="stylesheet" href="styles/special-themes-v6.css?v=20261124b" />
 <link rel="stylesheet" href="styles/gimmicks-v6.css?v=20261124" />
 <link rel="stylesheet" href="styles/badges-v6.css?v=20261124g" />
+<link rel="stylesheet" href="styles/nature-progress-v6.css?v=20261124d" />
 <link rel="stylesheet" href="styles/encyclopedia-device-v6.css?v=20261109-archive-2" />
 </head>
 <body>
@@ -21993,7 +21994,18 @@ function ensureProgression(p){
     }
   }
   if(!p.progression){
-    p.progression={auto:false,startLevel:Number(p.level||1),lastAppliedLevel:Number(p.level||1),preset:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0},blockSpent:{}};
+    p.progression={auto:true,autoDefaultV6:true,startLevel:Number(p.level||1),lastAppliedLevel:Number(p.level||1),preset:{hp:0,atk:0,def:0,spa:0,spd:0,spe:0},blockSpent:{}};
+  }
+  /* V6: o modo automático passa a ser o padrão. Fichas que nunca definiram pontos manuais
+     mudam para o automático uma única vez, a partir do nível atual (sem redistribuir nada). */
+  if(!p.progression.autoDefaultV6){
+    const presetTotal=Object.values(p.progression.preset||{}).reduce((sum,v)=>sum+Number(v||0),0);
+    if(!p.progression.auto&&presetTotal===0){
+      p.progression.auto=true;
+      p.progression.startLevel=Number(p.level||1);
+      p.progression.lastAppliedLevel=Number(p.level||1);
+    }
+    p.progression.autoDefaultV6=true;
   }
   if(!p.progression.preset) p.progression.preset={hp:0,atk:0,def:0,spa:0,spd:0,spe:0};
 
@@ -33229,5 +33241,6 @@ if(!document.getElementById("progressWarning").textContent.trim()){
   <script src="scripts/arena-picker-v6.js?v=20261124" defer></script>
   <script src="scripts/gimmicks-v6.js?v=20261124" defer></script>
   <script src="scripts/badges-v6.js?v=20261124g" defer></script>
+  <script src="scripts/nature-progress-v6.js?v=20261124d" defer></script>
 </body>
 </html>

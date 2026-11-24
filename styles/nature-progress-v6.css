@@ -1,0 +1,83 @@
+/* ============================================================
+   V6 — Nature & Progressão reorganizada
+   ============================================================ */
+.np-wrap{display:grid;gap:12px}
+.np-step{display:grid;gap:10px;padding:12px;border:2px solid var(--cl-line,#cfd3c4);border-radius:12px;background:var(--cl-card,#fff)}
+.np-step>header{display:flex;align-items:flex-start;gap:10px}
+.np-step>header>div{display:grid;gap:2px}
+.np-step>header b{font:400 12px var(--cl-title,inherit);color:var(--cl-text)}
+.np-step>header small{font-size:12px;line-height:1.4;color:var(--cl-muted);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;text-transform:none;letter-spacing:0}
+.np-num{flex:0 0 auto;display:grid;place-items:center;width:24px;height:24px;border:2px solid var(--cl-ink,#181a24);border-radius:50%;background:var(--cl-banner,#e3262f);color:#fff;font:700 11px var(--cl-pixel,monospace);box-shadow:0 2px 0 var(--cl-ink,#181a24)}
+.np-slot:empty{display:none}
+
+/* 1. Nature em uma linha */
+html body .np-wrap .nature-grid{display:grid!important;grid-template-columns:minmax(0,1.4fr) repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:0!important}
+html body .np-wrap .nature-grid>*{grid-column:auto!important;margin:0!important;min-width:0}
+html body .np-wrap .nature-grid .field>label{display:none}
+html body .np-wrap .nature-effect-card{display:flex!important;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:0!important;padding:8px 10px!important;border-radius:10px!important}
+html body .np-wrap .nature-effect-label{font-size:9px!important;white-space:nowrap}
+html body .np-wrap .nature-effect-card.positive .nature-effect-label::before{content:"▲ "}
+html body .np-wrap .nature-effect-card.negative .nature-effect-label::before{content:"▼ "}
+html body .np-wrap .nature-effect-value{font-weight:800!important;font-size:12px!important}
+html body .np-wrap .nature-description{display:none!important;grid-column:1/-1;margin:0!important;padding:0!important;border:0!important;background:none!important;font-size:12px!important;line-height:1.45;color:var(--cl-muted)!important;font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;text-transform:none!important;letter-spacing:0!important}
+
+/* 2. Escolha do modo */
+.np-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.np-switch button{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:center;padding:10px 12px;border:2px solid var(--cl-line,#cfd3c4);border-radius:12px;background:var(--cl-paper,#f4f4ec);color:var(--cl-text);text-align:left;cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s}
+.np-switch button:hover{transform:translateY(-2px)}
+.np-switch i{grid-row:span 2;display:grid;place-items:center;width:34px;height:34px;border:2px solid var(--cl-ink,#181a24);border-radius:10px;background:var(--cl-card,#fff);font-style:normal;font-size:16px}
+.np-switch b{font:400 11px var(--cl-title,inherit)}
+.np-switch b em{margin-left:6px;padding:1px 6px;border-radius:999px;background:#2a9a63;color:#fff;font:700 8px var(--cl-pixel,monospace);font-style:normal;vertical-align:2px}
+.np-switch small{font-size:11.5px;line-height:1.35;color:var(--cl-muted);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.np-switch button.on{border-color:var(--cl-banner,#e3262f);background:color-mix(in srgb,var(--cl-banner,#e3262f) 10%,var(--cl-card,#fff));box-shadow:0 0 0 2px color-mix(in srgb,var(--cl-banner,#e3262f) 45%,transparent)}
+.np-switch button.on i{background:var(--cl-banner,#e3262f);color:#fff}
+.np-wrap[data-mode="auto"] [data-slot="manual"],.np-wrap[data-mode="manual"] [data-slot="auto"]{display:none!important}
+
+/* prioridade automática mais enxuta */
+html body .np-wrap #autoPriorityPanel{margin:0!important;padding:10px!important;border:0!important;background:var(--cl-paper,#f4f4ec)!important;border-radius:10px!important;box-shadow:none!important}
+html body .np-wrap .auto-priority-head{display:none!important}
+.np-hint{margin:0 0 8px;font-size:12px;line-height:1.4;color:var(--cl-muted);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.np-hint b{color:var(--cl-text)}
+html body .np-wrap .priority-grid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:6px!important}
+html body .np-wrap .priority-slot{padding:6px!important;border-radius:9px!important}
+html body .np-wrap .priority-slot label{font-size:9px!important}
+html body .np-wrap .priority-slot select{padding:6px 4px!important;font-size:11px!important}
+html body .np-wrap .priority-preview{margin-top:8px!important;padding:8px!important}
+
+/* manual: 6 campos numa linha */
+html body .np-wrap #manualPresetSection{margin:0!important}
+html body .np-wrap #manualPresetSection>label{display:none}
+html body .np-wrap #presetGrid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:6px!important}
+html body .np-wrap #presetGrid>*{padding:6px!important;border-radius:9px!important}
+html body .np-wrap #presetGrid small,html body .np-wrap #presetGrid .preset-meta{font-size:8.5px!important;line-height:1.3}
+html body .np-wrap .progress-summary{display:flex!important;gap:8px!important;margin:8px 0 0!important}
+html body .np-wrap .progress-chip{flex:1;padding:6px 10px!important}
+
+/* 3. Subir de nível */
+html body .np-wrap .level-training-console{margin:0!important}
+html body .np-wrap .level-training-note{display:none}
+
+/* 4. Regras */
+.np-rules{border:2px dashed var(--cl-line,#cfd3c4);border-radius:12px;background:transparent}
+.np-rules>summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;list-style:none}
+.np-rules>summary::-webkit-details-marker{display:none}
+.np-rules>summary b{font:400 11px var(--cl-title,inherit)}
+.np-rules>summary small{flex:1;font-size:12px;color:var(--cl-muted);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.np-rules>summary i{font-style:normal;transition:transform .2s}
+.np-rules[open]>summary i{transform:rotate(180deg)}
+.np-rules>.np-slot{display:grid;gap:8px;padding:0 12px 12px}
+.np-rules :is(#progressLimitNotice,#progressionModeNote){margin:0!important;font-size:12px!important;line-height:1.45!important;font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;text-transform:none!important;letter-spacing:0!important}
+.np-hidden-toggle[hidden]{display:none!important}
+
+@media (max-width:760px){
+  .np-switch{grid-template-columns:1fr}
+  html body .np-wrap .nature-grid{grid-template-columns:1fr 1fr!important}
+  html body .np-wrap .nature-grid .nature-selector-field{grid-column:1/-1}
+  html body .np-wrap .priority-grid,html body .np-wrap #presetGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  html body .np-wrap .nature-effect-card{flex-direction:column;align-items:flex-start;gap:2px;padding:6px 8px!important}
+  html body .np-wrap .nature-effect-label{font-size:8px!important}
+  .np-rules>summary small{display:none}
+  .np-rules>summary b{flex:1}
+  html body .np-wrap .nature-grid>.nature-selector-field{grid-column:1/-1!important}
+}
+html body .np-wrap .preset-limit{display:block;margin-top:4px;font:600 10px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif!important;text-transform:none!important;letter-spacing:0!important;color:var(--cl-muted)!important}
