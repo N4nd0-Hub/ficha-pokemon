@@ -298,6 +298,7 @@
   }
 
   document.addEventListener("hh:render",render);
+  document.addEventListener("hh:moveschange",render);
   document.addEventListener("hh:matrixchange",render);
   document.addEventListener("hh:pokemonchange",render);
   let t=0;
