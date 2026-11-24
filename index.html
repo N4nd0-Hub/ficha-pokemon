@@ -17933,6 +17933,7 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
 <link rel="stylesheet" href="styles/appearance-v6.css?v=20261123" />
 <link rel="stylesheet" href="styles/capture-v6.css?v=20261124b" />
 <link rel="stylesheet" href="styles/trade-pc-v6.css?v=20261124" />
+<link rel="stylesheet" href="styles/special-themes-v6.css?v=20261124b" />
 <link rel="stylesheet" href="styles/encyclopedia-device-v6.css?v=20261109-archive-2" />
 </head>
 <body>
@@ -20432,9 +20433,9 @@ const CONDITIONS = {
 
 const THEMES = {
   hazel:{
-    label:"Básico", vars:{
-      "--bg":"#171a1f","--bg2":"#20252b","--panel":"#252b31","--panel2":"#2d343b","--line":"#44505a",
-      "--text":"#f2f4f6","--muted":"#a9b1b8","--accent":"#c86464","--accent2":"#e29a70"
+    label:"Padrão", vars:{
+      "--bg":"#121316","--bg2":"#1b1d21","--panel":"#23262b","--panel2":"#2c3036","--line":"#4a4f57",
+      "--text":"#f4f5f7","--muted":"#a9aeb6","--accent":"#e3262f","--accent2":"#6b7280"
     }
   },
   pepsi:{
@@ -20508,12 +20509,30 @@ const THEMES = {
       "--bg":"#130405","--bg2":"#210607","--panel":"#2c090a","--panel2":"#3b0c0e","--line":"#6c1c20",
       "--text":"#fff3f3","--muted":"#cba4a5","--accent":"#e32636","--accent2":"#7f0d15"
     }
+  },
+  pikachu:{
+    label:"Pikachu", special:true, vars:{
+      "--bg":"#1a1406","--bg2":"#241b08","--panel":"#2b210a","--panel2":"#35290d","--line":"#6b5414",
+      "--text":"#fff8e1","--muted":"#d6c48f","--accent":"#f2b705","--accent2":"#b8860b"
+    }
+  },
+  n:{
+    label:"N", special:true, vars:{
+      "--bg":"#0c1716","--bg2":"#122220","--panel":"#162a27","--panel2":"#1c3430","--line":"#3a6159",
+      "--text":"#effaf6","--muted":"#a5c4bb","--accent":"#3f9c80","--accent2":"#4a5a86"
+    }
+  },
+  arceus:{
+    label:"Arceus", special:true, vars:{
+      "--bg":"#1a1710","--bg2":"#231f15","--panel":"#2b261a","--panel2":"#352f21","--line":"#6e6040",
+      "--text":"#fbf6ea","--muted":"#cfc3a3","--accent":"#c9a23a","--accent2":"#9a8f78"
+    }
   }
 
 };
 
 const THEME_META={
-  hazel:{description:"Cinza escuro, vermelho suave e laranja",swatches:["#171a1f","#c86464","#e29a70"]},
+  hazel:{description:"Poké Ball: vermelho, cinza e preto",swatches:["#121316","#e3262f","#9aa0a8"]},
   pepsi:{description:"Vermelho, branco e azul",swatches:["#ffffff","#e31b23","#005cb9"]},
   pepsizero:{description:"Preto, vermelho e azul",swatches:["#08090b","#e31b23","#0065bd"]},
   esmeralda:{description:"Verde, preto e vermelho",swatches:["#0b0f0d","#148f4f","#d63b3b"]},
@@ -20525,13 +20544,23 @@ const THEME_META={
   platinum:{description:"Dourado, preto e vermelho",swatches:["#09090a","#d4af37","#b21f2d"]},
   pearl:{description:"Branco, roxo e rosa",swatches:["#ffffff","#7c3fb0","#e46ca6"]},
   diamond:{description:"Cinza, azul escuro e prata",swatches:["#283342","#173f7a","#c0cad4"]},
-  firered:{description:"Vermelho, vermelho escuro e vinho",swatches:["#e32636","#9e1821","#3d070a"]}
+  firered:{description:"Vermelho, vermelho escuro e vinho",swatches:["#e32636","#9e1821","#3d070a"]},
+  pikachu:{description:"Raios, faíscas e amarelo elétrico",swatches:["#f2b705","#2b2116","#e3350d"],special:true},
+  n:{description:"Fórmulas flutuando, roda-gigante e verde-menta",swatches:["#3f9c80","#f2f6f1","#4a5a86"],special:true},
+  arceus:{description:"Mármore grego, ouro e luz divina",swatches:["#f3efe6","#c9a23a","#9a8f78"],special:true}
 };
 
 const FONT_THEMES={
+  arcade:{
+    label:"Arcade 8-bit",
+    description:"Padrão: títulos em Press Start 2P e textos em Silkscreen.",
+    ui:'"Silkscreen",ui-monospace,monospace',
+    display:'"Press Start 2P","Silkscreen",ui-monospace,monospace',
+    mono:'"Silkscreen",ui-monospace,monospace'
+  },
   standard:{
-    label:"Padrão",
-    description:"Interface moderna e legível.",
+    label:"Letras normais",
+    description:"Textos em fonte comum, mais fáceis de ler.",
     ui:'"Segoe UI",Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif',
     display:'"Trebuchet MS","Segoe UI",system-ui,sans-serif',
     mono:'ui-monospace,"Cascadia Code","SFMono-Regular",Consolas,monospace'
@@ -20542,19 +20571,13 @@ const FONT_THEMES={
     ui:'"Silkscreen",ui-monospace,monospace',
     display:'"Silkscreen",ui-monospace,monospace',
     mono:'"Silkscreen",ui-monospace,monospace'
-  },
-  arcade:{
-    label:"Arcade 8-bit",
-    description:"Títulos em Press Start 2P e textos em Silkscreen.",
-    ui:'"Silkscreen",ui-monospace,monospace',
-    display:'"Press Start 2P","Silkscreen",ui-monospace,monospace',
-    mono:'"Silkscreen",ui-monospace,monospace'
   }
 };
 
 const defaultData = {
   theme:"hazel",
-  fontTheme:"standard",
+  fontTheme:"arcade",
+  fontDefaultV6:true,
   pokedexColor:"#e31b3d",
   pokedexFollowTheme:true,
   sheetPokedexMode:false,
@@ -20602,7 +20625,9 @@ const defaultData = {
 
 let state = loadState();
 if(!Array.isArray(state.speciesBank)) state.speciesBank=[];
-if(!FONT_THEMES[state.fontTheme])state.fontTheme="standard";
+if(!FONT_THEMES[state.fontTheme])state.fontTheme="arcade";
+/* V6: Arcade 8-bit virou a fonte padrão (uma vez; depois vale a escolha da pessoa). */
+if(!state.fontDefaultV6){if(state.fontTheme==="standard")state.fontTheme="arcade";state.fontDefaultV6=true;}
 normalizePokedexAppearance();
 normalizeSheetAppearance();
 normalizeAppearanceModalTab();
@@ -33178,10 +33203,11 @@ if(!document.getElementById("progressWarning").textContent.trim()){
   <script src="scripts/trainer-inventory-v6.js?v=20261122-ds" defer></script>
   <script src="scripts/happiness-v6.js?v=20261115b" defer></script>
   <script src="scripts/topbar-v6.js?v=20261123px" defer></script>
-  <script src="scripts/appearance-v6.js?v=20261123" defer></script>
+  <script src="scripts/appearance-v6.js?v=20261123b" defer></script>
   <script src="scripts/damage-matrix-v6.js?v=20261114-qd" defer></script>
   <script src="scripts/battle-v6.js?v=20261114-qd" defer></script>
   <script src="scripts/capture-v6.js?v=20261124b" defer></script>
   <script src="scripts/trade-pc-v6.js?v=20261124" defer></script>
+  <script src="scripts/special-themes-v6.js?v=20261124b" defer></script>
 </body>
 </html>

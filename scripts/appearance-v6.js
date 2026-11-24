@@ -59,6 +59,19 @@
       <span class="ap-check" aria-hidden="true">✓</span>
     </button>`;
   }
+  function specialCard(key,theme,active){
+    const meta=(typeof THEME_META!=="undefined"&&THEME_META[key])||{description:""};
+    return `<button type="button" class="theme-option ap-theme ap-special sp-${esc(key)}${active?" active":""}" data-theme="${esc(key)}" aria-pressed="${active}">
+      <span class="ap-preview ap-sp-preview" aria-hidden="true"><i class="sp-a"></i><i class="sp-b"></i><i class="sp-c"></i><i class="sp-d"></i></span>
+      <span class="ap-name"><b>${esc(theme.label)} <em>ESPECIAL</em></b><small>${esc(meta.description||"")}</small></span>
+      <span class="ap-check" aria-hidden="true">✓</span>
+    </button>`;
+  }
+  document.addEventListener("change",e=>{
+    if(e.target?.id!=="apFxToggle")return;
+    try{localStorage.setItem("hh_fx_off",e.target.checked?"0":"1");}catch(err){}
+    window.hhSpecialFx?.refresh();
+  });
   function fontCard(key,font,active){
     return `<button type="button" class="font-theme-option ap-font${active?" active":""}" data-font-theme="${esc(key)}" aria-pressed="${active}">
       <span class="ap-font-sample" style="font-family:${esc(font.display||font.ui)}">Aa</span>
@@ -69,7 +82,13 @@
   if(typeof window.renderThemeOptions==="function"){
     window.renderThemeOptions=function(){
       const grid=document.getElementById("themeGrid");if(!grid)return;
-      grid.innerHTML=Object.entries(THEMES).map(([k,t])=>themeCard(k,t,state.theme===k)).join("");
+      const all=Object.entries(THEMES);
+      const normal=all.filter(([,t])=>!t.special),special=all.filter(([,t])=>t.special);
+      let fxOff=false;try{fxOff=localStorage.getItem("hh_fx_off")==="1";}catch(e){}
+      grid.innerHTML=normal.map(([k,t])=>themeCard(k,t,state.theme===k)).join("")+
+        (special.length?`<div class="ap-special-head"><b>✨ Temas especiais</b><small>Com animações e enfeites exclusivos</small>
+          <label class="ap-fx-toggle"><input type="checkbox" id="apFxToggle"${fxOff?"":" checked"}> Efeitos animados</label></div>`+
+          special.map(([k,t])=>specialCard(k,t,state.theme===k)).join(""):"");
     };
   }
   if(typeof window.renderFontThemeOptions==="function"){
