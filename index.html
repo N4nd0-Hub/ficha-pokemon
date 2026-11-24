@@ -17925,7 +17925,7 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
 <link rel="stylesheet" href="styles/pokedex-device-v6.css?v=20261109-dex-controls" />
 <link rel="stylesheet" href="styles/classic-ui-v6.css?v=20261122-tc" />
 <link rel="stylesheet" href="styles/game-views-v6.css?v=20261122-wide" />
-<link rel="stylesheet" href="styles/arena-scenes-v6.css?v=20261114" />
+<link rel="stylesheet" href="styles/arena-scenes-v6.css?v=20261124" />
 <link rel="stylesheet" href="styles/nav-buttons-v6.css?v=20261122-dex" />
 <link rel="stylesheet" href="styles/trainer-inventory-v6.css?v=20261122-ds" />
 <link rel="stylesheet" href="styles/happiness-v6.css?v=20261115b" />
@@ -18891,6 +18891,10 @@ html[data-sheet-mode="pokedex"] .top-actions .top-personalize-btn{
                     <option value="sky">Céu</option>
                     <option value="cave">Caverna</option>
                     <option value="volcanic">Vulcânico</option>
+                    <option value="temple">Templo</option>
+                    <option value="city">Cidade</option>
+                    <option value="mountain">Montanha</option>
+                    <option value="ocean">Oceano</option>
                   </select>
                 </label>
               </div>
@@ -25605,7 +25609,11 @@ const COMBAT_ARENAS={
   forest:{label:"Floresta Densa"},
   sky:{label:"Céu"},
   cave:{label:"Caverna"},
-  volcanic:{label:"Vulcânico"}
+  volcanic:{label:"Vulcânico"},
+  temple:{label:"Templo"},
+  city:{label:"Cidade"},
+  mountain:{label:"Montanha"},
+  ocean:{label:"Oceano"}
 };
 
 function normalizeCombatArena(value){
@@ -33209,5 +33217,6 @@ if(!document.getElementById("progressWarning").textContent.trim()){
   <script src="scripts/capture-v6.js?v=20261124b" defer></script>
   <script src="scripts/trade-pc-v6.js?v=20261124" defer></script>
   <script src="scripts/special-themes-v6.js?v=20261124b" defer></script>
+  <script src="scripts/arena-picker-v6.js?v=20261124" defer></script>
 </body>
 </html>

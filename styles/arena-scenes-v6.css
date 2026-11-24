@@ -180,3 +180,102 @@ html body .combat-screen[data-arena] .combat-arena-picker{z-index:12!important}
   html body .combat-screen[data-arena] .combat-arena-picker select{min-width:0!important;font-size:12px!important}
   html body .combat-screen[data-arena] .combat-platform{width:86%!important;bottom:2%!important}
 }
+
+/* ---------- Novos ambientes ---------- */
+html body .combat-screen[data-arena="temple"]{--arena-scene:url("../assets/arenas/temple.png");--arena-platform:url("../assets/arenas/temple-platform.png")}
+html body .combat-screen[data-arena="city"]{--arena-scene:url("../assets/arenas/city.png");--arena-platform:url("../assets/arenas/city-platform.png")}
+html body .combat-screen[data-arena="mountain"]{--arena-scene:url("../assets/arenas/mountain.png");--arena-platform:url("../assets/arenas/mountain-platform.png")}
+html body .combat-screen[data-arena="ocean"]{--arena-scene:url("../assets/arenas/ocean.png");--arena-platform:url("../assets/arenas/ocean-platform.png");background-color:#11527e!important}
+
+/* Templo: brilho dourado subindo e luz pulsando */
+html body .combat-screen[data-arena="temple"] .combat-screen-grid::before{
+  left:0;right:0;top:0;height:200%;
+  background-image:url("../assets/arenas/fx-sparkle.png");background-size:320px 160px;
+  filter:sepia(1) saturate(4) hue-rotate(-10deg) brightness(1.2);opacity:.7;
+  animation:arenaRise 22s linear infinite;
+}
+html body .combat-screen[data-arena="temple"] .combat-screen-grid::after{
+  inset:0;background:radial-gradient(ellipse at 50% 8%,rgba(255,236,170,.45),transparent 55%);
+  animation:arenaGlow 4s ease-in-out infinite alternate;
+}
+/* Cidade: neon piscando e janelas acendendo */
+html body .combat-screen[data-arena="city"] .combat-screen-grid::before{
+  left:0;right:0;top:0;height:60%;
+  background-image:url("../assets/arenas/fx-glint.png");background-size:320px 160px;opacity:.5;
+  animation:arenaTwinkle 3s steps(2) infinite;
+}
+html body .combat-screen[data-arena="city"] .combat-screen-grid::after{
+  inset:0;background:radial-gradient(circle at 22.5% 44%,rgba(255,80,170,.55),transparent 12%);
+  animation:arenaNeon 4s steps(1) infinite;
+}
+@keyframes arenaNeon{0%,40%,46%,52%,100%{opacity:1}43%,49%{opacity:.15}}
+/* Montanha: neve caindo e nuvens passando lá embaixo */
+html body .combat-screen[data-arena="mountain"] .combat-screen-grid::before{
+  left:-50%;top:-100%;width:200%;height:200%;
+  background-image:url("../assets/arenas/fx-snow.png");background-size:240px 180px;
+  animation:arenaFall 12s linear infinite;
+}
+html body .combat-screen[data-arena="mountain"] .combat-screen-grid::after{
+  left:0;top:40%;width:200%;height:24%;
+  background-image:url("../assets/arenas/fx-clouds.png");background-size:auto 100%;background-repeat:repeat-x;opacity:.75;
+  animation:arenaDrift 60s linear infinite;
+}
+/* Oceano: bolhas subindo e cardumes passando */
+html body .combat-screen[data-arena="ocean"] .combat-screen-grid::before{
+  left:0;right:0;top:0;height:200%;
+  background-image:url("../assets/arenas/fx-bubbles.png");background-size:240px 240px;
+  animation:arenaRise 10s linear infinite;
+}
+html body .combat-screen[data-arena="ocean"] .combat-screen-grid::after{
+  left:0;top:12%;width:200%;height:42%;
+  background-image:url("../assets/arenas/fx-fish.png");background-size:auto 100%;background-repeat:repeat-x;opacity:.85;
+  animation:arenaDrift 34s linear infinite reverse;
+}
+html body .combat-screen[data-arena="ocean"]::before{
+  background:linear-gradient(105deg,transparent 30%,rgba(190,240,255,.10) 40%,transparent 50%),radial-gradient(ellipse at 50% 120%,rgba(0,0,0,.3),transparent 60%)!important;
+  animation:arenaSway 7s ease-in-out infinite alternate;
+}
+@keyframes arenaSway{from{background-position:-40px 0,0 0}to{background-position:40px 0,0 0}}
+
+/* ---------- Seletor de ambiente com miniaturas ---------- */
+html body .combat-screen[data-arena] .combat-arena-picker.ar-ready{
+  padding:0!important;border:0!important;background:none!important;box-shadow:none!important;display:block!important;
+}
+.combat-arena-picker.ar-ready>:not(.ar-btn):not(.ar-pop){display:none!important}
+.ar-btn{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border:3px solid var(--cl-ink,#181a24);border-radius:12px;
+  background:var(--cl-card,#fff);color:var(--cl-text,#23262e);cursor:pointer;box-shadow:0 3px 0 var(--cl-ink,#181a24);transition:transform .12s}
+.ar-btn:hover{transform:translateY(-2px)}
+.ar-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cl-ink,#181a24)}
+.ar-thumb{display:block;width:56px;height:28px;border:2px solid var(--cl-ink,#181a24);border-radius:6px;background:center/cover no-repeat;image-rendering:pixelated}
+.ar-btn-text{display:grid;text-align:left;line-height:1.15}
+.ar-btn-text small{font:700 8px var(--cl-pixel,monospace);letter-spacing:.08em;color:var(--cl-muted,#5f6670)}
+.ar-btn-text b{font:400 11px var(--cl-title,monospace)}
+.ar-btn-caret{font:700 10px var(--cl-pixel,monospace);transition:transform .15s}
+.ar-open .ar-btn-caret{transform:rotate(180deg)}
+.ar-pop{position:absolute;left:0;bottom:calc(100% + 8px);width:min(690px,calc(100vw - 64px));padding:10px;border:3px solid var(--cl-ink,#181a24);border-radius:14px;
+  background:var(--cl-paper,#fbfaf2);box-shadow:0 5px 0 var(--cl-ink,#181a24),0 18px 40px rgba(0,0,0,.35);z-index:30}
+.ar-pop[hidden]{display:none!important}
+.ar-pop h4{margin:0 0 8px;font:400 11px var(--cl-title,monospace);color:var(--cl-text,#23262e);display:flex;justify-content:space-between;align-items:center}
+.ar-pop h4 small{font:600 11px system-ui,sans-serif;color:var(--cl-muted)}
+.ar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;max-height:min(330px,56vh);overflow:auto;padding:2px}
+.ar-card{position:relative;display:grid;gap:4px;padding:4px;border:2px solid var(--cl-ink,#181a24);border-radius:10px;background:var(--cl-card,#fff);color:var(--cl-text);cursor:pointer;text-align:left;transition:transform .12s}
+.ar-card:hover{transform:translateY(-2px)}
+.ar-card .ar-thumb{width:100%;height:auto;aspect-ratio:2/1}
+.ar-card b{padding:0 2px 2px;font:700 10px var(--cl-pixel,monospace)}
+.ar-card.on{box-shadow:0 0 0 3px var(--cl-banner,#e3262f)}
+.ar-card.on::after{content:"✓";position:absolute;top:6px;right:6px;display:grid;place-items:center;width:20px;height:20px;border:2px solid var(--cl-ink);border-radius:50%;background:var(--cl-banner,#e3262f);color:#fff;font:900 11px system-ui}
+.ar-card em{position:absolute;top:6px;left:6px;padding:1px 5px;border:2px solid var(--cl-ink);border-radius:5px;background:#ffd84a;color:#2a1f0a;font:700 7px var(--cl-pixel,monospace);font-style:normal}
+@media (max-width:640px){
+  .ar-btn{padding:3px 8px 3px 3px;gap:6px}
+  .ar-thumb{width:40px;height:20px}
+  .ar-btn-text small{display:none}
+  .ar-pop{position:fixed;left:8px;right:8px;bottom:84px;width:auto}
+  .ar-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+.ar-card{grid-template-columns:minmax(0,1fr);align-content:start}
+.ar-card .ar-thumb{min-width:0;max-width:100%}
+@media (max-width:640px){
+  .ar-pop{position:absolute;left:0;right:auto;bottom:calc(100% + 6px);width:calc(100vw - 64px);max-width:420px}
+  .ar-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:230px}
+  .ar-card b{font-size:8px}
+}

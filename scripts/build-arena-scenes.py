@@ -305,6 +305,234 @@ def scene_volcanic():
     dots(im, 50, (0, 0, W, HORIZON), ["#ffb040", "#ff7a2a"], 14)
     return im
 
+
+def column(d, x, top, base, w, light="#f4efe2", mid="#ddd5c2", dark="#b8ad94", broken=False):
+    """Coluna grega com caneluras, capitel e base."""
+    d.rectangle([x - 1, base - 3, x + w + 1, base], fill=hexc(dark))
+    d.rectangle([x - 1, base - 4, x + w + 1, base - 4], fill=hexc(light))
+    d.rectangle([x, top + 3, x + w, base - 4], fill=hexc(mid))
+    for k in range(x + 1, x + w, 3):
+        d.line([(k, top + 4), (k, base - 5)], fill=hexc(dark))
+    d.line([(x, top + 3), (x, base - 5)], fill=hexc(light))
+    if broken:
+        d.polygon([(x, top + 3), (x + w // 2, top), (x + w, top + 5), (x + w, top + 3)], fill=hexc(mid))
+        return
+    d.rectangle([x - 2, top, x + w + 2, top + 2], fill=hexc(light))
+    d.rectangle([x - 2, top + 2, x + w + 2, top + 2], fill=hexc(dark))
+
+def scene_temple():
+    im = Image.new("RGBA", (W, H))
+    gradient(im, 0, HORIZON, ["#6b8fd8", "#93acdf", "#c9c3d8", "#f2d3b0", "#ffe2b0"])
+    d = ImageDraw.Draw(im)
+    d.ellipse([136, 6, 184, 54], fill=hexc("#fff4d6"))
+    rays = Image.new("RGBA", (W, H), (0, 0, 0, 0)); rd = ImageDraw.Draw(rays)
+    for a in range(0, 360, 24):
+        r = math.radians(a)
+        rd.polygon([(160, 30), (160 + 220 * math.cos(r), 30 + 220 * math.sin(r)), (160 + 220 * math.cos(r + .12), 30 + 220 * math.sin(r + .12))], fill=(255, 240, 200, 26))
+    im.alpha_composite(rays); d = ImageDraw.Draw(im)
+    for x, y, w in [(14, 30, 40), (250, 22, 46)]:
+        cloud(d, x, y, w, "#fff6ea", "#ead8c6")
+    ridge(im, 78, 8, "#a8a4b8", 3, hl="#bdb8c9")
+    ridge(im, 86, 5, "#8aa070", 9, freq=1.5, hl="#a2b886")
+    # templo ao fundo
+    tx0, tx1, tb = 92, 228, 88
+    d.rectangle([tx0 - 6, tb, tx1 + 6, tb + 2], fill=hexc("#cfc6b0"))
+    d.rectangle([tx0 - 3, tb - 2, tx1 + 3, tb], fill=hexc("#e8e1d0"))
+    d.rectangle([tx0, tb - 4, tx1, tb - 2], fill=hexc("#f4efe2"))
+    for i in range(8):
+        column(d, tx0 + 3 + i * 17, 44, tb - 4, 7)
+    d.rectangle([tx0 - 2, 38, tx1 + 2, 43], fill=hexc("#ece5d4"))
+    for k in range(tx0, tx1, 6):
+        d.rectangle([k, 39, k + 2, 41], fill=hexc("#c9a23a"))
+    d.rectangle([tx0 - 4, 36, tx1 + 4, 37], fill=hexc("#d8cfba"))
+    d.polygon([(tx0 - 4, 36), (160, 18), (tx1 + 4, 36)], fill=hexc("#f4efe2"))
+    d.polygon([(tx0 + 8, 34), (160, 22), (tx1 - 8, 34)], fill=hexc("#ddd5c2"))
+    d.line([(tx0 - 4, 36), (160, 18), (tx1 + 4, 36)], fill=hexc("#fffaf0"))
+    d.ellipse([154, 26, 166, 33], fill=hexc("#c9a23a"))
+    # colunas quebradas nas laterais
+    for x, top, w in [(14, 56, 9), (36, 68, 8), (276, 50, 10), (300, 64, 9)]:
+        column(d, x, top, 96, w, broken=(x in (36, 300)))
+    # piso de mármore em perspectiva
+    stripes(im, HORIZON, ["#efe8d8", "#e2d8c2"], first=2, grow=1.18)
+    vx, vy = 160, 40
+    for k in range(-12, 13):
+        xb = 160 + k * 34
+        x0 = vx + (xb - vx) * (HORIZON - vy) / (H - vy)
+        d.line([(int(x0), HORIZON), (xb, H)], fill=hexc("#cbbd9e"))
+    dots(im, 40, (0, HORIZON + 6, W, H), ["#d8c7a0", "#f7f1e2"], 23)
+    for x in (60, 250):  # vasos
+        d.ellipse([x - 5, 112, x + 5, 124], fill=hexc("#b8582c"))
+        d.rectangle([x - 3, 108, x + 3, 112], fill=hexc("#b8582c"))
+        d.line([(x - 4, 117), (x + 4, 117)], fill=hexc("#2a1a10"))
+        d.line([(x - 2, 113), (x - 2, 121)], fill=hexc("#e08050"))
+    return im
+
+def scene_city():
+    im = Image.new("RGBA", (W, H))
+    gradient(im, 0, 96, ["#1a1838", "#3a2a5a", "#7a3c6a", "#d0607a", "#f59a7a", "#3a2a4a"])
+    d = ImageDraw.Draw(im)
+    # prédios no fim do beco
+    rnd = random.Random(8)
+    x = 96
+    while x < 224:
+        w, h = rnd.randint(12, 22), rnd.randint(30, 62)
+        d.rectangle([x, 86 - h, x + w, 86], fill=hexc(rnd.choice(["#2a2540", "#322a4a", "#251f38"])))
+        for wy in range(86 - h + 4, 84, 5):
+            for wx in range(x + 2, x + w - 2, 4):
+                if rnd.random() < .45:
+                    d.rectangle([wx, wy, wx + 1, wy + 2], fill=hexc(rnd.choice(["#ffd27a", "#ffe9a8", "#9ee0ff"])))
+        x += w + 1
+    # paredes do beco em perspectiva
+    def wall(xa, xb, side):
+        top_far, top_near = 10, -40
+        poly = [(xa, top_far), (xb, top_near), (xb, H), (xa, 96)]
+        d.polygon(poly, fill=hexc("#5a2f2a" if side == "l" else "#4e2a28"))
+        for i in range(0, 40):  # tijolos
+            t = i / 40
+            y = int(top_far + (H - top_far) * t)
+            for k in range(0, 8):
+                f = k / 8
+                xx = int(xa + (xb - xa) * f)
+                yy = int(y + (top_near - top_far) * f * (1 - t))
+                d.point((xx + (i % 2) * 3, yy), fill=hexc("#7a443a"))
+        d.line([(xa, top_far), (xa, 96)], fill=hexc("#2a1614"))
+    wall(96, 0, "l")
+    wall(224, W, "r")
+    # janelas e escada de incêndio
+    for (x0, y0, x1, y1, lit) in [(20, 30, 40, 52, True), (52, 40, 66, 58, False), (262, 34, 284, 56, True), (240, 44, 254, 60, False)]:
+        d.rectangle([x0, y0, x1, y1], fill=hexc("#ffd88a" if lit else "#241c2a"))
+        d.rectangle([x0, y0, x1, y1], outline=hexc("#2a1614"))
+        d.line([((x0 + x1) // 2, y0), ((x0 + x1) // 2, y1)], fill=hexc("#2a1614"))
+    for y in (64, 88):
+        d.line([(232, y), (300, y - 10)], fill=hexc("#1a1a22"), width=2)
+        for k in range(232, 300, 6):
+            d.line([(k, y - (k - 232) * 10 // 68), (k, y - 8 - (k - 232) * 10 // 68)], fill=hexc("#1a1a22"))
+    # letreiro neon
+    d.rectangle([58, 64, 86, 76], fill=hexc("#1a1020"), outline=hexc("#ff4fa8"))
+    d.text((61, 65), "BAR", fill=hexc("#ff7ac0"))
+    # canos
+    d.rectangle([4, 0, 7, H], fill=hexc("#3a3a44")); d.line([(5, 0), (5, H)], fill=hexc("#6a6a78"))
+    d.rectangle([308, 0, 311, H], fill=hexc("#3a3a44"))
+    # chão de asfalto
+    stripes(im, 96, ["#3a3844", "#34323e"], first=2, grow=1.16)
+    d.polygon([(150, 96), (170, 96), (176, H), (144, H)], fill=hexc("#2e2c36"))
+    for y in range(100, H, 10):
+        d.line([(160, y), (160, y + 4)], fill=hexc("#c8b860"))
+    # lixeiras e caixa
+    for x, b in [(18, 132), (40, 124)]:
+        d.rectangle([x, b - 16, x + 14, b], fill=hexc("#5a6470"))
+        d.rectangle([x - 1, b - 18, x + 15, b - 16], fill=hexc("#7a8490"))
+        for k in range(x + 3, x + 13, 4):
+            d.line([(k, b - 14), (k, b - 2)], fill=hexc("#47505a"))
+    d.rectangle([268, 112, 312, 136], fill=hexc("#2f5a48")); d.rectangle([266, 108, 314, 112], fill=hexc("#3f7a60"))
+    d.rectangle([240, 126, 258, 138], fill=hexc("#a8784a")); d.line([(240, 132), (258, 132)], fill=hexc("#7a5434"))
+    # poças refletindo o neon
+    for x, y, w in [(70, 138, 30), (196, 130, 22), (110, 150, 26)]:
+        d.ellipse([x, y, x + w, y + 4], fill=hexc("#5a4a7a"))
+        d.line([(x + 4, y + 2), (x + w // 2, y + 2)], fill=hexc("#ff7ac0"))
+    dots(im, 50, (0, 100, W, H), ["#4a4856", "#2a2832"], 41)
+    return im
+
+def scene_mountain():
+    im = Image.new("RGBA", (W, H))
+    gradient(im, 0, 112, ["#1e4fa8", "#3a74c8", "#6a9fe0", "#a8cdf2", "#e6f3fc"])
+    d = ImageDraw.Draw(im)
+    d.ellipse([256, 8, 284, 36], fill=hexc("#fffbe8"))
+    # picos nevados distantes
+    for cx, h, w, c in [(40, 40, 50, "#8aa0c8"), (120, 30, 40, "#9aaed2"), (210, 46, 56, "#7f96c2"), (300, 34, 44, "#9aaed2")]:
+        d.polygon([(cx - w, 80), (cx, 80 - h), (cx + w, 80)], fill=hexc(c))
+        d.polygon([(cx - w // 4, 80 - h * 3 // 4), (cx, 80 - h), (cx + w // 4, 80 - h * 3 // 4), (cx + 4, 80 - h * 2 // 3), (cx - 3, 80 - h * 5 // 7)], fill=hexc("#f4f8ff"))
+    # mar de nuvens
+    rnd = random.Random(17)
+    for row, (y, c, sh) in enumerate([(78, "#eef5fc", "#cddff0"), (88, "#ffffff", "#dbe7f3")]):
+        for x in range(-10, W + 20, 20 + row * 6):
+            r = 10 + row * 3 + rnd.randint(-2, 3)
+            d.ellipse([x - r, y - r + 2, x + r, y + r + 2], fill=hexc(sh))
+            d.ellipse([x - r, y - r, x + r, y + r], fill=hexc(c))
+        d.rectangle([0, y, W, y + 14], fill=hexc(c))
+    # cume rochoso em primeiro plano
+    d.polygon([(0, 104), (30, 96), (70, 100), (120, 94), (200, 96), (250, 92), (290, 98), (W, 94), (W, H), (0, H)], fill=hexc("#6a6470"))
+    stripes(im, 104, ["#e9eff7", "#dfe7f2"], first=2, grow=1.17)
+    for x, y, w, h in [(0, 98, 40, 30), (276, 94, 44, 34), (70, 140, 30, 20), (230, 136, 26, 24)]:
+        d.polygon([(x, y + h), (x + w // 3, y), (x + w, y + h // 3), (x + w, y + h)], fill=hexc("#5a5462"))
+        d.line([(x + w // 3, y), (x + w, y + h // 3)], fill=hexc("#8a8494"))
+        d.polygon([(x + w // 3 - 4, y + 4), (x + w // 3, y), (x + w // 3 + 8, y + 3)], fill=hexc("#ffffff"))
+    # marco do cume
+    d.line([(296, 94), (296, 70)], fill=hexc("#5a3a20"), width=2)
+    d.polygon([(298, 70), (314, 74), (298, 78)], fill=hexc("#e0393e"))
+    dots(im, 60, (0, 106, W, H), ["#c9d6e6", "#ffffff"], 19)
+    return im
+
+def scene_ocean():
+    im = Image.new("RGBA", (W, H))
+    gradient(im, 0, H, ["#2fa6c8", "#1f86b0", "#166a98", "#11527e", "#0c3d62", "#0a3254"])
+    d = ImageDraw.Draw(im)
+    # raios de luz vindos da superfície
+    rays = Image.new("RGBA", (W, H), (0, 0, 0, 0)); rd = ImageDraw.Draw(rays)
+    for x in (30, 110, 190, 260):
+        rd.polygon([(x, 0), (x + 18, 0), (x + 50, H), (x + 22, H)], fill=(190, 240, 255, 30))
+    im.alpha_composite(rays); d = ImageDraw.Draw(im)
+    for y in range(2, 10, 3):  # ondulação da superfície
+        for x in range(0, W, 12):
+            d.line([(x + (y * 3) % 12, y), (x + (y * 3) % 12 + 5, y)], fill=hexc("#7fd6ec"))
+    # rochas ao fundo
+    ridge(im, 92, 10, "#0e4a6a", 21, freq=1.4, rough=1.0, hl="#16607e")
+    # navio pirata naufragado
+    sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); sd = ImageDraw.Draw(sh)
+    hull = [(150, 70), (270, 58), (284, 66), (268, 96), (172, 100), (150, 86)]
+    sd.polygon(hull, fill=hexc("#3c2a22"))
+    for k in range(0, 6):
+        y0 = 72 + k * 5
+        sd.line([(154, y0 + (k > 2) * 2), (276 - k * 2, y0 - 10 + k)], fill=hexc("#2a1c16"))
+    sd.line([(150, 70), (270, 58)], fill=hexc("#5a4030"), width=2)
+    for x in (184, 214, 244):  # escotilhas
+        sd.ellipse([x, 76, x + 7, 82], fill=hexc("#0c2a3a"), outline=hexc("#8a7040"))
+    sd.polygon([(256, 95), (264, 84), (272, 90), (266, 98)], fill=hexc("#0c2a3a"))  # rombo
+    sd.line([(200, 64), (176, 14)], fill=hexc("#4a3428"), width=3)  # mastro inclinado
+    sd.line([(186, 34), (150, 26)], fill=hexc("#4a3428"), width=2)
+    sd.polygon([(182, 26), (152, 22), (146, 44), (160, 52), (178, 46)], fill=hexc("#b8b096"))
+    sd.polygon([(160, 30), (164, 44), (170, 34)], fill=hexc("#11527e"))  # rasgo na vela
+    sd.line([(238, 60), (232, 30)], fill=hexc("#4a3428"), width=2)
+    sd.polygon([(233, 32), (250, 30), (248, 40), (236, 40)], fill=hexc("#1a1a1a"))  # bandeira
+    sd.ellipse([239, 33, 244, 37], fill=hexc("#e8e2d0"))
+    sh = Image.blend(Image.new("RGBA", (W, H), (0, 0, 0, 0)), sh, 1)
+    tint = Image.new("RGBA", (W, H), hexc("#11527e")[:3] + (0,))
+    sh_px = sh.load(); im_px = im.load()
+    for yy in range(H):
+        for xx in range(W):
+            r, g, b, a = sh_px[xx, yy]
+            if a:
+                br, bg, bb, _ = im_px[xx, yy]
+                im_px[xx, yy] = (int(r * .72 + br * .28), int(g * .72 + bg * .28), int(b * .72 + bb * .28), 255)
+    d = ImageDraw.Draw(im)
+    # areia
+    d.polygon([(0, 100), (60, 94), (140, 100), (220, 96), (W, 100), (W, H), (0, H)], fill=hexc("#c8b27a"))
+    stripes(im, 104, ["#d8c48a", "#ccb67c"], first=2, grow=1.16)
+    rnd = random.Random(31)
+    # algas
+    for x in [6, 14, 26, 96, 128, 292, 304, 312]:
+        h = rnd.randint(30, 62)
+        base = 108 + rnd.randint(-4, 6)
+        for y in range(base - h, base):
+            xx = x + int(3 * math.sin((y + x) / 6))
+            d.line([(xx, y), (xx + 2, y)], fill=hexc("#2f8a4a" if (y // 4) % 2 else "#3fa85a"))
+    # corais
+    for x, b, c in [(44, 118, "#ff7a6a"), (66, 122, "#ff9ad0"), (270, 120, "#ffb44a"), (250, 128, "#ff7a6a")]:
+        for k in range(-2, 3):
+            d.line([(x, b), (x + k * 4, b - 10 - abs(k) * -2)], fill=hexc(c), width=2)
+            d.ellipse([x + k * 4 - 2, b - 13 + abs(k) * 2, x + k * 4 + 2, b - 9 + abs(k) * 2], fill=hexc(c))
+    # baú do tesouro
+    d.rectangle([210, 112, 228, 124], fill=hexc("#7a4a24")); d.rectangle([210, 108, 228, 112], fill=hexc("#8a5a2c"))
+    d.rectangle([210, 112, 228, 113], fill=hexc("#e0b040")); d.rectangle([218, 113, 220, 117], fill=hexc("#e0b040"))
+    dots(im, 8, (204, 122, 236, 126), ["#ffd84a", "#fff2a0"], 5)
+    # pedras e conchas
+    for x, y in [(90, 136), (150, 146), (300, 140), (20, 150)]:
+        d.ellipse([x, y, x + 12, y + 6], fill=hexc("#8a7a5a")); d.line([(x + 2, y + 1), (x + 7, y + 1)], fill=hexc("#b0a07a"))
+    for x, y in [(120, 126), (180, 140), (240, 150)]:
+        d.pieslice([x, y, x + 6, y + 6], 180, 360, fill=hexc("#f4d8c8"))
+    dots(im, 70, (0, 106, W, H), ["#b8a26a", "#e8d8a0"], 13)
+    return im
+
 # ---------------------------------------------------------------- plataformas
 PW, PH = 128, 40
 
@@ -333,12 +561,17 @@ PLATFORMS = {
     "sky": dict(top="#ffffff", rim="#e6f1fa", side="#bcd4ea", ring="#dbe9f6"),
     "cave": dict(top="#7a6a62", rim="#5e504a", side="#3a302c", ring="#8c7c72"),
     "volcanic": dict(top="#3e2622", rim="#2c1a16", side="#1a0e0c", ring="#ff6a1a"),
+    "temple": dict(top="#f4efe2", rim="#ddd3bc", side="#a89a7a", ring="#c9a23a"),
+    "city": dict(top="#4a4856", rim="#36343f", side="#22212a", ring="#e8d060"),
+    "mountain": dict(top="#f2f6fb", rim="#c8d4e2", side="#6a6470", ring="#dfe8f2"),
+    "ocean": dict(top="#d8c48a", rim="#bea86e", side="#7a6a44", ring="#e8d8a6"),
 }
 
 SCENES = {
     "standard": scene_standard, "desert": scene_desert, "water": scene_water,
     "night": scene_night, "rain": scene_rain, "forest": scene_forest,
     "sky": scene_sky, "cave": scene_cave, "volcanic": scene_volcanic,
+    "temple": scene_temple, "city": scene_city, "mountain": scene_mountain, "ocean": scene_ocean,
 }
 
 # ---------------------------------------------------------------- camadas animadas
@@ -370,7 +603,27 @@ def layer_leaves():
         im.putpixel((x + 1, y + 2), c)
     return im
 
+def layer_bubbles():
+    im = Image.new("RGBA", (160, 160), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    rnd = random.Random(9)
+    for _ in range(14):
+        x, y, r = rnd.randint(3, 154), rnd.randint(3, 154), rnd.choice([1, 1, 2, 2, 3])
+        d.ellipse([x - r, y - r, x + r, y + r], outline=(220, 248, 255, 200))
+        im.putpixel((x - max(0, r - 1), y - max(0, r - 1)), (255, 255, 255, 255))
+    return im
+
+def layer_fish():
+    im = Image.new("RGBA", (320, 80), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    for x, y, c in [(30, 20, "#ffd84a"), (40, 26, "#ffd84a"), (36, 32, "#ffd84a"), (190, 46, "#ff8a5a"), (200, 52, "#ff8a5a"), (260, 14, "#9fe8ff")]:
+        d.ellipse([x, y, x + 6, y + 3], fill=hexc(c))
+        d.polygon([(x - 3, y - 1), (x, y + 1), (x - 3, y + 4)], fill=hexc(c))
+        im.putpixel((x + 4, y + 1), hexc("#1a1a1a"))
+    return im
+
 LAYERS = {
+    "fx-bubbles": layer_bubbles,
+    "fx-fish": layer_fish,
+    "fx-snow": lambda: layer_points(["#ffffff", "#eaf4ff"], 30, 7, size=(160, 120), cross=True),
     "fx-clouds": layer_clouds,
     "fx-sparkle": lambda: layer_points(["#ffffff", "#d8f6ff"], 22, 1, cross=True),
     "fx-stars": lambda: layer_points(["#ffffff", "#fff2b0", "#c8d8ff"], 26, 2, cross=True),
