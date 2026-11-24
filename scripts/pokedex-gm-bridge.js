@@ -405,12 +405,49 @@
       if (!existing.some(function(e){return e.id===f.id;})) existing.push(f);
     });
     current.gimmicks.mega.customForms=existing;
+    dedupeMegaForms(current);
     if(typeof renderCustomMegaOptions==='function') renderCustomMegaOptions();
     if(typeof saveState==='function') saveState();
     if(!quiet)notify(mapped.length+' Mega(s) registradas em Gimmicks.');
     return mapped.length;
   }
+  /* MEGA_DEDUPE_V1 — a mesma Mega podia entrar duas vezes: uma pela
+     integração da espécie (id "integrated-…") e outra pela sincronização da
+     Pokédex GM (id "gm-mega-…"). Mantém uma só e preserva a Mega ativa. */
+  function megaKey(f){
+    var src=f.gmCatalogFormId || f.integratedFormId;
+    if(src) return 'form:'+String(src);
+    var st=f.baseStats||{};
+    return 'sig:'+key(f.name)+'|'+[f.type1,f.type2].join('/')+'|'+['hp','atk','def','spa','spd','spe'].map(function(k){return Number(st[k]||0);}).join(',');
+  }
+  function dedupeMegaForms(p) {
+    var mega=p && p.gimmicks && p.gimmicks.mega;
+    if(!mega || !Array.isArray(mega.customForms)) return false;
+    var seen={}, out=[], changed=false;
+    mega.customForms.forEach(function(f){
+      if(!f) return;
+      var k=megaKey(f);
+      if(!(k in seen)){ seen[k]=out.length; out.push(f); return; }
+      var kept=out[seen[k]];
+      /* prefere a versão sincronizada com a Pokédex GM */
+      if(f.gmCatalogFormId && !kept.gmCatalogFormId){ out[seen[k]]=f; if(mega.formName==='custom:'+kept.id) mega.formName='custom:'+f.id; }
+      else if(mega.formName==='custom:'+f.id) mega.formName='custom:'+kept.id;
+      changed=true;
+    });
+    if(changed) mega.customForms=out;
+    return changed;
+  }
   function installHooks() {
+    if (typeof renderCustomMegaOptions==='function') {
+      var originalRenderMegas=renderCustomMegaOptions;
+      renderCustomMegaOptions=function(){
+        var changed=false;
+        try{ changed=dedupeMegaForms(window.current || (typeof current!=='undefined'?current:null)); }catch(e){}
+        var r=originalRenderMegas.apply(this,arguments);
+        if(changed && typeof saveState==='function') saveState();
+        return r;
+      };
+    }
     if (typeof findIntegratedCustomSpecies==='function') {
       originalFind = findIntegratedCustomSpecies;
       findIntegratedCustomSpecies = function(q){return findRemote(q) || originalFind(q);};
