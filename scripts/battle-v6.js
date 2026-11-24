@@ -323,6 +323,12 @@
     const original=window.renderCombatPage;
     window.renderCombatPage=function(){const r=original.apply(this,arguments);refresh();return r;};
   }
+  /* MOVES_LIVE_V1 — editar, equipar ou apagar um golpe atualiza a Batalha na hora */
+  document.addEventListener("hh:moveschange",()=>{
+    if(chosen&&!activeMoves().some(m=>String(m.id)===String(chosen))){chosen=null;const r=box.querySelector("#btRoll");if(r)r.hidden=true;}
+    renderMoves();
+    if(chosen)chooseMoveQuiet(chosen);
+  });
   document.addEventListener("hh:matrixchange",()=>{
     renderMoves();
     if(chosen)chooseMoveQuiet(chosen);
@@ -339,4 +345,19 @@
   setMenu(menu,{sound:false,speak:false});
   say(idleText(),{instant:true});
   refresh();
+})();
+
+/* MOVES_LIVE_V1 — avisa as outras telas (Resumo, Batalha) sempre que a lista
+   de golpes da ficha é redesenhada, para não precisar recarregar a página. */
+(function(){
+  if(typeof window.renderMoves!=="function"||window.renderMoves.__hhLive)return;
+  const original=window.renderMoves;
+  let queued=false;
+  const live=function(){
+    const r=original.apply(this,arguments);
+    if(!queued){queued=true;queueMicrotask(()=>{queued=false;document.dispatchEvent(new CustomEvent("hh:moveschange"));});}
+    return r;
+  };
+  live.__hhLive=true;
+  window.renderMoves=live;
 })();
