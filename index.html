@@ -20740,6 +20740,9 @@ function repairPokemonMoves(p){
     move.active=!!move.active;
     move.autoLearnset=!!move.autoLearnset;
     move.learnLevel=move.learnLevel==null ? null : Number(move.learnLevel);
+    /* MOVE_LEVEL_LOCK_V2: golpes por nível vindos do Banco do Sistema / Pokédex GM
+       também ficam bloqueados até o nível certo. */
+    if(!move.autoLearnset && move.systemIntegratedSpecies && move.learnLevel>0){move.autoLearnset=true;changed=true;}
 
     repaired.push(move);
   });
@@ -22969,6 +22972,7 @@ function syncIntegratedMoves(p,species){
       specialRules:[...(raw.specialRules||[])],
       learnLevel,
       requiredLevel:learnLevel,
+      autoLearnset:learnLevel!=null&&learnLevel>0,
       active:false,
       systemIntegratedSpecies:true
     });
