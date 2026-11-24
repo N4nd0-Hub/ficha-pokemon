@@ -1,0 +1,233 @@
+/* ============================================================
+   V6 — Temas especiais: Pikachu, N e Arceus
+   ============================================================ */
+#spFxBack{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
+#spFxFront{position:fixed;inset:0;z-index:9400;overflow:hidden;pointer-events:none}
+#spFxBack:empty,#spFxFront:empty{display:none}
+
+/* ============================================================
+   PIKACHU — amarelo elétrico, marrom e faíscas
+   ============================================================ */
+html[data-theme="pikachu"]{
+  --cl-ink:#2a1f0a;
+  --cl-paper:#fffbe8;--cl-paper2:#fff3c4;--cl-paper3:#ffe89a;--cl-card:#fffef7;--cl-inset:#fbefc4;--cl-line:#e2c36a;
+  --cl-text:#2b2210;--cl-muted:#7a6332;
+  --cl-frame:#d9a514;--cl-frame-dark:#7a5600;
+  --cl-banner:#e8a600;--cl-banner-dark:#9a6500;--cl-accent-text:#8a5200;
+  --cl-ball:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath fill='%23ffd23f' fill-opacity='.09' d='M9 1h4L9 6h3L5 15l2-6H4z'/%3E%3C/svg%3E");
+}
+html[data-theme="pikachu"][data-cl-scheme="dark"]{
+  --cl-ink:#0b0800;
+  --cl-paper:#221b0b;--cl-paper2:#2b2310;--cl-paper3:#372d14;--cl-card:#2a2210;--cl-inset:#17120a;--cl-line:#5c4a1c;--cl-hl:#4a3c16;
+  --cl-text:#fff5d6;--cl-muted:#d8c48c;--cl-accent-text:#ffd84a;
+}
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body{
+  background:radial-gradient(ellipse at 50% -10%,rgba(255,214,64,.35),transparent 55%),
+    radial-gradient(ellipse at 100% 100%,rgba(227,53,13,.18),transparent 50%),
+    linear-gradient(180deg,#3a2a06,#1a1406 70%)!important;background-attachment:fixed!important;
+}
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body .topbar{
+  background:var(--cl-scan),linear-gradient(180deg,#ffe066,#f2b705 55%,#c98a00)!important;
+}
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body .topbar::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:9px;pointer-events:none;
+  background:linear-gradient(135deg,#6b4310 33%,transparent 34%) 0 0/20px 10px,linear-gradient(225deg,#6b4310 33%,transparent 34%) 0 0/20px 10px;
+  }
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body .topbar .brand>span{color:#2a1f0a!important;text-shadow:2px 2px 0 rgba(255,255,255,.55)!important}
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body .topbar .brand small{color:#5a3c00!important}
+/* faixas das janelas: listras marrons e um raio que pisca */
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body .sheet .panel>.panel-head,
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body .sheet .combat-info-card>.combat-card-head{
+  background:var(--cl-scan),
+    linear-gradient(115deg,transparent 0 70%,rgba(107,67,16,.55) 70% 73%,transparent 73% 77%,rgba(107,67,16,.55) 77% 80%,transparent 80%),
+    linear-gradient(180deg,#ffd84a,#f2b705 60%,#c98a00)!important;
+  text-shadow:2px 2px 0 rgba(90,50,0,.55);
+}
+html[data-theme="pikachu"]:not([data-sheet-mode="pokedex"]) body .sheet .panel>.panel-head::after{
+  content:"";position:absolute;right:10px;top:50%;width:16px;height:22px;margin-top:-11px;
+  background:#fff;clip-path:polygon(55% 0,100% 0,62% 42%,90% 42%,25% 100%,42% 55%,12% 55%);
+  filter:drop-shadow(0 0 4px #fff59a);animation:spFlick 3.6s steps(1) infinite}
+@keyframes spFlick{0%,92%{opacity:.95}93%{opacity:.2}95%{opacity:1}97%{opacity:.3}}
+html[data-theme="pikachu"][data-sp-fx="on"]:not([data-sheet-mode="pokedex"]) body .sheet .panel:hover{
+  box-shadow:0 0 0 3px var(--cl-ink),0 0 18px 4px rgba(255,214,64,.55),8px 8px 0 3px rgba(0,0,0,.4)!important}
+html[data-theme="pikachu"] .sp-zap{animation:spZap .6s steps(2) 1}
+@keyframes spZap{0%,100%{filter:none}25%{filter:brightness(1.35) saturate(1.4)}50%{filter:brightness(.92)}75%{filter:brightness(1.25) drop-shadow(0 0 10px #ffe46b)}}
+html[data-theme="pikachu"] .cp-throw,html[data-theme="pikachu"] .tp-go{background:linear-gradient(180deg,#ffe066,#f2b705 60%,#c98a00)!important;color:#2a1f0a!important;text-shadow:1px 1px 0 rgba(255,255,255,.5)!important}
+
+.sp-orb{position:absolute;width:var(--s);height:var(--s);border-radius:50%;background:#fff6a8;box-shadow:0 0 10px 3px rgba(255,214,64,.8);opacity:.0;animation:spOrb 10s ease-in-out infinite}
+@keyframes spOrb{0%,100%{opacity:0;transform:translate(0,0) scale(.6)}20%{opacity:.8}50%{opacity:.35;transform:translate(30px,-40px) scale(1)}80%{opacity:.8}}
+.sp-bolt{position:absolute;inset:0}
+.sp-bolt svg{position:absolute;inset:0;overflow:visible}
+.sp-bolt polyline{fill:none;stroke-linejoin:miter;stroke-linecap:square}
+.sp-bolt .glow polyline{stroke:#ffe04a;stroke-width:9;opacity:.55;filter:blur(4px)}
+.sp-bolt .core polyline{stroke:#fffbe0;stroke-width:3}
+.sp-bolt{animation:spBolt .7s steps(1) forwards}
+@keyframes spBolt{0%{opacity:1}12%{opacity:.15}20%{opacity:1}35%{opacity:.4}45%{opacity:1}70%{opacity:.6}100%{opacity:0}}
+.sp-flash{position:absolute;inset:0;background:rgba(255,244,170,.18);animation:spFlash .5s ease-out forwards}
+@keyframes spFlash{0%{opacity:1}100%{opacity:0}}
+.sp-spark{position:absolute;width:6px;height:6px;background:#fff36b;box-shadow:0 0 6px 2px rgba(255,214,64,.9)}
+
+/* ============================================================
+   N — papel quadriculado, verde-menta, fórmulas e roda-gigante
+   ============================================================ */
+html[data-theme="n"]{
+  --cl-ink:#1d2a2a;
+  --cl-paper:#f6faf6;--cl-paper2:#e9f3ee;--cl-paper3:#d6e9e0;--cl-card:#fdfefc;--cl-inset:#e3efe9;--cl-line:#b6d1c6;
+  --cl-text:#1f2c2b;--cl-muted:#5c7470;
+  --cl-frame:#7fbfaa;--cl-frame-dark:#2c5a50;
+  --cl-banner:#3f9c80;--cl-banner-dark:#226652;--cl-accent-text:#226652;
+  --cl-ball:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M0 .5H48M.5 0V48' stroke='%23bff0dc' stroke-opacity='.10'/%3E%3C/svg%3E");
+}
+html[data-theme="n"][data-cl-scheme="dark"]{
+  --cl-ink:#050b0a;
+  --cl-paper:#142320;--cl-paper2:#1a2d29;--cl-paper3:#223a35;--cl-card:#182a26;--cl-inset:#0e1916;--cl-line:#2f5049;--cl-hl:#2b4740;
+  --cl-text:#e8f7f1;--cl-muted:#a3c5bb;--cl-accent-text:#8fe0c4;
+}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body{
+  background:radial-gradient(ellipse at 20% 0%,rgba(127,214,176,.28),transparent 50%),
+    radial-gradient(ellipse at 90% 100%,rgba(120,136,200,.25),transparent 55%),
+    linear-gradient(180deg,#132623,#0c1716)!important;background-attachment:fixed!important;
+}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body::before{background-size:48px 48px!important;animation-duration:30s!important}
+/* janelas viram papel quadriculado de caderno */
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .panel{
+  background:
+    linear-gradient(color-mix(in srgb,var(--cl-banner) 9%,transparent) 1px,transparent 1px) 0 0/16px 16px,
+    linear-gradient(90deg,color-mix(in srgb,var(--cl-banner) 9%,transparent) 1px,transparent 1px) 0 0/16px 16px,
+    linear-gradient(180deg,var(--cl-card),var(--cl-paper))!important}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .topbar{
+  background:var(--cl-scan),linear-gradient(100deg,#f4f7f4 0 42%,#bff0dc 46%,#4a5a86 54%,#1d2424 60%)!important}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .topbar::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:4px;pointer-events:none;
+  background:linear-gradient(90deg,#7fd6b0,#bcc6f5,#f6e7a1,#f5b8c8,#7fd6b0);background-size:200% 100%;animation:spSlide 8s linear infinite}
+@keyframes spSlide{to{background-position:200% 0}}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .topbar .brand>span{color:#1d2424!important;text-shadow:none!important}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .topbar .brand small{color:#3f9c80!important}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .sheet .panel>.panel-head::after{
+  content:"∑";position:absolute;right:12px;top:50%;transform:translateY(-50%);font:700 18px Georgia,serif;color:rgba(255,255,255,.75)}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .sheet .panel:nth-of-type(3n+2)>.panel-head::after{content:"π"}
+html[data-theme="n"]:not([data-sheet-mode="pokedex"]) body .sheet .panel:nth-of-type(3n)>.panel-head::after{content:"√x"}
+
+.sp-wheel{position:absolute;right:-30px;bottom:-40px;width:min(46vw,520px);opacity:.14}
+.sp-wheel svg{width:100%;height:auto;stroke:#bff0dc;fill:none;overflow:visible}
+.sp-wheel circle[r="12"]{fill:#bff0dc}
+.sp-wheel-rot{transform-origin:0 0;animation:spSpin 90s linear infinite}
+.sp-cab{animation:spSpin 90s linear infinite reverse;transform-origin:0 0}
+.sp-wheel.still .sp-wheel-rot,.sp-wheel.still .sp-cab{animation:none}
+@keyframes spSpin{to{transform:rotate(360deg)}}
+.sp-formula{position:absolute;white-space:nowrap;color:#c9f3e3;opacity:0;font-family:"Segoe Print","Comic Sans MS","Bradley Hand",cursive;transform:rotate(var(--r));animation:spFloat 24s linear infinite;text-shadow:0 0 8px rgba(127,214,176,.35)}
+@keyframes spFloat{0%{opacity:0;transform:translateY(40px) rotate(var(--r))}10%{opacity:.22}85%{opacity:.22}100%{opacity:0;transform:translateY(-120px) rotate(var(--r))}}
+.sp-toy{position:absolute;width:var(--s);height:var(--s);border:2px solid var(--c);opacity:.18;animation:spToy 20s ease-in-out infinite}
+.sp-toy.circ{border-radius:50%}
+.sp-toy.tri{border:0;background:var(--c);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.sp-toy.star{border:0;background:var(--c);clip-path:polygon(50% 0,62% 38%,100% 38%,69% 60%,80% 100%,50% 76%,20% 100%,31% 60%,0 38%,38% 38%)}
+.sp-toy.cube{box-shadow:5px -5px 0 -2px var(--c)}
+@keyframes spToy{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(20px,-30px) rotate(180deg)}}
+[data-sp-fx="still"] .sp-formula{opacity:.18;animation:none}
+[data-sp-fx="still"] .sp-toy,[data-sp-fx="still"] .sp-orb,[data-sp-fx="still"] .sp-mote{animation:none}
+
+/* ============================================================
+   ARCEUS — mármore grego, ouro e luz divina
+   ============================================================ */
+html[data-theme="arceus"]{
+  --sp-marble:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006 .014' numOctaves='5' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .52 0 0 0 0 .48 0 0 0 0 .42 1.4 0 0 0 -.2'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0 0 .05 .42 .05 0 0 0 0'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E");
+  --cl-ink:#3b3222;
+  --cl-paper:#f7f4ec;--cl-paper2:#efe9dc;--cl-paper3:#e4dbc6;--cl-card:#fcfaf5;--cl-inset:#ebe4d4;--cl-line:#d3c6a3;
+  --cl-text:#2e281c;--cl-muted:#7a6e55;
+  --cl-frame:#d8bf72;--cl-frame-dark:#7a6020;
+  --cl-banner:#c9a23a;--cl-banner-dark:#8a6a14;--cl-accent-text:#7a5c10;
+  --cl-ball:none;
+}
+html[data-theme="arceus"][data-cl-scheme="dark"]{
+  --cl-ink:#070604;
+  --cl-paper:#1e1b15;--cl-paper2:#26221a;--cl-paper3:#302b20;--cl-card:#221f18;--cl-inset:#14120e;--cl-line:#5a4e32;--cl-hl:#3e3624;
+  --cl-text:#f7f0dc;--cl-muted:#cdbf98;--cl-accent-text:#f0cf6a;
+}
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body{
+  background:radial-gradient(ellipse at 50% -15%,rgba(255,236,170,.55),transparent 55%),
+    linear-gradient(180deg,#4a4130,#1f1b12 75%)!important;background-attachment:fixed!important;
+}
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body::before{display:none!important}
+/* janelas de mármore */
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .panel,
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .combat-info-card{
+  background:var(--sp-marble) 0 0/420px 420px,linear-gradient(160deg,var(--cl-card),var(--cl-paper) 60%,var(--cl-paper2))!important}
+html[data-theme="arceus"][data-cl-scheme="dark"]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .panel{
+  background:var(--sp-marble) 0 0/420px 420px,linear-gradient(160deg,#25211a,#1b1814)!important}
+/* faixas de ouro com brilho que passa */
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .sheet .panel>.panel-head,
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .sheet .combat-info-card>.combat-card-head{
+  overflow:hidden;
+  background:linear-gradient(180deg,#f3dc8c,#d4af45 45%,#a98322)!important;
+  text-shadow:1px 1px 0 rgba(80,55,0,.6)}
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .sheet .panel>.panel-head::after{
+  content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;transform:skewX(-20deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);animation:spSheen 7s ease-in-out infinite}
+@keyframes spSheen{0%,70%{left:-40%}100%{left:130%}}
+html[data-theme="arceus"][data-sp-fx="still"] body .sheet .panel>.panel-head::after{animation:none;display:none}
+/* topo com friso grego */
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .topbar{
+  background:var(--sp-marble) 0 0/420px 420px,linear-gradient(180deg,#fbf8f0,#e9e1cc)!important;border-bottom-color:#8a6a14!important}
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .topbar::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:12px;pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12'%3E%3Crect width='24' height='12' fill='%23c9a23a'/%3E%3Cpath d='M0 10.5H20V1.5H6V7.5H14V4.5H10' fill='none' stroke='%23fff3c8' stroke-width='1.6'/%3E%3C/svg%3E") 0 0/24px 12px;
+  }
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .topbar .brand>span{color:#5a4410!important;text-shadow:1px 1px 0 #fff!important}
+html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .topbar .brand small{color:#8a6a14!important}
+html[data-theme="arceus"] .cp-throw,html[data-theme="arceus"] .tp-go{background:linear-gradient(180deg,#f3dc8c,#d4af45 50%,#a98322)!important;text-shadow:1px 1px 0 rgba(80,55,0,.6)!important}
+
+.sp-rays{position:absolute;left:50%;top:-60vmax;width:150vmax;height:150vmax;margin-left:-75vmax;opacity:.55;
+  background:repeating-conic-gradient(from 0deg,rgba(255,240,190,.20) 0deg 4deg,transparent 4deg 13deg);
+  -webkit-mask:radial-gradient(circle,#000 0,#000 25%,transparent 62%);mask:radial-gradient(circle,#000 0,#000 25%,transparent 62%);
+  animation:spSpin 160s linear infinite}
+.sp-halo{position:absolute;left:50%;top:-140px;width:420px;height:420px;margin-left:-210px}
+.sp-halo i{position:absolute;inset:0;border:3px solid rgba(255,226,140,.35);border-radius:50%;box-shadow:0 0 40px rgba(255,226,140,.35),inset 0 0 40px rgba(255,226,140,.25);animation:spHalo 6s ease-in-out infinite}
+.sp-halo i+i{inset:40px;animation-delay:-3s}
+@keyframes spHalo{50%{transform:scale(1.06);opacity:.55}}
+.sp-col{position:absolute;top:90px;bottom:-10px;width:86px;opacity:.5}
+.sp-col.left{left:6px}.sp-col.right{right:6px}
+.sp-col i,.sp-col::before,.sp-col::after{position:absolute;left:0;right:0;content:""}
+.sp-col::before{top:0;height:26px;background:linear-gradient(180deg,#fffaf0,#d9cfb5);border-radius:3px;box-shadow:0 6px 0 -2px #cbbf9f}
+.sp-col i{top:30px;bottom:30px;left:10px;right:10px;background:var(--sp-marble) 0 0/420px 420px,repeating-linear-gradient(90deg,#efe8d6 0 8px,#d6ccb2 8px 10px,#fbf6ea 10px 13px)}
+.sp-col::after{bottom:0;height:30px;background:linear-gradient(180deg,#e8dfca,#bfb393);border-radius:3px}
+@media (max-width:1100px){.sp-col{opacity:.22;width:60px}}
+.sp-mote{position:absolute;bottom:-10px;width:var(--s);height:var(--s);border-radius:50%;background:#ffe9a6;box-shadow:0 0 8px 2px rgba(255,220,120,.8);opacity:0;animation:spRise 14s linear infinite}
+@keyframes spRise{0%{opacity:0;transform:translate(0,0)}10%{opacity:.9}90%{opacity:.6}100%{opacity:0;transform:translate(var(--x),-105vh)}}
+.sp-ring{position:absolute;width:20px;height:20px;margin:-10px;border:2px solid #ffe08a;border-radius:50%;box-shadow:0 0 12px #ffe08a;animation:spRing .85s ease-out forwards}
+@keyframes spRing{to{transform:scale(4.5);opacity:0}}
+
+/* ============================================================
+   Cartões dos temas especiais no Personalizar
+   ============================================================ */
+html body #themeModal.ap-sheet .ap-special-head{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 12px;margin-top:6px;padding:10px 0 8px;border-top:3px dashed var(--ap-line,#ccc)}
+.ap-special-head b{font:400 13px var(--cl-title,inherit);color:var(--ap-text)}
+.ap-special-head small{flex:1;font-size:12px;color:var(--ap-muted)}
+.ap-fx-toggle{display:flex;align-items:center;gap:6px;font:700 10px var(--cl-pixel,inherit);color:var(--ap-text);cursor:pointer}
+.ap-fx-toggle input{width:16px;height:16px}
+.ap-special .ap-name b em{margin-left:4px;padding:1px 5px;border-radius:4px;background:linear-gradient(90deg,#ffd84a,#ff8ad0,#7fd6ff);color:#2a1f0a;font:700 8px var(--cl-pixel,inherit);font-style:normal;vertical-align:2px}
+.ap-sp-preview{position:relative;display:block!important;height:78px}
+.ap-sp-preview i{position:absolute}
+.sp-pikachu .ap-sp-preview{background:radial-gradient(circle at 30% 20%,#ffe066,#f2b705 55%,#8a5a00)}
+.sp-pikachu .sp-a{left:46%;top:-4px;width:20px;height:80px;background:#fffbe0;clip-path:polygon(55% 0,100% 0,62% 42%,90% 42%,25% 100%,42% 55%,12% 55%);filter:drop-shadow(0 0 6px #fff);animation:spFlick 2.2s steps(1) infinite}
+.sp-pikachu .sp-b{left:0;right:0;bottom:0;height:12px;background:linear-gradient(135deg,#6b4310 33%,transparent 34%) 0 0/16px 12px,linear-gradient(225deg,#6b4310 33%,transparent 34%) 0 0/16px 12px}
+.sp-pikachu .sp-c{left:14%;top:30%;width:8px;height:8px;border-radius:50%;background:#fff6a8;box-shadow:0 0 10px 4px rgba(255,255,200,.9);animation:spOrb 3s ease-in-out infinite}
+.sp-pikachu .sp-d{right:14%;top:22%;width:6px;height:6px;border-radius:50%;background:#fff6a8;box-shadow:0 0 10px 4px rgba(255,255,200,.9);animation:spOrb 4s ease-in-out infinite -1s}
+.sp-n .ap-sp-preview{background:linear-gradient(rgba(63,156,128,.18) 1px,transparent 1px) 0 0/10px 10px,linear-gradient(90deg,rgba(63,156,128,.18) 1px,transparent 1px) 0 0/10px 10px,linear-gradient(90deg,#f4f7f4 50%,#1d2424 50%)}
+.sp-n .sp-a{right:8px;top:6px;width:62px;height:62px;border:3px solid #3f9c80;border-radius:50%;background:repeating-conic-gradient(#3f9c80 0 4deg,transparent 4deg 30deg);-webkit-mask:radial-gradient(circle,transparent 0 6px,#000 7px);mask:radial-gradient(circle,transparent 0 6px,#000 7px);animation:spSpin 12s linear infinite}
+.sp-n .sp-b::after{content:"e^{iπ}+1=0";font:italic 700 11px Georgia,serif;color:#3f9c80}
+.sp-n .sp-b{left:8px;top:10px;animation:spToy 6s ease-in-out infinite}
+.sp-n .sp-c::after{content:"∑ π √";font:700 13px Georgia,serif;color:#9fe3c8}
+.sp-n .sp-c{left:56%;bottom:6px}
+.sp-n .sp-d{left:12px;bottom:10px;width:14px;height:14px;border:2px solid #4a5a86;animation:spToy 5s ease-in-out infinite}
+.sp-arceus .ap-sp-preview{background:var(--sp-marble,none) 0 0/240px 240px,linear-gradient(180deg,#fbf8f0,#e4dbc6)}
+.sp-arceus .ap-sp-preview{--sp-marble:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420'%3E%3Cfilter id='m' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.006 .014' numOctaves='5' seed='11' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .52 0 0 0 0 .48 0 0 0 0 .42 1.4 0 0 0 -.2'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='table' tableValues='0 0 0 .05 .42 .05 0 0 0 0'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23m)'/%3E%3C/svg%3E")}
+.sp-arceus .sp-a{left:50%;top:-50px;width:140px;height:140px;margin-left:-70px;background:repeating-conic-gradient(rgba(255,220,120,.5) 0 5deg,transparent 5deg 15deg);-webkit-mask:radial-gradient(circle,#000 20%,transparent 65%);mask:radial-gradient(circle,#000 20%,transparent 65%);animation:spSpin 20s linear infinite}
+.sp-arceus .sp-b,.sp-arceus .sp-c{top:10px;bottom:0;width:14px;background:repeating-linear-gradient(90deg,#efe8d6 0 3px,#cfc4a6 3px 4px);border-top:5px solid #d9cfb5}
+.sp-arceus .sp-b{left:10px}.sp-arceus .sp-c{right:10px}
+.sp-arceus .sp-d{left:0;right:0;top:0;height:8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8'%3E%3Crect width='16' height='8' fill='%23c9a23a'/%3E%3Cpath d='M0 7H13V1H4V5H9V3H7' fill='none' stroke='%23fff3c8' stroke-width='1.2'/%3E%3C/svg%3E") 0 0/16px 8px}
+@media (prefers-reduced-motion:reduce){.ap-sp-preview *,.sp-orb,.sp-mote,.sp-toy,.sp-formula,.sp-rays,.sp-halo i,.sp-wheel *{animation:none!important}}
+.sp-mote.front{opacity:0;animation-name:spRiseFront}
+@keyframes spRiseFront{0%{opacity:0;transform:translate(0,0)}15%{opacity:.45}85%{opacity:.3}100%{opacity:0;transform:translate(var(--x),-105vh)}}
+/* descrições dos cartões do Personalizar em fonte comum (mais legíveis no Arcade) */
+html body #themeModal.ap-sheet .ap-name small{font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;text-transform:none!important;letter-spacing:0!important;font-size:11.5px!important}
+@media (max-width:700px){html[data-theme="arceus"]:not([data-sheet-mode="pokedex"]) body .topbar::after{height:7px;background-size:14px 7px}}
