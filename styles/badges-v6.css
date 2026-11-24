@@ -1,0 +1,82 @@
+/* ============================================================
+   V6 — Insígnias em pixel art: estojo "divino" no Trainer Card
+   e emblemas do editor de insígnias.
+   ============================================================ */
+
+/* Estojo: veludo azul-noite com moldura de ouro e luz celeste */
+html body .tc-badgecase{
+  position:relative;overflow:hidden;
+  padding:12px 14px 14px!important;
+  border:3px solid #2a1a06!important;border-radius:14px!important;
+  background:
+    radial-gradient(ellipse at 50% -20%,rgba(255,236,170,.28),transparent 60%),
+    repeating-linear-gradient(45deg,rgba(255,255,255,.025) 0 2px,transparent 2px 6px),
+    linear-gradient(180deg,#2c2458,#1a1438 70%,#140f2a)!important;
+  box-shadow:inset 0 0 0 3px #d9a93a,inset 0 0 0 5px #6e4a10,inset 0 6px 18px rgba(0,0,0,.45),0 4px 0 #2a1a06!important;
+  color:#ffe6a0!important;
+}
+html body .tc-badgecase::before{
+  content:"";position:absolute;left:50%;top:-60%;width:140%;height:160%;margin-left:-70%;pointer-events:none;
+  background:repeating-conic-gradient(from 0deg at 50% 0%,rgba(255,236,170,.07) 0 5deg,transparent 5deg 14deg);
+  animation:hbRays 40s linear infinite;
+}
+@keyframes hbRays{to{transform:rotate(12deg)}}
+html body .tc-badgecase>small{position:relative;font:700 10px var(--cl-pixel)!important;letter-spacing:.14em;color:#ffe6a0!important;text-shadow:1px 1px 0 #000}
+.hb-count{position:absolute;top:10px;right:14px;padding:2px 8px;border:2px solid #d9a93a;border-radius:999px;background:#140f2a;color:#ffe6a0;font:700 10px var(--cl-pixel)}
+html body .tc-badgecase>div{position:relative;display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;gap:8px!important;margin-top:12px!important;padding:0 4px 6px}
+
+/* encaixe de cada insígnia */
+html body .tc-badge.hb-slot{
+  position:relative;display:grid;place-items:center;
+  aspect-ratio:1;width:auto;height:auto;padding:0!important;
+  border:0!important;border-radius:50%!important;clip-path:none!important;
+  background:radial-gradient(circle at 50% 55%,#0c0920 0 52%,#3a2a12 53% 57%,#d9a93a 58% 61%,transparent 62%)!important;
+  box-shadow:none!important;animation:none!important;filter:none!important;
+}
+.hb-slot.hb-empty{opacity:.55}
+.hb-slot img.hb-badge{position:relative;z-index:1;width:116%;max-width:none;height:auto;image-rendering:pixelated;margin-top:-10%;
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.45));transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.hb-slot img.hb-badge.earned{animation:hbFloat 3.2s ease-in-out infinite}
+.hb-slot:nth-child(2n) img.hb-badge.earned{animation-delay:-1.6s}
+.hb-slot:nth-child(3n) img.hb-badge.earned{animation-delay:-.8s}
+.hb-slot img.hb-badge:not(.earned){opacity:.7;width:104%;margin-top:-2%}
+.hb-slot:hover img.hb-badge{transform:scale(1.12) translateY(-4px)}
+@keyframes hbFloat{50%{transform:translateY(-3px)}}
+.hb-glow{position:absolute;inset:8%;border-radius:50%;pointer-events:none;opacity:0}
+.hb-slot:has(img.earned) .hb-glow{opacity:1;background:radial-gradient(circle,rgba(255,236,170,.55),transparent 65%);animation:hbPulse 3.2s ease-in-out infinite}
+@keyframes hbPulse{50%{transform:scale(1.15);opacity:.55}}
+/* brilho que atravessa a insígnia de vez em quando */
+.hb-slot:has(img.earned)::after{
+  content:"";position:absolute;z-index:2;inset:10% 18%;border-radius:50%;pointer-events:none;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.75) 50%,transparent 60%);
+  background-size:300% 100%;background-position:150% 0;mix-blend-mode:screen;
+  animation:hbShine 5s ease-in-out infinite;
+}
+.hb-slot:nth-child(2n):has(img.earned)::after{animation-delay:-2.5s}
+@keyframes hbShine{0%,70%{background-position:150% 0}100%{background-position:-60% 0}}
+.hb-slot small{position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);max-width:120%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:700 7px var(--cl-pixel);color:#cfc3ff;opacity:0;transition:opacity .2s;pointer-events:none}
+.hb-slot:hover small{opacity:1}
+
+/* Editor de insígnias (Editar cartão) */
+html body .trainer-license-badge .trainer-badge-emblem:has(.hb-core){
+  width:62px!important;height:62px!important;padding:0!important;
+  border:2px solid #2a1a06!important;border-radius:14px!important;
+  background:radial-gradient(circle at 50% 40%,rgba(255,236,170,.25),transparent 60%),linear-gradient(180deg,#2c2458,#140f2a)!important;
+  box-shadow:inset 0 0 0 2px #d9a93a,0 3px 0 #2a1a06!important;
+  display:grid!important;place-items:center;position:relative;overflow:visible!important;
+}
+html body .trainer-license-badge:not(.earned) .trainer-badge-emblem:has(.hb-core){background:linear-gradient(180deg,#3a3a44,#202028)!important;box-shadow:inset 0 0 0 2px #6a6a74,0 3px 0 #111!important}
+.trainer-badge-core.hb-core{display:grid;place-items:center;text-shadow:none!important}
+.hb-mini{width:58px;height:auto;image-rendering:pixelated;margin-top:-6px;transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
+.trainer-badge-emblem:hover .hb-mini{transform:scale(1.12) rotate(-4deg)}
+.trainer-badge-emblem:active .hb-mini{transform:scale(.92)}
+.hb-mini.earned{filter:drop-shadow(0 0 6px rgba(255,220,120,.55))}
+html body .trainer-license-badge .trainer-badge-emblem:has(.hb-core) small{position:absolute;bottom:-2px;right:-2px;padding:1px 4px;border-radius:5px;background:#140f2a;color:#ffe6a0!important;font-size:8px}
+
+@media (max-width:640px){
+  html body .tc-badgecase>div{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px 10px!important}
+}
+@media (prefers-reduced-motion:reduce){
+  .hb-slot img.hb-badge.earned,.hb-glow,.hb-slot::after,html body .tc-badgecase::before{animation:none!important}
+}
