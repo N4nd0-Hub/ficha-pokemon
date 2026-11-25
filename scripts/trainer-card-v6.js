@@ -229,6 +229,7 @@
   }
 
   function render(){
+    if(window.hhDefer?.("pageTrainer",render))return;
     const t=typeof ensureTrainerData==="function"?ensureTrainerData():state.trainer||{};
     renderAppearance(t.cardAppearance);
     wrap.querySelector(".tc-front").innerHTML=front(t);

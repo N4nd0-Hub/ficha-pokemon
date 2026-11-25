@@ -1,0 +1,89 @@
+/* ============================================================
+   V6 — Celular: polimento geral (≤ 900px)
+   ============================================================ */
+.mp-team{display:none}
+
+@media (max-width:900px){
+  /* ---------- Cabeçalho: vira a fileira do time ---------- */
+  html body #app .sheet .sheet-head{
+    display:block!important;padding:8px 8px 6px!important;min-height:0!important;height:auto!important;
+    margin-bottom:10px!important;
+  }
+  html body #app .sheet .sheet-head>.sheet-head-info,
+  html body #app .sheet .sheet-head>.sheet-navigation,
+  html[data-sheet-mode] body #app .sheet .sheet-head>.sheet-navigation{display:none!important}
+  html body .sheet-head::before,html body .sheet-head::after{display:none!important}
+  .mp-team{
+    display:flex;justify-content:flex-start;width:100%;min-width:0;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+    padding:2px 2px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
+  .mp-team::-webkit-scrollbar{display:none}
+  .mp-mon{
+    position:relative;flex:0 0 auto;scroll-snap-align:center;
+    display:grid;grid-template-columns:auto;justify-items:center;gap:1px;
+    width:58px;padding:5px 2px 4px;border:2px solid var(--cl-line,#c9cdd8);border-radius:12px;
+    background:var(--cl-card,#fff);color:var(--cl-text,#181a24);cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:transform .12s ease;
+  }
+  .mp-mon:active{transform:scale(.94)}
+  .mp-mon.on{border-color:var(--cl-ink,#181a24);background:color-mix(in srgb,var(--cl-hl,#ffe27a) 55%,var(--cl-card,#fff));box-shadow:0 3px 0 var(--cl-ink,#181a24);transform:translateY(-1px)}
+  .mp-pic{display:grid;place-items:center;width:40px;height:40px}
+  .mp-pic img{width:40px;height:40px;object-fit:contain;image-rendering:auto}
+  .mp-pic i{font-style:normal;font-size:22px;opacity:.7}
+  .mp-hp{display:block;width:44px;height:5px;border:1px solid var(--cl-ink,#181a24);border-radius:3px;background:#3a3f4c;overflow:hidden}
+  .mp-hp i{display:block;width:var(--hp);height:100%;background:#58d890}
+  .mp-hp[data-hp=mid] i{background:#e8bb6d}
+  .mp-hp[data-hp=low] i{background:#f05a5a}
+  .mp-mon b{max-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 10px/1.2 var(--cl-pixel,system-ui);letter-spacing:0}
+  .mp-mon small{font:400 9px/1 var(--cl-pixel,system-ui);opacity:.75}
+  .mp-more{border-style:dashed}
+  .mp-more .mp-pic i{font-size:20px}
+
+  /* ---------- Selo "Salvo": ícone compacto na barra do topo ---------- */
+  html body #hhLocalSaveButton{
+    top:calc(10px + env(safe-area-inset-top))!important;bottom:auto!important;right:12px!important;
+    width:44px;height:44px;min-height:44px;padding:0!important;justify-content:center;gap:0;
+    border-radius:12px!important;z-index:9995;
+  }
+  html body #hhLocalSaveButton span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  html body #hhLocalSaveButton::before{content:"💾";font-size:17px;line-height:1}
+  html body #hhLocalSaveButton i{position:absolute;right:5px;top:5px;width:9px;height:9px;border:1px solid var(--cl-ink,#181a24)}
+  html body #hhLocalSaveButton[data-status=pending] i{animation:mpPulse 1s ease-in-out infinite}
+  html body #hhLocalSaveButton[data-status=error]{border-color:#f05a5a!important}
+  @keyframes mpPulse{50%{opacity:.35}}
+  html body #hhLocalSaveAlert{top:calc(62px + env(safe-area-inset-top));bottom:auto;right:10px}
+  html body .topbar{padding-right:64px!important}
+
+  /* ---------- Textos minúsculos: mínimo legível ---------- */
+  html body .cl-move-stat small,html body .cl-move-cat,html body .tc-list li small,html body .inv-tag,
+  html body .tcd-attr footer span,html body .tc-badge small,html body .field>label,html body .priority-slot>label,
+  html body .hv-scale span,html body .sum-tabs>button,html body .tcd-summary span,html body .tcd-skill-group h5 small,
+  html body .gx-label b,html body .misc-rule-chip b,html body .misc-rule-chip span,html body .empty-state,
+  html body .section-helper,html body .nature-effect-label,html body .tag,html body .progress-limit-notice,
+  html body .progression-note,html body .priority-preview b,html body .hb-style button,html body .tcd-tags em,
+  html body .misc-menu-kicker,html body .misc-menu-copy p,html body .move-auto-status,html body .misc-create-drawer>summary,
+  html body .ability-description,html body .misc-ppg-symbol,html body .ppg-value-row span,html body .misc-history-title span,
+  html body .dex-device-title{
+    font-size:10px!important;
+  }
+  html body .empty-state,html body .section-helper,html body .misc-menu-copy p,html body .ability-description,
+  html body .move-auto-status,html body .progression-note,html body .progress-limit-notice{font-size:11px!important;line-height:1.45!important}
+  html body .mn-v6 .mobile-nav-btn b{font-size:9px!important}
+
+  /* ---------- Alvos de toque ---------- */
+  html body .sum-stepper button,html body .hv-step,html body .misc-option-toggle,html body #combatStageToolsToggle,
+  html body .dex-chip,html body .general-stack-toggle{min-width:40px!important;min-height:40px!important}
+  html body .encyclopedia-letter{min-height:36px!important}
+  html body input[type=checkbox],html body input[type=radio]{min-width:20px;min-height:20px}
+  html body input.sum-inline{min-height:36px}
+
+  /* ---------- Menos trabalho para a tela ---------- */
+  html:not([data-sheet-mode="pokedex"]) body::before{animation:none!important;will-change:auto!important}
+  .drawer:not(.open) *, #app:not(.drawer-open) .drawer *{animation-play-state:paused!important}
+}
+
+/* Celulares pequenos */
+@media (max-width:380px){
+  .mp-mon{width:52px}
+  .mp-pic,.mp-pic img{width:36px;height:36px}
+}

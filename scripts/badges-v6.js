@@ -300,7 +300,10 @@
   // os botões ficam dentro do cartão: impede que o clique vire o cartão
   document.addEventListener("click",e=>{const b=e.target.closest("button[data-hb-style]");if(!b)return;e.preventDefault();e.stopPropagation();setStyle(b.dataset.hbStyle);window.hhClassicSfx?.select?.();},true);
   const page=document.getElementById("pageTrainer");
-  if(page)new MutationObserver(run).observe(page,{childList:true,subtree:true});
+  // Junta várias mudanças seguidas numa decoração só, no próximo quadro.
+  let queued=0;
+  const schedule=()=>{if(!queued)queued=requestAnimationFrame(()=>{queued=0;run();});};
+  if(page)new MutationObserver(schedule).observe(page,{childList:true,subtree:true});
   run();
   window.hhBadgeArt={url,img,draw,drawGreek,setStyle,STYLES,TYPES:Object.keys(TYPE),get style(){return style;}};
 })();

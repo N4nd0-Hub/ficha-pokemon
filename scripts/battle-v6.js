@@ -315,6 +315,7 @@
 
   let lastId=null;
   function refresh(){
+    if(window.hhDefer?.("page2",refresh))return;
     const id=current?.id;
     if(id!==lastId){chosen=null;box.querySelector("#btRoll").hidden=true;lastId=id;if(page.classList.contains("active"))say(idleText(),{instant:true});}
     renderMoves();

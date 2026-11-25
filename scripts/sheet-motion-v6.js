@@ -10,11 +10,15 @@
 
   function restartClass(el,className,ms){
     if(!el)return;
+    // Reinicia a animação no próximo quadro, sem forçar o navegador a
+    // recalcular o layout na hora (isso travava o celular a cada desenho).
     el.classList.remove(className);
-    void el.offsetWidth;
-    el.classList.add(className);
-    clearTimeout(el["_t_"+className]);
-    el["_t_"+className]=setTimeout(()=>el.classList.remove(className),ms);
+    cancelAnimationFrame(el["_r_"+className]);
+    el["_r_"+className]=requestAnimationFrame(()=>{
+      el.classList.add(className);
+      clearTimeout(el["_t_"+className]);
+      el["_t_"+className]=setTimeout(()=>el.classList.remove(className),ms);
+    });
   }
 
   /* ---------- Troca de página ---------- */
