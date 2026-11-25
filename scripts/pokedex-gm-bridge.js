@@ -84,10 +84,17 @@
       return parents.get(id);
     }
     function connect(a, b) {parents.set(root(b), root(a));}
+    /* Liga pelo ID salvo pela Pokédex GM (previousId/nextIds). O nome
+       guardado na evolução pode ficar desatualizado quando o GM renomeia
+       uma etapa; nesse caso o nome antigo separava a linha. */
+    function evoRefs(ids, names) {
+      var known = references(ids).filter(function(alias){return aliases.has(alias);});
+      return known.length ? known : references(names);
+    }
     entries.forEach(function(s){
       var ev = s.evolution || {};
-      var previous = references(ev.previous || ev.evolvesFrom);
-      var next = references(ev.next || ev.evolvesTo);
+      var previous = evoRefs(ev.previousId, ev.previous || ev.evolvesFrom);
+      var next = evoRefs(ev.nextIds, ev.next || ev.evolvesTo);
       previous.forEach(function(alias){
         var id = aliases.get(alias);
         connect(s.gmId, id || 'unpublished:' + alias);
@@ -553,6 +560,10 @@
     var category={fakemon:'Fakemon',rework:'Rework',official:'Oficial'}[s.classification] || s.classification;
     var previous=s.evolution && (s.evolution.previous || s.evolution.evolvesFrom);
     var previousName=typeof previous==='string' ? previous.trim() : previous && previous.name;
+    // Mostra o nome atual da pré-evolução quando o ID dela está no catálogo.
+    var previousEntry=s.evolution && s.evolution.previousId
+      && catalog.find(function(x){return String(x.gmId)===String(s.evolution.previousId);});
+    if(previousEntry)previousName=previousEntry.name;
     var stage=previousName ? 'Evolução' : 'Forma base';
     return '<article class="hh-gm-entry" data-species-id="'+esc(s.gmId)+'">'
       +'<div class="hh-gm-art"><span class="hh-gm-stage">'+stage+'</span>'
