@@ -187,6 +187,7 @@
 
   let lastId=null;
   function render(){
+    if(window.hhDefer?.("page1",render))return;
     const p=typeof current!=="undefined"&&current?current:getCurrent();
     if(!p)return;
     const isNew=p.id!==lastId;

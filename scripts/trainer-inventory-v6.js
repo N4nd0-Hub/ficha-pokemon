@@ -354,6 +354,7 @@
   }
 
   function render(){
+    if(window.hhDefer?.("pageTrainer",render))return;
     const {t,inv}=data();
     const counts=Object.fromEntries(CATS.map(c=>[c.id,inv.items.filter(i=>i.category===c.id).length]));
     const items=inv.items.filter(i=>filter==="all"||i.category===filter);
