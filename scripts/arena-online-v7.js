@@ -576,7 +576,9 @@
   const PX=(n,sz)=>window.hhArenaPix?window.hhArenaPix.svg(n,sz):"";
   let tab=(()=>{const t=ls.get("hh_arena_tab","sala");return ["sala","time","ranking","chat","ajustes"].includes(t)?t:"sala";})();
   let unread=0;
-  const TABS=[["sala","people","Sala"],["time","ball","Meu time"],["ranking","trophy","Ranking"],["chat","chat","Chat"],["ajustes","gear","Ajustes"]];
+  const TABS=[["sala","people","Sala","Desafiar e assistir","#e0393e"],["time","ball","Meu time","Escalação","#e39a12"],["ranking","trophy","Ranking","Desafio Sem Fim","#c9961a"],["chat","chat","Chat","Conversa","#2f74d4"],["ajustes","gear","Ajustes","Sala e regras","#7a5ad0"]];
+  const wideMq=matchMedia("(min-width:1100px)");
+  wideMq.addEventListener?.("change",()=>{if(!B)render();});
   function lobbyView(){
     if(status==="error")return `<div class="ar7-card ar7-empty"><b>Não foi possível conectar à arena.</b><p>Confira a internet e tente de novo.</p><button type="button" class="ar7-btn primary" data-ar="retry">Tentar de novo</button></div>`;
     const list=Object.values(people).sort((a,b)=>(a.id===me.id?-1:b.id===me.id?1:a.name.localeCompare(b.name)));
@@ -589,38 +591,47 @@
     const best=Number(state.arenaSurvivalBest||0);
     const top=RANK.list?.[0];
     const nBattles=Object.keys(battles).length;
-    if(tab==="chat")unread=0;
+    const wide=wideMq.matches;
+    const curTab=wide&&tab==="chat"?"sala":tab;
+    if(curTab==="chat"||wide)unread=0;
     const counts={sala:others.length,chat:unread};
-    return `<div class="ar8">
-    <section class="ar8-hero" style="background-image:linear-gradient(100deg,rgba(14,16,30,.82) 0%,rgba(14,16,30,.45) 50%,rgba(14,16,30,.08) 100%),url('assets/arenas/${esc(bg)}.png')">
+    const slots=teamSource();
+    return `<div class="ar8"><div class="ar8-main">
+    <section class="ar8-hero ar8-frame" style="background-image:linear-gradient(100deg,rgba(14,16,30,.82) 0%,rgba(14,16,30,.45) 50%,rgba(14,16,30,.08) 100%),url('assets/arenas/${esc(bg)}.png')">
       <div class="ar8-hero-me">
         <span class="ar8-avatar" style="--t:${typeColor(lead?.t?.[0])}">${leadImg?`<img src="${esc(leadImg)}" alt="">`:PX("ball",40)}</span>
         <div class="ar8-hero-txt">
           <small>Treinador</small>
           <b>${esc(me.name)}</b>
-          <span class="ar8-pills"><span class="ar8-pill ${status==="on"?"on":""}"><i></i>${statusText()}</span><span class="ar8-pill">Sala <code>${esc(room)}</code></span></span>
+          <span class="ar8-pills"><span class="ar8-pill ${status==="on"?"on":""}"><i></i>${statusText()}</span><span class="ar8-pill">Sala <code>${esc(room)}</code></span><span class="ar8-pill gold">🏆 Recorde ${best}</span></span>
         </div>
       </div>
-      <div class="ar8-hero-team" aria-label="Seu time">${myTeam.length?teamSource().map(p=>{const im=localImg(p);return `<span class="ar7-mini" title="${esc(p.name)} Lv${Number(p.level||1)}" style="--t:${typeColor(p.type1)}">${im?`<img src="${esc(im)}" alt="" width="34" height="34">`:`<i>${esc((p.name||"?").slice(0,1))}</i>`}</span>`;}).join(""):`<em>Monte seu time na aba Meu time.</em>`}</div>
+      <div class="ar8-party" aria-label="Seu time">${Array.from({length:6},(_,i)=>{const p=slots[i];if(!p)return `<span class="ar8-slot empty">${PX("ball",22)}</span>`;const im=localImg(p);return `<span class="ar8-slot${i===0?" lead":""}" title="${esc(p.name)} • Lv. ${Number(p.level||1)}" style="--t:${typeColor(p.type1)}">${im?`<img src="${esc(im)}" alt="${esc(p.name)}">`:`<i>${esc((p.name||"?").slice(0,1))}</i>`}<small>Lv${Number(p.level||1)}</small></span>`;}).join("")}</div>
     </section>
     ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.format>=6?"time todo":`${outgoing.format} vs ${outgoing.format}`} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
     <section class="ar8-modes">
-      <article class="ar8-mode friends">
-        <span class="ar8-mode-ico">${PX("swords",64)}</span>
+      <article class="ar8-mode friends ar8-frame">
+        <span class="ar8-mode-ico">${PX("swords",72)}</span>
         <div class="ar8-mode-txt"><small>Multijogador</small><h3>Batalha entre amigos</h3>
           <p>${others.length?`<b>${others.length}</b> treinador${others.length>1?"es":""} na sala`:"Ninguém na sala ainda"}${nBattles?` · <b>${nBattles}</b> batalha${nBattles>1?"s":""} ao vivo`:""}</p></div>
         <div class="ar8-mode-act">${others.length?`<button type="button" class="ar7-btn primary" data-ar="tab" data-v="sala">⚔ Desafiar</button>`:`<button type="button" class="ar7-btn primary" data-ar="share">🔗 Convidar</button>`}</div>
       </article>
-      <article class="ar8-mode endless">
-        <span class="ar8-mode-ico tower">${PX("tower",56)}</span>
+      <article class="ar8-mode endless ar8-frame">
+        <span class="ar8-mode-ico tower">${PX("tower",64)}</span>
         <div class="ar8-mode-txt"><small>Solo · ondas infinitas</small><h3>Desafio Sem Fim</h3>
           <p>Recorde: <b>${best}</b> onda${best===1?"":"s"}${top?` · Líder: <b>${esc(top.player)}</b> (${top.waves})`:""}</p></div>
         <div class="ar8-mode-act"><button type="button" class="ar7-btn primary" data-ar="surv-start" ${myTeam.length?"":"disabled"}>▶ Começar</button><button type="button" class="ar7-btn" data-ar="tab" data-v="ranking">🏆</button></div>
       </article>
     </section>
-    <nav class="ar8-tabs" role="tablist" aria-label="Seções da arena">${TABS.map(([k,ico,label])=>`<button type="button" role="tab" aria-selected="${tab===k}" class="ar8-tab${tab===k?" on":""}" data-ar="tab" data-v="${k}">${PX(ico,20)}<span>${label}</span>${counts[k]?`<i class="ar8-count">${counts[k]}</i>`:""}</button>`).join("")}</nav>
-    <section class="ar8-panel" role="tabpanel">${tab==="sala"?roomTab(others,battles,myTeam):tab==="time"?`<div class="ar8-sec"><h3>${PX("ball",22)} Seu time na arena</h3><p class="ar8-sub">Quem vai para as batalhas e para o Desafio Sem Fim. O primeiro começa a luta.</p>${teamEditor()}</div>`:tab==="ranking"?rankTab():tab==="chat"?chatTab():settingsTab()}</section>
+    <nav class="ar8-tabs" role="tablist" aria-label="Seções da arena">${TABS.filter(([k])=>!(wide&&k==="chat")).map(([k,ico,label,sub,col])=>`<button type="button" role="tab" aria-selected="${curTab===k}" class="ar8-tab${curTab===k?" on":""}" data-ar="tab" data-v="${k}" style="--nb:${col}"><span class="ar8-tab-ico">${PX(ico,22)}</span><span class="ar8-tab-txt"><b>${label}</b><small>${sub}</small></span>${counts[k]?`<i class="ar8-count">${counts[k]}</i>`:""}</button>`).join("")}</nav>
+    <section class="ar8-panel" role="tabpanel">${curTab==="sala"?roomTab(others,battles,myTeam):curTab==="time"?`<div class="ar8-sec"><h3>${PX("ball",22)} Seu time na arena</h3><p class="ar8-sub">Quem vai para as batalhas e para o Desafio Sem Fim. O primeiro começa a luta.</p>${teamEditor()}</div>`:curTab==="ranking"?rankTab():curTab==="chat"?chatTab():settingsTab()}</section>
+    </div>
+    ${wide?`<aside class="ar8-side">${sideOnline(others)}${chatTab()}</aside>`:""}
     </div>`;
+  }
+  function sideOnline(others){
+    return `<div class="ar8-sec ar8-online"><h3>${PX("people",22)} Online agora <small>${others.length+1}</small></h3>
+      <ul>${[{name:me.name,status:"me",team:teamPreview()},...others].map(p=>{const l=(p.team||[])[0];return `<li><span class="ar8-avatar xs" style="--t:${typeColor(l?.t?.[0])}">${l?.img?`<img src="${esc(l.img)}" alt="">`:PX("ball",18)}</span><b>${esc(p.name)}${p.status==="me"?" <small>(você)</small>":""}</b><i class="ar8-dot ${esc(p.status)}" title="${esc(p.status)}"></i></li>`;}).join("")}</ul></div>`;
   }
   function roomTab(others,battles,myTeam){
     const watchers={};Object.values(people).filter(p=>p.status==="watch").forEach(p=>{watchers[p.battle]=(watchers[p.battle]||0)+1;});
