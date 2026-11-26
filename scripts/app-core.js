@@ -291,6 +291,84 @@ const THEME_META={
   arceus:{description:"Mármore grego, ouro e luz divina",swatches:["#f3efe6","#c9a23a","#9a8f78"],special:true}
 };
 
+/* ============================================================
+   V7 — Temas de jogos e protagonistas
+   Cada tema tem grupo (clássico, jogo, protagonista, especial),
+   geração, estampa de fundo (motif) e cores das janelas:
+   tint = papel das janelas, frame = molduras, banner = faixas.
+   O desenho das estampas e o seletor ficam em scripts/themes-v7.js.
+   ============================================================ */
+function themeMix(a,b,t){
+  const h=x=>[1,3,5].map(i=>parseInt(x.slice(i,i+2),16));
+  const [r1,g1,b1]=h(a),[r2,g2,b2]=h(b);
+  return "#"+[r1+(r2-r1)*t,g1+(g2-g1)*t,b1+(b2-b1)*t].map(v=>Math.round(v).toString(16).padStart(2,"0")).join("");
+}
+function themeVars(bg,accent,accent2){
+  return {"--bg":bg,"--bg2":themeMix(bg,"#ffffff",.045),"--panel":themeMix(bg,"#ffffff",.08),"--panel2":themeMix(bg,"#ffffff",.12),
+    "--line":themeMix(themeMix(bg,accent2,.45),"#ffffff",.12),"--text":"#f6f5f2","--muted":themeMix("#f6f5f2",accent2,.38),
+    "--accent":accent,"--accent2":accent2};
+}
+const THEME_V7=[
+  /* key, label, grupo, geração, fundo, faixa, moldura, estampa, descrição */
+  ["leafgreen","LeafGreen","game",1,"#08130a","#3fa34d","#1f6b3a","leaf","Verde-folha de Kanto com folhas no fundo"],
+  ["blue","Blue","game",1,"#070c17","#2f6fd6","#1b3f86","wave","Azul-oceano do Kanto original"],
+  ["gold","Gold","game",2,"#140f04","#d9a520","#7a5a12","feather","Ouro de Johto e penas no vento"],
+  ["silver","Silver","game",2,"#0b0f14","#8fa6bf","#34465e","wave","Prata e mar profundo de Johto"],
+  ["crystal","Crystal","game",2,"#061214","#33b9c7","#1d6f8a","gem","Cristal azul-turquesa e brilho gelado"],
+  ["black","Black","game",5,"#060607","#3a7bd5","#2c3038","yinyang","Preto profundo com faíscas azuis de Unova"],
+  ["white","White","game",5,"#0f1012","#e0743a","#9aa3b2","yinyang","Branco e prata com chama alaranjada"],
+  ["sun","Sun","game",7,"#170a04","#f08a24","#c2410c","sun","Sol de Alola em laranja e dourado"],
+  ["moon","Moon","game",7,"#070818","#7b5cd6","#2b2f7a","moon","Noite de Alola em roxo e índigo"],
+  ["sword","Sword","game",8,"#06101c","#2a8fe0","#1a3f74","sword","Azul de Galar e espadas cruzadas"],
+  ["shield","Shield","game",8,"#170609","#d8344c","#6e1a2a","shield","Carmim de Galar e escudos"],
+  ["za","Legends Z-A","game",10,"#050806","#5fcf33","#1d3a1f","hex","Lumiose à noite: preto e verde-neon"],
+  ["red","Red","hero",1,"#12070a","#d6332d","#2f4f8f","cap","Boné vermelho e jaqueta clássica de Kanto"],
+  ["leaf","Leaf","hero",1,"#071214","#d8433a","#2a9c96","leaf","Chapéu branco, camiseta azul-piscina e saia vermelha"],
+  ["ethan","Ethan","hero",2,"#120c05","#e3a51f","#b83a2c","cap","Boné preto e amarelo com jaqueta vermelha"],
+  ["lyra","Lyra","hero",2,"#0a0d18","#e0475e","#2f63b8","heart","Laço vermelho e macacão azul"],
+  ["kris","Kris","hero",2,"#061212","#f2c337","#1fa39a","sparkle","Marias-chiquinhas turquesa e boné amarelo"],
+  ["brendan","Brendan","hero",3,"#100906","#e25a28","#2b2d33","wave","Gorro branco, laranja e preto de Hoenn"],
+  ["may","May","hero",3,"#0f0709","#e0394a","#2f8f4e","flower","Bandana vermelha e detalhes verdes"],
+  ["lucas","Lucas","hero",4,"#0a0b14","#d33a3a","#2b3b6b","snowflake","Boina vermelha e casaco azul-marinho de Sinnoh"],
+  ["dawn","Dawn","hero",4,"#10080f","#e5579a","#242a40","star","Gorro branco, saia rosa e cachecol"],
+  ["hilbert","Hilbert","hero",5,"#07090f","#d83b3b","#2a5fb3","zigzag","Boné vermelho e jaqueta azul de Unova"],
+  ["hilda","Hilda","hero",5,"#0c0a0d","#e65b8c","#3a3f4c","bow","Boné rosa, colete preto e rabo de cavalo"],
+  ["nate","Nate","hero",5,"#070a12","#e8493c","#2e63c2","film","Viseira vermelha e jaqueta azul dos estúdios"],
+  ["rosa","Rosa","hero",5,"#120a0f","#f06fa0","#c9932a","sparkle","Coques, viseira rosa e detalhes amarelos"],
+  ["calem","Calem","hero",6,"#08090f","#d73a46","#26385e","xy","Chapéu vermelho e jaqueta azul de Kalos"],
+  ["serena","Serena","hero",6,"#0f070a","#e44f6b","#4a2b3a","bow","Chapéu rosa, saia vermelha e laço"],
+  ["elio","Elio","hero",7,"#071012","#f2a93a","#2a8fb0","sun","Camiseta listrada e boné de Alola"],
+  ["selene","Selene","hero",7,"#0f0a06","#f07c2c","#3a9a62","flower","Blusa florida laranja e verde-tropical"],
+  ["victor","Victor","hero",8,"#070b12","#e04040","#3a5f9a","star","Boné e uniforme do Desafio de Ginásios"],
+  ["gloria","Gloria","hero",8,"#0b0f10","#e66b91","#2f8a86","bow","Boina cinza-esverdeada e vestido rosa"],
+  ["florian","Florian","hero",9,"#0e0905","#f08a2a","#2b3a5c","orange","Uniforme da Academia Laranja de Paldea"],
+  ["juliana","Juliana","hero",9,"#0b0812","#8a5ad6","#2b3a5c","grape","Uniforme da Academia Uva de Paldea"],
+  ["rei","Rei","hero",10,"#070a14","#c79a2e","#24365e","compass","Uniforme da Equipe Galáxia de Hisui"],
+  ["akari","Akari","hero",10,"#110810","#d84f72","#24365e","compass","Lenço vermelho e uniforme de Hisui"]
+];
+THEME_V7.forEach(([key,label,group,gen,bg,accent,accent2,motif,description])=>{
+  THEMES[key]={label,group,gen,motif,vars:themeVars(bg,accent,accent2)};
+  THEME_META[key]={description,swatches:[bg,accent,accent2]};
+});
+/* Temas que já existiam: grupo, geração e estampa próprios. */
+Object.entries({
+  hazel:["classic",0,"ball"],pokelight:["classic",0,"ball"],pepsi:["classic",0,"star"],
+  firered:["game",1,"flame"],esmeralda:["game",3,"gem"],rubi:["game",3,"flame"],safira:["game",3,"wave"],
+  diamond:["game",4,"gem"],pearl:["game",4,"pearl"],platinum:["game",4,"star"],
+  pepsizero:["game",6,"xy"],skarlet:["game",9,"orange"],violet:["game",9,"grape"],
+  pikachu:["special",1,""],n:["special",5,""],arceus:["special",10,""]
+}).forEach(([key,[group,gen,motif]])=>{if(THEMES[key])Object.assign(THEMES[key],{group,gen,motif});});
+Object.assign(THEME_META.firered,{description:"Vermelho-fogo de Kanto com chamas no fundo"});
+Object.assign(THEME_META.esmeralda,{description:"Verde-esmeralda de Hoenn e joias brilhando"});
+Object.assign(THEME_META.rubi,{description:"Rubi e magma de Hoenn"});
+Object.assign(THEME_META.safira,{description:"Safira e ondas do mar de Hoenn"});
+Object.assign(THEME_META.diamond,{description:"Azul-diamante e prata de Sinnoh"});
+Object.assign(THEME_META.pearl,{description:"Pérola, lilás e rosa de Sinnoh"});
+Object.assign(THEME_META.platinum,{description:"Platina, ouro e vermelho de Sinnoh"});
+Object.assign(THEME_META.pepsizero,{description:"Azul de X e vermelho de Y em Kalos"});
+Object.assign(THEME_META.skarlet,{description:"Escarlate da Academia Laranja de Paldea"});
+Object.assign(THEME_META.violet,{description:"Violeta da Academia Uva de Paldea"});
+
 const FONT_THEMES={
   arcade:{
     label:"Arcade 8-bit",

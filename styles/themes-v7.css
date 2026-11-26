@@ -1,0 +1,64 @@
+/* ============================================================
+   V7 — Temas de jogos e protagonistas
+   ============================================================ */
+
+/* ---------- Janelas mais tingidas nos temas de jogo/protagonista ---------- */
+html:is([data-theme-group="game"],[data-theme-group="hero"]):not([data-cl-scheme="dark"]){
+  --cl-paper:color-mix(in srgb,var(--accent2,#2f6fd0) 12%,#fbfaf2);
+  --cl-paper2:color-mix(in srgb,var(--accent2,#2f6fd0) 17%,#eceee2);
+  --cl-paper3:color-mix(in srgb,var(--accent2,#2f6fd0) 23%,#dfe1d2);
+  --cl-card:color-mix(in srgb,var(--accent2,#2f6fd0) 5%,#ffffff);
+  --cl-inset:color-mix(in srgb,var(--accent2,#2f6fd0) 14%,#e7e7da);
+  --cl-line:color-mix(in srgb,var(--accent2,#2f6fd0) 26%,#bfc2b2);
+  --cl-hl:color-mix(in srgb,var(--accent,#d8343c) 12%,#ffffff);
+}
+html:is([data-theme-group="game"],[data-theme-group="hero"])[data-cl-scheme="dark"]{
+  --cl-paper:color-mix(in srgb,var(--accent2,#2f6fd0) 20%,#141820);
+  --cl-paper2:color-mix(in srgb,var(--accent2,#2f6fd0) 22%,#1b202b);
+  --cl-card:color-mix(in srgb,var(--accent2,#2f6fd0) 15%,#1e2430);
+  --cl-line:color-mix(in srgb,var(--accent2,#2f6fd0) 40%,#3a4252);
+  --cl-hl:color-mix(in srgb,var(--accent,#d8343c) 22%,#343b4a);
+}
+
+/* A estampa do tema também aparece, bem leve, na barra do topo. */
+html:is([data-theme-group="game"],[data-theme-group="hero"]):not([data-sheet-mode="pokedex"]) body .topbar{
+  background:var(--cl-ball),var(--cl-scan),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner) 88%,#fff),var(--cl-banner) 55%,var(--cl-banner-dark))!important;
+  background-size:48px 48px,auto,auto!important;
+}
+
+/* ---------- Seletor de temas ---------- */
+html body #themeModal .theme-grid.th7-grid{align-items:stretch}
+.th7-tools,.th7-section,.th7-gen,.th7-empty{grid-column:1/-1}
+.th7-tools{display:grid;gap:10px;margin-bottom:2px}
+.th7-current{display:flex;align-items:baseline;gap:8px;font-size:12px;color:var(--ap-muted,#5f6670)}
+.th7-current b{font-size:14px;color:var(--ap-text,#23262e)}
+.th7-search{display:flex;align-items:center;gap:8px;padding:0 12px;border:2px solid var(--ap-ink,#181a24);border-radius:10px;background:var(--cl-card,#fff)}
+.th7-search span{font-size:18px;opacity:.6}
+html body #themeModal .th7-search input{flex:1;min-width:0;height:40px;border:0!important;outline:0;background:transparent!important;color:var(--ap-text,#23262e);font:600 14px/1 system-ui,sans-serif!important;box-shadow:none!important}
+.th7-search:focus-within{outline:3px solid color-mix(in srgb,var(--cl-frame,#3d7be0) 45%,transparent);outline-offset:1px}
+.th7-filters{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.th7-filters::-webkit-scrollbar{display:none}
+.th7-filter{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border:2px solid var(--ap-ink,#181a24);border-radius:999px;
+  background:var(--cl-card,#fff);color:var(--ap-text,#23262e);font:700 12px system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 0 var(--ap-ink,#181a24)}
+.th7-filter small{display:grid;place-items:center;min-width:20px;height:18px;padding:0 5px;border-radius:9px;background:color-mix(in srgb,var(--ap-ink,#181a24) 12%,transparent);font-size:10.5px}
+.th7-filter.on{background:var(--cl-banner,#d8343c);color:#fff}
+.th7-filter.on small{background:rgba(255,255,255,.25)}
+.th7-filter:active{transform:translateY(2px);box-shadow:none}
+.th7-section{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-top:10px;padding-top:12px;border-top:2px dashed var(--cl-line,#c9cdd8)}
+.th7-section b{font-size:15px;color:var(--ap-text,#23262e)}
+.th7-section small{font-size:11.5px;color:var(--ap-muted,#5f6670)}
+.th7-section .ap-fx-toggle{margin-left:auto}
+.th7-gen{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.th7-gen span{padding:3px 8px;border-radius:6px;background:var(--ap-ink,#181a24);color:#fff;font:700 10.5px var(--cl-pixel,system-ui);letter-spacing:.04em;text-transform:uppercase}
+.th7-gen small{font-size:11.5px;color:var(--ap-muted,#5f6670)}
+.th7-empty{margin:8px 0;padding:18px;border:2px dashed var(--cl-line,#c9cdd8);border-radius:10px;text-align:center;color:var(--ap-muted,#5f6670)}
+
+/* Prévia com a estampa do tema */
+.th7-preview{position:relative}
+.th7-card[style*="--p-motif"] .th7-preview .ap-body{background:var(--p-motif),var(--p-bg2);background-size:28px 28px,auto}
+.th7-card[style*="--p-motif"] .th7-preview .ap-bar{background:var(--p-motif),linear-gradient(90deg,var(--p-a),color-mix(in srgb,var(--p-a) 70%,var(--p-b)));background-size:20px 20px,auto}
+
+@media (max-width:600px){
+  html body #themeModal.ap-sheet .theme-grid.th7-grid{gap:9px!important}
+  .th7-section b{font-size:14px}
+}
