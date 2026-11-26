@@ -47,7 +47,9 @@
   // batalha atual: {id,role:'p1'|'p2'|'spec',host:bool,state,teams,format,opp,names,playing}
   let B=null;
   /* Desafio Sem Fim: corrida atual (time, HP que sobra entre ondas, onda) */
-  let RUN=null,RANK={list:null,loading:false,error:""};
+  let RUN=null,RANK={list:null,loading:false,error:"",mode:"endless"};
+  const REG=id=>window.hhArenaSurvival?.REGIONS?.[id]||null;
+  const regionBest=id=>Number(state.arenaRegionBest?.[id]||0);
   const SURV=()=>window.hhArenaSurvival;
   const aiRules={typeMultiplier:(t,d)=>defensiveMultiplier(t,d),normalizeType:t=>normalizeTypeName(t)};
   function playerKey(){
@@ -126,16 +128,83 @@
     }
     thumbBusy=false;if(changed){track();render();}
   }
+  /* ---------- Gimmicks do Pokémon da ficha ----------
+     Mega: formas personalizadas/da Pokédex GM e Megas oficiais da PokéAPI
+     (atributos = base da Mega + pontos investidos). Tera: Tera Type da ficha
+     (ou o 1º tipo). Z: só com o Cristal Z preparado na ficha. */
+  const megaCache=new Map();
+  const g_=(name,...a)=>{try{return typeof window[name]==="function"?window[name](...a):undefined;}catch(e){return undefined;}};
+  async function officialMegas(p){
+    const sp=p.apiData?.speciesName||"";
+    if(!sp||p.apiData?.source!=="PokeAPI")return [];
+    const k=String(sp).toLowerCase();
+    if(megaCache.has(k))return megaCache.get(k);
+    const job=(async()=>{
+      try{
+        const r=await fetch(`https://pokeapi.co/api/v2/pokemon-species/${encodeURIComponent(k)}/`);if(!r.ok)return [];
+        const sd=await r.json();
+        const vars=(sd.varieties||[]).filter(v=>!v.is_default&&/-mega(-[xyz])?$/.test(v.pokemon?.name||""));
+        const out=[];
+        for(const v of vars){
+          try{
+            const d=await (await fetch(v.pokemon.url)).json();
+            const base={};(d.stats||[]).forEach(x=>{const m={hp:"hp",attack:"atk",defense:"def","special-attack":"spa","special-defense":"spd",speed:"spe"}[x.stat.name];if(m)base[m]=x.base_stat;});
+            const ab=(d.abilities||[]).sort((a,b)=>Number(a.slot||0)-Number(b.slot||0)).find(x=>!x.is_hidden)||d.abilities?.[0];
+            const abApi=ab?.ability?.name||"";
+            out.push({name:g_("formatMegaDisplayName",d.name,sp)||d.name,types:(d.types||[]).map(x=>normalizeTypeName(x.type?.name||"")).filter(Boolean),base,
+              ability:g_("officialAbilityEnglishName",abApi)||abApi,abilityText:String(await (g_("fetchAbilityDescription",abApi)||"")||"").slice(0,900),
+              img:d.sprites?.other?.["official-artwork"]?.front_default||d.sprites?.front_default||""});
+          }catch(e){}
+        }
+        return out;
+      }catch(e){return [];}
+    })();
+    megaCache.set(k,job);
+    return job;
+  }
+  async function gimmicksOf(p,cur){
+    const g=p.gimmicks||{},mg=g.mega||{},tera=g.tera||{},z=g.zMove||{};
+    const baseStats=cur.baseStats||{},stats=cur.stats||{};
+    const invested=k=>Math.max(0,Number(stats[k]||0)-Number(baseStats[k]||0));
+    const withPoints=b=>Object.fromEntries(["hp","atk","def","spa","spd","spe"].map(k=>[k,Number(b?.[k]||0)+invested(k)]));
+    const forms=[];
+    if(cur.megaNow)forms.push(cur.megaNow);
+    else{
+      for(const f of (mg.customForms||[]).slice(0,3)){
+        if(!f?.name||!f.baseStats)continue;
+        const st=withPoints(f.baseStats);
+        forms.push({name:f.name,types:[normalizeTypeName(f.type1),normalizeTypeName(f.type2)].filter(Boolean),stats:st,maxHp:Math.max(1,st.hp),ability:f.abilityName||"",abilityText:String(f.abilityText||"").slice(0,900),img:await compactImage(f.imageUrl||"")});
+      }
+      if(!forms.length)for(const f of (await officialMegas(p)).slice(0,2)){
+        const st=withPoints(f.base);
+        forms.push({name:f.name,types:f.types,stats:st,maxHp:Math.max(1,st.hp),ability:f.ability,abilityText:f.abilityText,img:f.img});
+      }
+    }
+    return {megaForms:forms,teraType:normalizeTypeName(tera.type)||normalizeTypeName(cur.type1)||"",zType:z.prepared?normalizeTypeName(z.type)||"":""};
+  }
   async function buildTeam(limit){
     const list=teamSource().slice(0,limit);
     const out=[];
-    for(const p of list){
+    for(const p0 of list){
+      // Se a ficha estiver com Mega ou Tera ligada, a arena começa na forma normal
+      // e a Mega/Tera vira o gimmick da batalha.
+      let p=p0,megaNow=null;
+      const mg=p0.gimmicks?.mega,tr=p0.gimmicks?.tera;
+      if(mg?.active&&mg.snapshot){
+        const sn=mg.snapshot;
+        megaNow={name:p0.name,types:[normalizeTypeName(p0.type1),normalizeTypeName(p0.type2)].filter(Boolean),stats:{...p0.stats},maxHp:Math.max(1,Number(p0.maxHp||p0.stats?.hp||1)),
+          ability:p0.abilityName||"",abilityText:String(p0.abilityText||"").slice(0,900),img:await compactImage(displayPokemonImage(p0))};
+        p={...p0,name:sn.name,type1:sn.type1,type2:sn.type2,stats:sn.stats,baseStats:sn.baseStats,maxHp:sn.maxHp,abilityName:sn.abilityName,abilityText:sn.abilityText,imageUrl:sn.imageUrl||p0.imageUrl};
+      }
+      if(tr?.active&&tr.snapshot)p={...p,type1:tr.snapshot.type1,type2:tr.snapshot.type2};
+      let gimmick=null;try{gimmick=await gimmicksOf(p0,{...p,megaNow});}catch(e){}
       const moves=(p.moves||[]).filter(m=>m.active&&!(typeof isMoveLevelLocked==="function"&&isMoveLevelLocked(m))).slice(0,5)
         .map(m=>({name:m.name,type:normalizeTypeName(m.type)||"Normal",category:m.category||"Status",power:Number(m.power||0),
           accuracy:m.alwaysHits||m.accuracy==null||m.accuracy===""?null:Number(m.accuracy),alwaysHits:!!m.alwaysHits,desc:String(m.description||"").slice(0,420)}));
       out.push({name:p.name||"Pokémon",level:Number(p.level||1),types:[normalizeTypeName(p.type1),normalizeTypeName(p.type2)].filter(Boolean),
         stats:{hp:Number(p.stats?.hp||0),atk:Number(p.stats?.atk||0),def:Number(p.stats?.def||0),spa:Number(p.stats?.spa||0),spd:Number(p.stats?.spd||0),spe:Number(p.stats?.spe||0)},
-        maxHp:Math.max(1,Number(p.maxHp||p.stats?.hp||1)),ability:p.abilityName||"",abilityText:String(p.abilityText||"").slice(0,900),img:await compactImage(displayPokemonImage(p)),
+        maxHp:Math.max(1,Number(p.maxHp||p.stats?.hp||1)),ability:p.abilityName||"",abilityText:String(p.abilityText||"").slice(0,900),img:await compactImage(p===p0?displayPokemonImage(p):(p.imageUrl||displayPokemonImage(p0))),
+        fid:String(p0.id),gimmick,
         moves:moves.length?moves:[{name:"Struggle",type:"Normal",category:"Physical",power:50,accuracy:null,desc:"Sem golpes ativos na ficha."}]});
     }
     return out;
@@ -205,7 +274,7 @@
     room=next;ls.set("hh_arena_room",room);disconnect();chat=[];await connect();
   }
   function myStatus(){
-    if(RUN)return {status:"survival",wave:RUN.wave};
+    if(RUN)return {status:"survival",wave:RUN.wave,region:RUN.region?.id||""};
     if(!B)return {status:"idle"};
     if(B.role==="spec")return {status:"watch",battle:B.id};
     return {status:"battle",battle:B.id,vs:B.names?.[B.role==="p1"?"p2":"p1"]||""};
@@ -365,7 +434,7 @@
   /* ---------- Batalha: ações do jogador ---------- */
   function act(action){
     if(!B||B.role==="spec"||!B.view)return;
-    B.chosen=true;sfx("select");buzz(8);
+    B.chosen=true;B.sel={};B.bagOpen=false;sfx("select");buzz(8);
     if(B.host)hostAction("p1",action,B.view.turn);
     else send(battleCh,"action",{side:B.role,action,turn:B.view.turn});
     render();
@@ -394,9 +463,11 @@
         applyEventToView(ev);
         if(ev.k==="switch"){B.view.sides[ev.side].active=s.sides[ev.side].active;}
         if(ev.k==="faint"){B.view.sides[ev.side].team[B.view.sides[ev.side].active].fainted=true;}
-        if(ev.k==="switch")render(true);else patch();
+        if(ev.k==="switch"||ev.k==="gimmick"||(ev.k==="item"&&ev.revived))render(true);else patch();
+        if(ev.k==="gimmick"){const el=root.querySelector(`.ar7-mon.${ev.side===mySide()?"me":"foe"}`);el?.classList.add("ar9-evolve",ev.kind);sfx("page");buzz([20,30,60]);}
+        if(ev.k==="evade"&&!ev.fail){const el=root.querySelector(`.ar7-mon.${ev.side===mySide()?"me":"foe"}`);el?.classList.remove("ar9-dodge");void el?.offsetWidth;el?.classList.add("ar9-dodge");}
         const wait=animate(ev);
-        await new Promise(r=>setTimeout(r,Math.max(wait||0,ev.k==="move"?450:ev.k==="hit"?850:ev.k==="faint"?1000:500)));
+        await new Promise(r=>setTimeout(r,Math.max(wait||0,ev.k==="move"?450:ev.k==="hit"?850:ev.k==="faint"?1000:ev.k==="gimmick"?1400:500)));
       }
       if(!B)return;
       B.view=JSON.parse(JSON.stringify(s));B.view.events=[];B.chosen=false;
@@ -409,10 +480,17 @@
         const f=root.querySelector(".ar7-field");
         if(f){const t=document.createElement("b");t.className="ar7-turnban";t.textContent="Turno "+B.view.turn;f.appendChild(t);setTimeout(()=>t.remove(),1500);}
       }
-      if(B.view.phase==="end"&&B.solo&&RUN&&!RUN.done)onWaveEnd();
+      if(B.view.phase==="end"&&B.solo&&RUN&&!RUN.done){onWaveEnd();render(true);}
       if(B.view.phase==="end"){const f=root.querySelector(".ar7-field");if(f){const t=document.createElement("b");t.className="ar7-turnban end";t.textContent=B.view.winner?`${sideName(B.view.winner)} venceu!`:"Fim";f.appendChild(t);}}
     }
     if(B)B.playing=false;
+  }
+  /* Gimmicks que o meu ativo ainda pode usar (vale também para quem não é o anfitrião) */
+  function gimmicksFor(side){
+    const v=B.view.sides[side],mon=B.teams[side][v.active],g=mon?.gimmick||{},used=v.gim||{mega:null,tera:null,z:false};
+    return {mega:used.mega==null&&used.tera!==v.active&&!mon.mega?(g.megaForms||[]):[],
+      tera:used.tera==null&&used.mega!==v.active&&!mon.mega&&!mon.tera&&g.teraType?g.teraType:"",
+      z:!used.z&&g.zType&&(mon.moves||[]).some(m=>String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.zType)?g.zType:""};
   }
   function sideName(s){return B?.names?.[s]||s;}
   function monName(side,idx){const t=B?.teams?.[side];const i=idx??B?.view?.sides?.[side]?.active;return t?.[i]?.name||"Pokémon";}
@@ -429,6 +507,15 @@
     if(ev.k==="field"&&sd){sd.field=sd.field||{};sd.field[ev.kind]=ev.end?0:ev.turns;}
     if(ev.k==="switch"&&sd){sd.stg={};sd.cnf=false;}
     if(ev.k==="faint"&&t){t.fainted=true;t.status=null;sd.stg={};sd.cnf=false;}
+    if(ev.k==="gimmick"&&sd){
+      sd.gim=sd.gim||{mega:null,tera:null,z:false};
+      sd.gim[ev.kind]=ev.idx;
+      const m=B.teams?.[ev.side]?.[ev.idx];
+      if(m&&!B.host){if(ev.kind==="mega")Object.assign(m,{name:ev.to,img:ev.img||m.img,types:ev.types,ability:ev.ability,mega:true});else Object.assign(m,{types:ev.types,tera:ev.type});}
+      const st=sd.team[ev.idx];if(st&&ev.maxHp){st.maxHp=ev.maxHp;st.hp=ev.hp;}
+    }
+    if(ev.k==="move"&&ev.z&&sd){sd.gim=sd.gim||{};sd.gim.z=true;}
+    if(ev.k==="item"&&sd&&ev.hp!=null){const st=sd.team[ev.idx];if(st){st.hp=ev.hp;if(ev.revived)st.fainted=false;st.status=ev.status||null;}if(ev.idx===sd.active)sd.cnf=!!ev.cnf;}
   }
   const ST_LABEL={psn:"Envenenado",tox:"gravemente envenenado (Toxic)",brn:"Queimado",dbrn:"com Deep Burn",par:"Paralisado",slp:"Dormindo",frz:"Congelado",cnf:"Confuso"};
   const ST_SHORT={psn:"PSN",tox:"TOX",brn:"BRN",dbrn:"BRN+",par:"PAR",slp:"SLP",frz:"FRZ",cnf:"CNF"};
@@ -436,7 +523,7 @@
   const STAT_SHORT={atk:"ATK",def:"DEF",spa:"SPA",spd:"SPD",spe:"SPE",acc:"PRE",eva:"EVA"};
   const W_LABEL={rain:"Chuva",sun:"Sol forte",sand:"Tempestade de areia",hail:"Granizo"};
   const W_ICON={rain:"🌧",sun:"☀",sand:"🌪",hail:"❄"};
-  const SRC_LABEL={psn:"o veneno",tox:"o veneno (Toxic)",brn:"a queimadura",dbrn:"a queimadura profunda",sand:"a tempestade de areia",hail:"o granizo",cnf:"a confusão",recoil:"o recuo"};
+  const SRC_LABEL={evade:"o cansaço de tanto esquivar",psn:"o veneno",tox:"o veneno (Toxic)",brn:"a queimadura",dbrn:"a queimadura profunda",sand:"a tempestade de areia",hail:"o granizo",cnf:"a confusão",recoil:"o recuo"};
   const CANT={slp:"está dormindo.",frz:"está congelado!",par:"está paralisado e não conseguiu se mover!",flinch:"hesitou e não atacou!",cnf:"está confuso e se feriu!",powder:"é imune a golpes de pó."};
   function pushLog(events){
     for(const ev of events){
@@ -444,7 +531,8 @@
       if(ev.k==="move"){
         line=`<b>${esc(ev.mon)}</b> (${esc(sideName(ev.side))}) usou <b class="ar7-mv" style="--t:${typeColor(ev.type)}">${esc(ev.move)}</b>!`;
         if(ev.roll!=null)line+=` <span class="ar7-dice">🎲 d100 ${ev.roll}${ev.acc!=null?` / ${ev.acc}%`:""}</span>`;
-        if(ev.miss){line+=" — <i>errou!</i>";cls="miss";}
+        if(ev.z)line=`<b class="ar9-zline">Z-MOVE!</b> `+line+` <small>Power ${ev.power}</small>`;
+        if(ev.miss){line+=ev.dodged?" — <i>esquivou!</i>":" — <i>errou!</i>";cls="miss";}
         if(ev.protect){line+=" — se protegeu!";}
         if(ev.status&&ev.desc)line+=`<small>${esc(ev.desc)}</small>`;
         if(ev.noTarget)line+=" — sem alvo.";
@@ -460,6 +548,14 @@
         }
         if(ev.notes?.length)line+=` <span class="ar7-dice">${ev.notes.map(esc).join(" · ")}</span>`;
         if(ev.hits>1)line+=` <i>(${ev.hits} acertos)</i>`;
+      }else if(ev.k==="gimmick"){
+        line=ev.kind==="mega"?`◆ <b>${esc(ev.mon)}</b> Mega Evoluiu para <b class="ar9-mega">${esc(ev.to)}</b>!`:`✦ <b>${esc(ev.mon)}</b> Terastalizou: agora é <b class="ar7-mv" style="--t:${typeColor(ev.type)}">${esc(ev.type)}</b> (STAB +2d6)!`;cls="gimmick";
+      }else if(ev.k==="evade"){
+        if(ev.fail)line=`${esc(ev.mon)} não consegue esquivar (${ev.why==="frz"?"congelado":"dormindo"}).`;
+        else line=`↯ <b>${esc(ev.mon)}</b> ${ev.kind==="active"?"se concentra em esquivar":"fica pronto para esquivar"} <span class="ar7-dice">Precisão do rival −${ev.pen} · ${ev.streak}ª seguida${ev.tired?" · cansado!":""}</span>`;
+        cls="evade";
+      }else if(ev.k==="item"){
+        line=ev.fail?`${esc(sideName(ev.side))} usou ${esc(ev.item)}, mas não teve efeito.`:`🎒 ${esc(sideName(ev.side))} usou <b>${esc(ev.item)}</b> em ${esc(ev.mon)}${ev.revived?": voltou à luta!":ev.healed?`: +${ev.healed} HP`:""}${ev.cured?" (status curado)":""}.`;cls="heal";
       }else if(ev.k==="heal")line=`${esc(monName(ev.side))} recuperou <b>${ev.amount}</b> HP${ev.src?` <small class="ar7-src">${esc(ev.src)}</small>`:""}.`;
       else if(ev.k==="sdmg"){line=`${esc(ev.mon)} perdeu <b>${ev.amount}</b> HP por ${SRC_LABEL[ev.src]||esc(ev.src)}.`;cls="weak";}
       else if(ev.k==="stage"){
@@ -626,11 +722,28 @@
         <div class="ar8-mode-act"><button type="button" class="ar7-btn primary" data-ar="surv-start" ${myTeam.length?"":"disabled"}>▶ Começar</button><button type="button" class="ar7-btn" data-ar="tab" data-v="ranking">🏆</button></div>
       </article>
     </section>
+    ${citiesView(myTeam)}
     <nav class="ar8-tabs" role="tablist" aria-label="Seções da arena">${TABS.filter(([k])=>!(wide&&k==="chat")).map(([k,ico,label,sub,col])=>`<button type="button" role="tab" aria-selected="${curTab===k}" class="ar8-tab${curTab===k?" on":""}" data-ar="tab" data-v="${k}" style="--nb:${col}"><span class="ar8-tab-ico">${PX(ico,22)}</span><span class="ar8-tab-txt"><b>${label}</b><small>${sub}</small></span>${counts[k]?`<i class="ar8-count">${counts[k]}</i>`:""}</button>`).join("")}</nav>
     <section class="ar8-panel" role="tabpanel">${curTab==="sala"?roomTab(others,battles,myTeam):curTab==="time"?`<div class="ar8-sec"><h3>${PX("ball",22)} Seu time na arena</h3><p class="ar8-sub">Quem vai para as batalhas e para o Desafio Sem Fim. O primeiro começa a luta.</p>${teamEditor()}</div>`:curTab==="ranking"?rankTab():curTab==="chat"?chatTab():settingsTab()}</section>
     </div>
     ${wide?`<aside class="ar8-side">${sideOnline(others)}${chatTab()}</aside>`:""}
     </div>`;
+  }
+  /* Desafios das cidades: cada cidade tem sua área de um tipo só */
+  function citiesView(myTeam){
+    const regions=Object.values(window.hhArenaSurvival?.REGIONS||{});
+    if(!regions.length)return "";
+    return `<section class="ar9-cities" aria-label="Desafios das cidades">
+      <h3 class="ar9-cities-title">${PX("abyss",22)} Desafios das cidades <small>Desafio Sem Fim por tipagem</small></h3>
+      ${regions.map(r=>{const best=regionBest(r.id);return `<article class="ar9-city ar8-frame t-${esc(r.type.toLowerCase())}" style="--t:${typeColor(r.type)};--td:${typeDark(r.type)};background-image:linear-gradient(100deg,rgba(20,14,10,.92) 0%,rgba(28,20,14,.7) 55%,rgba(28,20,14,.25) 100%),url('assets/arenas/${esc(r.scene)}.png')">
+        <span class="ar9-city-ico">${PX(r.icon,64)}</span>
+        <div class="ar9-city-txt"><small>Cidade de <b>${esc(r.city)}</b> · tipo ${esc(r.typePt)}</small><h3>${esc(r.area)}</h3>
+          <p>Lv ${r.minLv} → ${r.maxLv} · cada andar mais fundo e mais perigoso · Guardião no andar ${r.floors}</p>
+          <ul class="ar9-rules"><li>⭐ Rende <b>PPg</b> para quem lutar</li><li>🎒 Cura só com os itens da sua Bolsa</li><li>💔 Golpes de cura rendem metade</li></ul>
+          <p class="ar9-best">Seu recorde: <b>${best}</b> andar${best===1?"":"es"}${best?` (${best*40} m)`:""}</p></div>
+        <div class="ar8-mode-act"><button type="button" class="ar7-btn primary" data-ar="region-start" data-v="${esc(r.id)}" ${myTeam.length?"":"disabled"}>⬇ Descer</button><button type="button" class="ar7-btn" data-ar="rank-mode-open" data-v="${esc(r.id)}" title="Ranking de ${esc(r.city)}">🏆</button></div>
+      </article>`;}).join("")}
+    </section>`;
   }
   function sideOnline(others){
     return `<div class="ar8-sec ar8-online"><h3>${PX("people",22)} Online agora <small>${others.length+1}</small></h3>
@@ -638,7 +751,7 @@
   }
   function roomTab(others,battles,myTeam){
     const watchers={};Object.values(people).filter(p=>p.status==="watch").forEach(p=>{watchers[p.battle]=(watchers[p.battle]||0)+1;});
-    const badge=p=>p.status==="battle"?`⚔ em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"👁 assistindo":p.status==="survival"?`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`:"● disponível";
+    const badge=p=>p.status==="battle"?`⚔ em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"👁 assistindo":p.status==="survival"?(p.region&&REG(p.region)?`⛰ ${esc(REG(p.region).area)} · andar ${Number(p.wave)||1}`:`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`):"● disponível";
     return `<div class="ar8-sec">
       <h3>${PX("people",24)} Treinadores na sala <small>${others.length}</small></h3>
       ${others.length?`<ul class="ar8-people">${others.map(p=>{const l=(p.team||[])[0];return `<li class="ar8-person ${esc(p.status)}">
@@ -657,22 +770,26 @@
     </div>`;
   }
   function rankTab(){
-    const list=RANK.list,best=Number(state.arenaSurvivalBest||0);
+    const list=RANK.list,reg=RANK.mode!=="endless"?REG(RANK.mode):null;
+    const best=reg?regionBest(reg.id):Number(state.arenaSurvivalBest||0);
+    const unit=n=>reg?`andar${n===1?"":"es"}`:`onda${n===1?"":"s"}`;
     const me_=playerKey();
     const pod=list?.slice(0,3)||[];
     const card=(r,i)=>`<div class="ar8-pod p${i+1}${r.player_key===me_?" me":""}">
       ${i===0?`<span class="ar8-crown">${PX("crown",30)}</span>`:""}
       <span class="ar8-avatar" style="--t:#ffd23f">${r.team?.[0]?.img?`<img src="${esc(r.team[0].img)}" alt="">`:PX("ball",34)}</span>
-      <b>${esc(r.player)}</b><strong>${r.waves}<small> onda${r.waves===1?"":"s"}</small></strong><i class="ar8-step">${i+1}</i></div>`;
+      <b>${esc(r.player)}</b><strong>${r.waves}<small> ${unit(r.waves)}</small></strong><i class="ar8-step">${i+1}</i></div>`;
+    const regions=Object.values(window.hhArenaSurvival?.REGIONS||{});
     return `<div class="ar8-sec ar8-rank">
-      <div class="ar8-rank-top"><h3>${PX("trophy",24)} Ranking do Desafio Sem Fim</h3><button type="button" class="ar7-link" data-ar="rank-reload">atualizar</button></div>
-      <p class="ar8-sub">Melhor corrida de cada treinador. Seu recorde: <b>${best}</b> onda${best===1?"":"s"}.</p>
+      <div class="ar8-rank-top"><h3>${PX("trophy",24)} Ranking ${reg?`do ${esc(reg.area)}`:"do Desafio Sem Fim"}</h3><button type="button" class="ar7-link" data-ar="rank-reload">atualizar</button></div>
+      <div class="ar9-rank-modes" role="tablist" aria-label="Modo do ranking"><button type="button" role="tab" aria-selected="${!reg}" class="${!reg?"on":""}" data-ar="rank-mode" data-v="endless">${PX("tower",18)} Sem Fim</button>${regions.map(x=>`<button type="button" role="tab" aria-selected="${reg?.id===x.id}" class="${reg?.id===x.id?"on":""}" data-ar="rank-mode" data-v="${esc(x.id)}">${PX(x.icon,18)} ${esc(x.city)}</button>`).join("")}</div>
+      <p class="ar8-sub">Melhor ${reg?"descida":"corrida"} de cada treinador. Seu recorde: <b>${best}</b> ${unit(best)}.</p>
       ${RANK.loading&&!list?`<p class="ar7-empty-text">Carregando…</p>`:RANK.error&&!list?`<p class="ar7-empty-text">${esc(RANK.error)}</p>`:!list||!list.length?`<div class="ar8-empty">${PX("tower",40)}<p>Ninguém no ranking ainda. Seja o primeiro!</p></div>`:`
       <div class="ar8-podium">${[1,0,2].filter(i=>pod[i]).map(i=>card(pod[i],i)).join("")}</div>
       ${list.length>3?`<ol class="ar7-rank-list" start="4">${list.slice(3).map((r,i)=>`<li class="${r.player_key===me_?"me":""}"><span class="ar7-rank-pos">${i+4}</span>
         <span class="ar7-rank-name"><b>${esc(r.player)}</b><small>${(r.team||[]).map(t=>esc(t.n)).join(", ")}${r.damage_mode==="matrix"?" · 🧪":""}${r.last_foe?` · caiu para ${esc(r.last_foe)}`:""}</small></span>
         <span class="ar7-rank-minis">${teamMinis((r.team||[]).map(t=>({n:t.n,lv:t.lv,t:[],img:t.img||""})),24)}</span>
-        <b class="ar7-rank-score">${r.waves}<small>onda${r.waves===1?"":"s"}</small></b></li>`).join("")}</ol>`:""}`}
+        <b class="ar7-rank-score">${r.waves}<small>${unit(r.waves)}</small></b></li>`).join("")}</ol>`:""}`}
     </div>`;
   }
   function chatTab(){
@@ -727,41 +844,69 @@
     RANK.loading=true;RANK.error="";render();
     try{
       await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
-      const {data,error}=await sb.from("arena_survival_ranking").select("player,player_key,waves,team,damage_mode,last_foe,created_at").order("waves",{ascending:false}).order("created_at",{ascending:true}).limit(300);
+      const mode=RANK.mode;
+      const {data,error}=await sb.from("arena_survival_ranking").select("player,player_key,waves,team,damage_mode,last_foe,created_at,mode").eq("mode",mode).order("waves",{ascending:false}).order("created_at",{ascending:true}).limit(300);
       if(error)throw error;
+      if(mode!==RANK.mode){RANK.loading=false;return;}
       const seen=new Set(),out=[];
       for(const r of data||[]){if(seen.has(r.player_key))continue;seen.add(r.player_key);out.push(r);if(out.length>=20)break;}
       RANK.list=out;RANK.at=Date.now();
     }catch(e){RANK.error="Não consegui carregar o ranking agora.";}
     RANK.loading=false;render();
   }
-  async function startRun(){
+  async function startRun(regionId){
     if(B||!SURV())return;
+    const region=regionId?REG(regionId):null;
+    if(regionId&&!region)return;
+    toast(region?`Descendo para o ${region.area}…`:"Preparando o Desafio Sem Fim…");
     const team=await buildTeam(6);
     if(!team.length){toast("Monte um time primeiro.");return;}
-    RUN={wave:0,team,hp:team.map(m=>({hp:Math.max(1,Number(m.maxHp||1)),maxHp:Math.max(1,Number(m.maxHp||1)),fainted:false})),train:0,dmg:dmgMode,cleared:0,done:false};
+    RUN={wave:0,team,hp:team.map(m=>({hp:Math.max(1,Number(m.maxHp||1)),maxHp:Math.max(1,Number(m.maxHp||1)),fainted:false})),train:0,dmg:dmgMode,cleared:0,done:false,
+      region,mode:region?region.id:"endless",ppg:{},lastGains:[]};
     nextWave();
   }
   async function nextWave(){
-    RUN.wave++;RUN.done=false;RUN.error="";
-    B={id:"solo-"+uidShort(),role:"p1",host:true,solo:true,arena:pickScene(scene),dmg:RUN.dmg,format:6,names:{p1:me.name,p2:"Onda "+RUN.wave},state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
+    RUN.wave++;RUN.done=false;RUN.error="";RUN.lastGains=[];
+    const region=RUN.region;
+    B={id:"solo-"+uidShort(),role:"p1",host:true,solo:true,arena:region?region.scene:pickScene(scene),dmg:RUN.dmg,format:6,names:{p1:me.name,p2:(region?"Andar ":"Onda ")+RUN.wave},state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false,sel:{}};
     for(const k in lastHp)delete lastHp[k];
     sfx("page");render();track();
     const ref=Math.round(RUN.team.reduce((x,m)=>x+Number(m.level||1),0)/RUN.team.length);
     let wave;
-    try{wave=await SURV().makeWave(RUN.wave,ref);}
+    try{wave=region?await SURV().makeRegionWave(region.id,RUN.wave):await SURV().makeWave(RUN.wave,ref);}
     catch(e){if(RUN){RUN.error="A PokéAPI não respondeu.";render();}return;}
     if(!B?.solo||!RUN)return;
     RUN.waveInfo=wave;
     const alive=RUN.team.map((m,i)=>i).filter(i=>!RUN.hp[i].fainted);
     RUN.alive=alive;
+    const foeName=region?`${wave.label} · Andar ${RUN.wave}`:`${wave.boss?"Chefe da onda":wave.elite?"Elite da onda":"Onda"} ${RUN.wave}`;
     B.state=engine.newBattle({id:B.id,format:6,damage:RUN.dmg,
-      p1:{id:me.id,name:me.name,team:alive.map(i=>RUN.team[i])},
-      p2:{id:"cpu",name:`${wave.boss?"Chefe da onda":wave.elite?"Elite da onda":"Onda"} ${RUN.wave}`,team:wave.team}});
+      // no desafio da cidade, golpes e abilities curam só metade
+      p1:{id:me.id,name:me.name,team:alive.map(i=>RUN.team[i]),items:true,healMult:region?.5:1},
+      p2:{id:"cpu",name:foeName,team:wave.team}});
     // HP que sobrou das ondas anteriores e o treino acumulado
     alive.forEach((ri,j)=>{const st=B.state.sides.p1.team[j];st.hp=Math.min(st.maxHp,RUN.hp[ri].hp);if(RUN.train){st.persist.atk=(st.persist.atk||0)+RUN.train;st.persist.spa=(st.persist.spa||0)+RUN.train;}});
     B.teams=B.state.teams;B.names={p1:me.name,p2:B.state.sides.p2.name};B.started=true;
     applyState(pub(B.state),true);B.state.events=[];track();
+  }
+  const saveNow=()=>{try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}};
+  /* PPg (regra 17): quem lutou no andar ganha 1 (selvagem), 2 (Montanhista)
+     ou 3 (Guardião). Nada se o Pokémon está 10+ níveis acima do rival. */
+  function awardPpg(){
+    const info=RUN.waveInfo,st=B.state;if(!info||!st)return;
+    const gains=[];
+    RUN.alive.forEach((ri,j)=>{
+      const t=st.sides.p1.team[j];if(!t?.part)return;
+      const m=RUN.team[ri];
+      if(Number(m.level||1)-info.level>=10){gains.push({ri,n:0,why:"nível bem acima do rival"});return;}
+      const p=state.pokemon.find(x=>String(x.id)===String(m.fid));if(!p)return;
+      const before=Math.max(0,Number(p.currentPpg||0)),after=Math.min(15,before+info.ppg);
+      p.currentPpg=after;RUN.ppg[ri]=(RUN.ppg[ri]||0)+(after-before);
+      gains.push({ri,n:after-before,total:after,max:after>=15});
+    });
+    RUN.lastGains=gains;
+    saveNow();
+    try{if(typeof renderAll==="function")setTimeout(()=>{try{renderAll();}catch(e){}},50);}catch(e){}
   }
   function onWaveEnd(){
     RUN.done=true;
@@ -770,9 +915,15 @@
       RUN.cleared=RUN.wave;
       // guarda o HP que sobrou
       if(st)RUN.alive.forEach((ri,j)=>{const t=st.sides.p1.team[j];RUN.hp[ri]={hp:t.hp,maxHp:t.maxHp,fainted:t.fainted};});
-      // recupera 10% de todos de pé
-      RUN.hp.forEach(h=>{if(!h.fainted)h.hp=Math.min(h.maxHp,h.hp+Math.ceil(h.maxHp*.1));});
-      if(RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}}
+      if(RUN.region){
+        awardPpg();
+        const id=RUN.region.id;state.arenaRegionBest=state.arenaRegionBest||{};
+        if(RUN.cleared>regionBest(id)){state.arenaRegionBest[id]=RUN.cleared;saveNow();}
+      }else{
+        // recupera 10% de todos de pé
+        RUN.hp.forEach(h=>{if(!h.fainted)h.hp=Math.min(h.maxHp,h.hp+Math.ceil(h.maxHp*.1));});
+        if(RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;saveNow();}
+      }
       if(RUN.hp.every(h=>h.fainted))endRun();
     }else endRun();
   }
@@ -780,29 +931,101 @@
     if(!RUN||RUN.recorded)return;
     RUN.recorded=true;RUN.over=true;
     const foe=B?.teams?.p2?.[B?.state?.sides?.p2?.active||0]?.name||"";
-    if(RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;}
-    try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
+    if(!RUN.region&&RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;}
+    saveNow();
     if(RUN.cleared>=1)saveRank({waves:RUN.cleared,foe:reason?"":foe});
   }
   async function saveRank({waves,foe}){
     const run=RUN;if(!run)return;
     const team=run.team.slice(0,6).map(m=>({n:String(m.name).slice(0,30),lv:Number(m.level||1),img:/^https?:/.test(m.img||"")&&String(m.img).length<300?m.img:""}));
-    const mode=run.dmg==="matrix"?"matrix":"classic";
+    const dmg=run.dmg==="matrix"?"matrix":"classic";
     try{
       await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
-      const {error}=await sb.from("arena_survival_ranking").insert({player:String(me.name||"Treinador").slice(0,24),player_key:playerKey().slice(0,64),waves,team,damage_mode:mode,last_foe:String(foe||"").slice(0,40)||null});
+      const {error}=await sb.from("arena_survival_ranking").insert({player:String(me.name||"Treinador").slice(0,24),player_key:playerKey().slice(0,64),waves,team,damage_mode:dmg,last_foe:String(foe||"").slice(0,40)||null,mode:run.mode||"endless"});
       if(error)throw error;
-      toast("Corrida registrada no ranking!");RANK.at=0;loadRank(true);
+      toast("Corrida registrada no ranking!");RANK.at=0;if(RANK.mode===(run.mode||"endless"))loadRank(true);
     }catch(e){toast("Não consegui salvar no ranking.");}
   }
   function applyReward(kind){
     if(!RUN||RUN.over)return;
-    if(kind==="heal")RUN.hp.forEach(h=>{if(!h.fainted)h.hp=Math.min(h.maxHp,h.hp+Math.ceil(h.maxHp*.35));});
-    if(kind==="revive"){const h=RUN.hp.find(x=>x.fainted);if(h){h.fainted=false;h.hp=Math.ceil(h.maxHp*.5);}}
-    if(kind==="train")RUN.train=Math.min(3,RUN.train+1);
+    if(!RUN.region){
+      if(kind==="heal")RUN.hp.forEach(h=>{if(!h.fainted)h.hp=Math.min(h.maxHp,h.hp+Math.ceil(h.maxHp*.35));});
+      if(kind==="revive"){const h=RUN.hp.find(x=>x.fainted);if(h){h.fainted=false;h.hp=Math.ceil(h.maxHp*.5);}}
+      if(kind==="train")RUN.train=Math.min(3,RUN.train+1);
+    }
     B=null;nextWave();
   }
+
+  /* ---------- Mochila (itens reais da Bolsa da ficha) ---------- */
+  const ITEM_KINDS=new Set(["healFlat","healFraction","healFull","fullRestore","reviveFraction","reviveFull","cureCondition","cureAll","stage"]);
+  function bagList({between=false}={}){
+    const out=[];
+    try{
+      initializeUnifiedBagInventory();
+      for(const [slug,q] of Object.entries(state.combatBag||{})){
+        const qty=Math.floor(Number(q||0));if(qty<=0)continue;
+        const item=BAG_CONSUMABLE_BY_SLUG.get(slug);if(!item)continue;
+        const spec=bagItemUseSpec(item);if(!spec||!ITEM_KINDS.has(spec.kind))continue;
+        if(between&&!/^(heal|full|revive)/.test(spec.kind))continue;
+        out.push({slug,name:item.name,qty,spec,desc:String(item.description||"").slice(0,140),revive:/^revive/.test(spec.kind)});
+      }
+    }catch(e){}
+    const order={reviveFull:0,reviveFraction:1,fullRestore:2,healFull:3,healFraction:4,healFlat:5};
+    return out.sort((a,b)=>(order[a.spec.kind]??9)-(order[b.spec.kind]??9)||a.name.localeCompare(b.name));
+  }
+  function spendItem(slug){
+    try{const q=bagQuantity(slug);if(q<=0)return false;setBagQuantity(slug,q-1,{render:false,save:true});saveNow();return true;}catch(e){return false;}
+  }
+  const itemImg=slug=>{try{return pokeApiItemSpriteUrl(slug);}catch(e){return "";}};
+  /* Entre andares: a cura vem só da Mochila */
+  function useItemBetween(slug,ri){
+    const it=bagList({between:true}).find(x=>x.slug===slug);const h=RUN?.hp?.[ri];
+    if(!it||!h)return;
+    const e=it.spec;
+    if(it.revive!==!!h.fainted){toast(it.revive?"Esse item é para quem desmaiou.":"Quem desmaiou precisa de um Revive.");return;}
+    if(!it.revive&&h.hp>=h.maxHp){toast("O HP já está cheio.");return;}
+    if(!spendItem(slug))return;
+    if(it.revive){h.fainted=false;h.hp=e.kind==="reviveFull"?h.maxHp:Math.max(1,Math.floor(h.maxHp*(e.num||1)/(e.den||2)));}
+    else{const add=e.kind==="healFlat"?(e.amount||20):e.kind==="healFraction"?Math.floor(h.maxHp*(e.num||1)/(e.den||4)):h.maxHp;h.hp=Math.min(h.maxHp,h.hp+Math.max(1,add));}
+    B.betweenItem="";sfx("select");toast(`${it.name} em ${RUN.team[ri].name}.`);render();
+  }
+  function bagPanel(between){
+    const list=bagList({between});
+    const sel=B.bagItem||B.betweenItem||"";
+    const it=list.find(x=>x.slug===sel);
+    const team=between?RUN.team:B.teams[mySide()];
+    const hpOf=i=>between?RUN.hp[i]:B.view.sides[mySide()].team[i];
+    return `<div class="ar9-bag">
+      <p class="ar9-bag-title">🎒 Mochila <small>itens reais da Bolsa da ficha · cada uso gasta 1</small></p>
+      ${list.length?`<div class="ar9-bag-items">${list.map(x=>`<button type="button" class="ar9-item${x.slug===sel?" on":""}" data-ar="${between?"bag-between":"bag-pick"}" data-slug="${esc(x.slug)}" title="${esc(x.desc)}"><img src="${esc(itemImg(x.slug))}" alt="" width="30" height="30" loading="lazy"><b>${esc(x.name)}</b><small>×${x.qty}</small></button>`).join("")}</div>`
+        :`<p class="ar7-empty-text">Nenhum item de cura na Bolsa. Compre ou ganhe itens na ficha (aba Bolsa).</p>`}
+      ${it?`<p class="ar9-bag-title">Usar <b>${esc(it.name)}</b> em:</p><div class="ar7-party">${team.map((m,i)=>{const st=hpOf(i);const dis=it.revive!==!!st.fainted;return `<button type="button" class="ar7-switch" data-ar="${between?"bag-use-between":"bag-use"}" data-slug="${esc(it.slug)}" data-idx="${i}" ${dis?"disabled":""}>
+        ${m.img?`<img src="${esc(m.img)}" alt="" width="34" height="34">`:`<i>${esc(m.name.slice(0,1))}</i>`}<span><b>${esc(m.name)}</b><small class="${hpClass(hpPct(st))}">${st.fainted?"desmaiado":`${st.hp}/${st.maxHp}`}</small></span></button>`;}).join("")}</div>`:""}
+    </div>`;
+  }
+  function regionPanel(v){
+    const R0=RUN.region,won=v.winner==="p1"&&!RUN.over;
+    const hpRow=`<div class="ar7-surv-hp">${RUN.team.map((m,i)=>{const h=RUN.hp[i];const pc=Math.round(100*h.hp/h.maxHp);return `<span class="${h.fainted?"out":""}" title="${esc(m.name)} ${h.fainted?"desmaiado":`${h.hp}/${h.maxHp}`}">${m.img?`<img src="${esc(m.img)}" alt="" width="28" height="28">`:""}<i style="--p:${h.fainted?0:pc}%"></i></span>`;}).join("")}</div>`;
+    const totalPpg=Object.values(RUN.ppg||{}).reduce((a,b)=>a+b,0);
+    if(won){
+      const next=SURV()?.regionInfo(R0.id,RUN.wave+1);
+      const gains=RUN.lastGains||[];
+      return `<div class="ar7-result win ar9-floor">
+        <b>⛰ Andar ${RUN.wave} vencido! <small>${RUN.waveInfo?.depth||0} m · ${esc(RUN.waveInfo?.zone||"")}</small></b>
+        ${gains.length?`<ul class="ar9-ppg">${gains.map(g=>{const m=RUN.team[g.ri];return `<li class="${g.n?"":"none"}">${m.img?`<img src="${esc(m.img)}" alt="" width="26" height="26">`:""}<b>${esc(m.name)}</b>${g.n?`<i>+${g.n} PPg</i><small>${g.total}/15${g.max?" · máximo":""}</small>`:`<small>${g.why?esc(g.why):"já está no máximo (15)"}</small>`}</li>`;}).join("")}</ul>`:""}
+        <small>Sem cura grátis no abismo: use a Mochila antes de descer. Próximo: <b>Andar ${RUN.wave+1}</b>${next?` · Lv. ${next.level} · ${next.depth} m${next.boss?" · <b>GUARDIÃO</b>":next.elite?" · Montanhista":""}`:""}.</small>
+        ${hpRow}
+        ${bagPanel(true)}
+        <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="region-stop">Subir e encerrar</button><button type="button" class="ar7-btn primary" data-ar="surv-reward" data-v="next">⬇ Descer ao andar ${RUN.wave+1}</button></div>
+      </div>`;
+    }
+    const best=regionBest(R0.id);
+    return `<div class="ar7-result lose"><b>${RUN.cleared>=R0.floors?"🏔 Você voltou do Coração do Abismo!":"O abismo venceu desta vez…"}</b>
+      <small>Andares vencidos: <b>${RUN.cleared}</b> (${RUN.cleared*40} m). Recorde em ${esc(R0.city)}: <b>${best}</b>. PPg ganhos nesta descida: <b>${totalPpg}</b>.${RUN.cleared>=1?" A descida foi para o ranking.":""}</small>
+      <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button><button type="button" class="ar7-btn primary" data-ar="region-again">Descer de novo</button></div></div>`;
+  }
   function survivalPanel(v){
+    if(RUN?.region)return regionPanel(v);
     const won=v.winner==="p1"&&RUN&&!RUN.over;
     if(won){
       const anyFainted=RUN.hp.some(h=>h.fainted);
@@ -863,7 +1086,7 @@
   }
   const lastHp={};
   function battleView(){
-    if(B.solo&&(!B.view||!B.teams))return `<div class="ar7-card ar7-empty ar7-surv-load"><span class="ar7-surv-ico">🗼</span><b>${RUN?.error?esc(RUN.error):`Onda ${RUN?.wave||1}: chamando um Pokémon selvagem…`}</b><p>${RUN?.error?"Confira a internet e tente de novo.":"Buscando na PokéAPI e distribuindo os atributos."}</p>${RUN?.error?`<button type="button" class="ar7-btn primary" data-ar="surv-retry">Tentar de novo</button>`:""}<button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button></div>`;
+    if(B.solo&&(!B.view||!B.teams))return `<div class="ar7-card ar7-empty ar7-surv-load${RUN?.region?" ar9-abyss-load":""}"><span class="ar7-surv-ico">${RUN?.region?PX("abyss",56):"🗼"}</span><b>${RUN?.error?esc(RUN.error):RUN?.region?`Andar ${RUN.wave} · ${RUN.wave*40} m: algo se mexe nas pedras…`:`Onda ${RUN?.wave||1}: chamando um Pokémon selvagem…`}</b><p>${RUN?.error?"Confira a internet e tente de novo.":RUN?.region?`Só Pokémon do tipo ${esc(RUN.region.typePt)} vivem no ${esc(RUN.region.area)}.`:"Buscando na PokéAPI e distribuindo os atributos."}</p>${RUN?.error?`<button type="button" class="ar7-btn primary" data-ar="surv-retry">Tentar de novo</button>`:""}<button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button></div>`;
     if(!B.view||!B.teams)return `<div class="ar7-card ar7-empty"><b>${B.role==="spec"?"Entrando para assistir…":"Preparando a batalha…"}</b><p>${B.role==="spec"?"Buscando o estado da batalha.":"Esperando os dois times chegarem."}</p><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button></div>`;
     const v=B.view,mine=mySide(),foe=mine==="p1"?"p2":"p1";
     const specs=Object.values(B.specs||{});
@@ -883,11 +1106,29 @@
       if(B.playing)panel=`<div class="ar7-waiting ar7-dots">Resolvendo o turno</div>`;
       else if(waitingSwitch)panel=`<div class="ar7-waiting">Esperando ${esc(sideName(foe))} escolher o próximo Pokémon…</div>`;
       else if(s.ready||B.chosen)panel=`<div class="ar7-waiting">✓ Ação escolhida. Esperando ${esc(sideName(foe))}…</div>`;
+      else if(!mustSwitch&&B.bagOpen&&s.items)panel=`<p class="ar7-ask">🎒 Usar um item gasta a ação de <b>${esc(team[s.active].name)}</b>.</p>${bagPanel(false)}<button type="button" class="ar7-btn" data-ar="bag-close">← Voltar aos golpes</button>`;
       else{
         const mon=team[s.active];
+        const sel=B.sel||(B.sel={});
+        const g=gimmicksFor(mine);
+        const zOn=sel.gimmick==="z";
+        const streak=s.evadeStreak||0;
         panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} desmaiou! Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
-          ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>`<button type="button" class="ar7-move" data-ar="move" data-idx="${i}" style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
-            <b>${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${m.power?` · ${powerToDice(m.power)}`:""}${m.accuracy!=null?` · ${m.accuracy}%`:""}</small></button>`).join("")}</div>`}
+          ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${zOn&&!zOk?"disabled":""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
+            <b>${zOk?"Z-":""}${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${zOk?` · ${powerToDice(zp)} · não erra`:`${m.power?` · ${powerToDice(m.power)}`:""}${m.accuracy!=null?` · ${m.accuracy}%`:""}`}</small></button>`;}).join("")}</div>
+          <div class="ar9-tactics">
+            ${g.mega.length||g.tera||g.z?`<div class="ar9-gims" role="group" aria-label="Gimmicks (uma de cada por batalha)">
+              ${g.mega.map((f,i)=>`<button type="button" class="ar9-gim mega${sel.gimmick==="mega"&&(sel.form||0)===i?" on":""}" data-ar="gim" data-v="mega" data-form="${i}" aria-pressed="${sel.gimmick==="mega"&&(sel.form||0)===i}" title="Mega Evolui antes de atacar: ${esc(f.name)} (${esc((f.types||[]).join("/"))})"><i>◆</i>${g.mega.length>1?esc(f.name):"Mega Evoluir"}</button>`).join("")}
+              ${g.tera?`<button type="button" class="ar9-gim tera${sel.gimmick==="tera"?" on":""}" data-ar="gim" data-v="tera" aria-pressed="${sel.gimmick==="tera"}" style="--t:${typeColor(g.tera)}" title="Terastaliza antes de atacar: vira ${esc(g.tera)} e o STAB de ${esc(g.tera)} vira +2d6"><i>✦</i>Tera ${esc(g.tera)}</button>`:""}
+              ${g.z?`<button type="button" class="ar9-gim z${zOn?" on":""}" data-ar="gim" data-v="z" aria-pressed="${zOn}" style="--t:${typeColor(g.z)}" title="Z-Move: um golpe ${esc(g.z)} com Power turbinado que não erra (1 por batalha)"><i>Z</i>Z-Move ${esc(g.z)}</button>`:""}
+            </div>`:""}
+            <div class="ar9-evade">
+              <button type="button" class="ar9-react${sel.react?" on":""}" data-ar="react" aria-pressed="${!!sel.react}" title="Evasão Reativa: junto do golpe, a Precisão do rival cai 25"><i>↯</i>Esquiva reativa <small>−25 Precisão</small></button>
+              <button type="button" class="ar9-active" data-ar="evade" title="Evasão Ativa: gasta a ação, a Precisão do rival cai 50"><i>🛡</i>Evasão ativa <small>gasta a ação · −50</small></button>
+              ${s.items?`<button type="button" class="ar9-bagbtn" data-ar="bag-open"><i>🎒</i>Mochila <small>gasta a ação</small></button>`:""}
+            </div>
+            ${streak>=2?`<p class="ar9-tired">${streak>=3?"⚠ Cansado: a próxima evasão custa HP (1d6).":"Mais uma evasão seguida e o cansaço começa."}</p>`:""}
+          </div>`}
           <p class="ar7-party-title">${mustSwitch?"Escolha quem entra:":`Trocar Pokémon <small>(gasta o turno)</small>`}</p>
           <div class="ar7-party">${team.map((m,i)=>{const st=s.team[i];const dis=st.fainted||i===s.active;return `<button type="button" class="ar7-switch" data-ar="switch" data-idx="${i}" ${dis?"disabled":""} title="Trocar para ${esc(m.name)}">
             ${m.img?`<img src="${esc(m.img)}" alt="" width="34" height="34">`:`<i>${esc(m.name.slice(0,1))}</i>`}<span><b>${esc(m.name)}</b><small class="${hpClass(hpPct(st))}">${st.fainted?"desmaiado":`${st.hp}/${st.maxHp}`}</small></span></button>`;}).join("")}</div>
@@ -895,7 +1136,7 @@
       }
     }
     return `<section class="ar7-battle">
-      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
+      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
       <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
@@ -905,8 +1146,8 @@
         <span class="ar7-scene-tag">${esc(sceneLabel(B.arena))}</span>
       </div>
       <div class="ar7-msg" aria-hidden="true"><p>${B.log.length?B.log[B.log.length-1].line:`${esc(sideName(foe))} quer batalhar!`}</p></div>
-      <div class="ar7-emotes" role="group" aria-label="Reações">${EMOTES.map(e=>`<button type="button" data-ar="emote" data-e="${esc(e)}">${esc(e)}</button>`).join("")}</div>
       <div class="ar7-panel">${panel}</div>
+      <div class="ar7-emotes" role="group" aria-label="Reações">${EMOTES.map(e=>`<button type="button" data-ar="emote" data-e="${esc(e)}">${esc(e)}</button>`).join("")}</div>
       <div class="ar7-log" aria-live="polite">${B.log.map(l=>`<p class="${l.cls}">${l.line}</p>`).join("")}</div>
       ${specs.length?`<p class="ar7-specs">👁 Assistindo: ${specs.map(esc).join(", ")}</p>`:""}
       ${!ended?`<button type="button" class="ar7-btn ar7-leave" data-ar="leave">${B.role==="spec"?"Parar de assistir":"Sair da batalha"}</button>`:""}
@@ -930,7 +1171,28 @@
     else if(a==="decline")reply(false);
     else if(a==="watch")spectate(b.dataset.id,{p1:b.dataset.p1,p2:b.dataset.p2});
     else if(a==="leave"){if(B&&B.role!=="spec"&&B.view&&B.view.phase!=="end"&&!confirm("Sair agora conta como desistência. Sair?"))return;leaveBattle();render();}
-    else if(a==="move")act({kind:"move",idx:Number(b.dataset.idx)});
+    else if(a==="move"){const sel=B?.sel||{};act({kind:"move",idx:Number(b.dataset.idx),react:!!sel.react,gimmick:sel.gimmick||"",form:sel.form||0});}
+    else if(a==="gim"){const sel=B.sel=B.sel||{};const v=b.dataset.v,f=Number(b.dataset.form||0);if(sel.gimmick===v&&(sel.form||0)===f)sel.gimmick="";else{sel.gimmick=v;sel.form=f;}sfx("select");render(true);}
+    else if(a==="react"){const sel=B.sel=B.sel||{};sel.react=!sel.react;sfx("select");render(true);}
+    else if(a==="evade")act({kind:"evade"});
+    else if(a==="bag-open"){B.bagOpen=true;B.bagItem="";render(true);}
+    else if(a==="bag-close"){B.bagOpen=false;B.bagItem="";render(true);}
+    else if(a==="bag-pick"){B.bagItem=B.bagItem===b.dataset.slug?"":b.dataset.slug;render(true);}
+    else if(a==="bag-use"){
+      const it=bagList().find(x=>x.slug===b.dataset.slug);if(!it)return;
+      const idx=Number(b.dataset.idx);
+      if(it.spec.kind==="stage"&&idx!==B.view.sides[mySide()].active){toast("Itens de estágio só no Pokémon em campo.");return;}
+      if(!spendItem(it.slug))return;
+      B.bagOpen=false;B.bagItem="";
+      act({kind:"item",target:idx,slug:it.slug,name:it.name,effect:it.spec});
+    }
+    else if(a==="bag-between"){B.betweenItem=B.betweenItem===b.dataset.slug?"":b.dataset.slug;render(true);}
+    else if(a==="bag-use-between")useItemBetween(b.dataset.slug,Number(b.dataset.idx));
+    else if(a==="region-start")startRun(b.dataset.v||"altamuralha");
+    else if(a==="region-stop"){if(confirm("Subir agora encerra a descida e guarda o resultado no ranking. Encerrar?")){endRun("subiu");render();B=null;RUN=null;track();render();}}
+    else if(a==="region-again"){const id=RUN?.region?.id||"altamuralha";B=null;RUN=null;startRun(id);}
+    else if(a==="rank-mode-open"){tab="ranking";ls.set("hh_arena_tab",tab);RANK.mode=b.dataset.v;RANK.list=null;RANK.at=0;render();loadRank(true);root.querySelector(".ar8-tabs")?.scrollIntoView({block:"nearest",behavior:"smooth"});}
+    else if(a==="rank-mode"){RANK.mode=b.dataset.v;RANK.list=null;RANK.at=0;render();loadRank(true);}
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
