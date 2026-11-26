@@ -33,6 +33,43 @@
   let shown=120,sel=null,detail=null,shiny=false,addLevel=5,adding=false;
   const cache=new Map();
 
+  /* ---------- Tradução para PT-BR ----------
+     A PokéAPI quase não tem textos em português: traduzimos o texto em
+     inglês (Google Tradutor; se falhar, MyMemory) e guardamos no navegador. */
+  const TR_KEY="hh_dex_ptbr_v2";
+  let trCache={};try{trCache=JSON.parse(localStorage.getItem(TR_KEY)||"{}")||{};}catch(e){}
+  function trSave(){try{const k=Object.keys(trCache);if(k.length>1500)k.slice(0,k.length-1500).forEach(x=>delete trCache[x]);localStorage.setItem(TR_KEY,JSON.stringify(trCache));}catch(e){}}
+  async function toPtBr(text,from="en"){
+    text=String(text||"").trim();if(!text)return "";
+    const key=from+":"+text;
+    if(trCache[key])return trCache[key];
+    let out="";
+    try{
+      const r=await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${from}&tl=pt&dt=t&q=${encodeURIComponent(text)}`);
+      if(r.ok){const j=await r.json();out=(j[0]||[]).map(x=>x[0]).join("");}
+    }catch(e){}
+    if(!out){
+      try{const r=await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|pt-BR`);const j=await r.json();out=j?.responseData?.translatedText||"";}catch(e){}
+    }
+    if(out){out=out.replace(/Pokémon|Pokemon/g,"Pokémon");trCache[key]=out;trSave();}
+    return out;
+  }
+
+  /* "Stump Pokémon" → "Pokémon Toco": traduz numa frase (dá a palavra certa)
+     e, se a palavra voltar em inglês, traduz o nome inteiro. */
+  const titleCase=t=>t.split(" ").map(w=>w&&!/^(de|do|da|dos|das|e)$/i.test(w)?w.charAt(0).toUpperCase()+w.slice(1):w).join(" ");
+  async function genusPt(g){
+    const word=String(g).replace(/\s*Pokémon\s*$/i,"").trim();
+    if(!word)return g;
+    const ck="genus:"+word;if(trCache[ck])return trCache[ck];
+    let res="";
+    const sent=await toPtBr(`This is the ${word} Pokémon.`,"en");
+    const m=/Pok[ée]mon\s+(.+?)\.?$/i.exec(sent||"");
+    if(m&&m[1].trim().toLowerCase()!==word.toLowerCase())res=m[1].trim();
+    if(!res){const d=await toPtBr(g,"en");res=String(d||"").replace(/\s*Pok[ée]mon\s*/gi," ").trim()||word;}
+    const out="Pokémon "+titleCase(res);trCache[ck]=out;trSave();return out;
+  }
+
   /* ---------- Dados ---------- */
   async function getJSON(url,opt){
     if(cache.has(url))return cache.get(url);
@@ -92,13 +129,21 @@
       render();
       const sp=await getJSON(d.species.url);
       if(sel!==p)return;
-      const ptFlavor=(sp.flavor_text_entries||[]).filter(f=>["pt-br","pt","es","en"].includes(f.language.name));
-      const pick=lang=>ptFlavor.filter(f=>f.language.name===lang).pop();
-      const fl=pick("pt-br")||pick("pt")||pick("es")||pick("en");
-      detail.flavor=fl?String(fl.flavor_text).replace(/[\f\n\r]+/g," "):"";
-      detail.flavorLang=fl?.language?.name||"";
-      const g=(sp.genera||[]).find(x=>x.language.name==="es")||(sp.genera||[]).find(x=>x.language.name==="en");
-      detail.genus=g?.genus||"";
+      const entries=(sp.flavor_text_entries||[]);
+      const pick=lang=>entries.filter(f=>f.language.name===lang).pop();
+      const clean=t=>String(t||"").replace(/[\f\n\r\u00ad]+/g," ").replace(/\s+/g," ").trim();
+      const pt=pick("pt-br")||pick("pt-BR")||pick("pt");
+      const en=pick("en"),es=pick("es");
+      const gEn=(sp.genera||[]).find(x=>x.language.name==="en")?.genus||"";
+      if(pt){detail.flavor=clean(pt.flavor_text);}
+      else{
+        detail.flavor="";detail.translating=true;render();
+        const src=en||es;
+        detail.flavor=await toPtBr(clean(src?.flavor_text),src===en?"en":"es")||clean(src?.flavor_text);
+      }
+      detail.genus=gEn?await genusPt(gEn):"";
+      detail.translating=false;
+      if(sel!==p)return;
       render();
       if(sp.evolution_chain?.url){
         const ch=await getJSON(sp.evolution_chain.url);
@@ -170,7 +215,7 @@
         </div>
       </div>
       ${!d?`<p class="dx7-loading">Carregando dados…</p>`:d.error?`<p class="dx7-loading">${esc(d.error)}</p>`:`
-      ${d.flavor?`<p class="dx7-flavor">“${esc(d.flavor)}”</p>`:""}
+      ${d.translating?`<p class="dx7-flavor dx7-tr">Traduzindo a descrição…</p>`:d.flavor?`<p class="dx7-flavor">“${esc(d.flavor)}”</p>`:""}
       <div class="dx7-block"><h4>Base Stats <small>BST ${bst}</small></h4>
         ${STAT_LABEL.map(([k,l])=>{const v=Number(d.stats[k]||0);return `<div class="dx7-stat"><span>${l}</span><b>${v}</b><i><em style="width:${Math.min(100,v/2.55)}%;--c:${v>=110?"#3fc957":v>=80?"#9bd34a":v>=60?"#f2c230":"#f08030"}"></em></i></div>`;}).join("")}
       </div>
