@@ -66,12 +66,23 @@
   /* Time da arena: o jogador escolhe quais Pokémon levam (até 6) e a ordem;
      sem escolha, vai a Equipe da ficha. */
   const fichaTeam=()=>state.pokemon.filter(p=>(p.storageGroup||"team")==="team").slice(0,6);
+  /* A escolha fica na memória, na própria ficha (vai junto no salvamento)
+     e, se couber, no navegador. Antes ficava só no navegador: quando o
+     armazenamento estava cheio (fichas com muitas artes), o clique não fazia nada. */
+  let pickMem=null;
   function pickIds(){
-    let ids=[];try{ids=JSON.parse(ls.get("hh_arena_pick","[]"))||[];}catch(e){}
+    let ids=pickMem;
+    if(!ids&&Array.isArray(state.arenaPick))ids=state.arenaPick;
+    if(!ids){try{ids=JSON.parse(ls.get("hh_arena_pick","[]"))||[];}catch(e){ids=[];}}
     const known=new Set(state.pokemon.map(p=>String(p.id)));
     return ids.map(String).filter(id=>known.has(id)).slice(0,6);
   }
-  function savePick(ids){ls.set("hh_arena_pick",JSON.stringify(ids.slice(0,6)));}
+  function savePick(ids){
+    pickMem=ids.slice(0,6);
+    state.arenaPick=pickMem.slice();
+    try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
+    ls.set("hh_arena_pick",JSON.stringify(pickMem));
+  }
   function teamSource(){
     const ids=pickIds();
     if(!ids.length)return fichaTeam();
