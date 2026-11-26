@@ -57,10 +57,10 @@
         flinch:false,enteredTurn:1,lastMove:"",lastType:"",fury:0,swagger:0,nextPhys:0,nextDouble:null,nextHalf:false,
         hurt:{phys:0,spec:0,any:false},used:{},protectStreak:0,abilStages:[]};
     }
-    function newBattle({id,format,p1,p2}){
+    function newBattle({id,format,p1,p2,damage:dmgMode}){
       const side=(info)=>({id:info.id,name:info.name,active:0,needSwitch:false,pending:null,hazards:{tspikes:0},field:{},faintedLastTurn:false,
         team:info.team.map(monState)});
-      const b={id,format,turn:1,phase:"choose",winner:null,reason:"",weather:null,
+      const b={id,format,turn:1,phase:"choose",winner:null,reason:"",weather:null,damage:dmgMode==="matrix"?"matrix":"classic",
         sides:{p1:side(p1),p2:side(p2)},teams:{p1:p1.team.map(prepMon),p2:p2.team.map(prepMon)},events:[]};
       const events=[];
       // as abilities de entrada dos dois primeiros, na ordem de Speed
@@ -223,10 +223,30 @@
       const stab=atkTypes.includes(mtype);
       let bonusDice=bonusStat.dice+(stab?1:0),fixed=bonusStat.fixed;
       ev.stab=stab;
-      let add=0,pen=0;const notes=[];
+      let add=0,pen=0;
       if(mult>=4)add=2;else if(mult>=2)add=1;
       else if(mult<=.25){bonusDice=0;fixed=0;pen=2;}
       else if(mult<=.5){bonusDice=Math.floor(bonusDice/2);pen=1;}
+      const ex=extraMods(b,atkSide,move,mtype,physical);add+=ex.add;pen+=ex.pen;const notes=ex.notes;
+      const def=rules.statDice(effStat(b,defSide,physical?"def":"spd"));
+      let defDice=def.dice,defFixed=def.fixed;
+      if(mult>=4){defDice=0;defFixed=0;}else if(mult>=2){defDice=Math.floor(defDice/2);defFixed=Math.floor(defFixed/2);}
+      let critFixed=0;
+      if(crit){critFixed=base*(critKind==="natural"?6:4);base=0;if(critKind==="natural")defDice=Math.max(0,defDice-1);}
+      let dice=Math.max(0,base+bonusDice+add-pen-defDice);
+      if(dice<=0&&!critFixed)dice=1;
+      const rolls=roll(dice);
+      let total=Math.max(1,sum(rolls)+fixed+critFixed-defFixed);
+      total=finalMods(b,atkSide,cat,physical,total,notes);
+      ev.dice=(ev.dice||0)+dice;ev.rolls=[...(ev.rolls||[]),...rolls];ev.fixed=(ev.fixed||0)+fixed+critFixed-defFixed;
+      if(notes.length)ev.notes=[...new Set([...(ev.notes||[]),...notes])];
+      return total;
+    }
+    /* Bônus e penalidades em d6 que valem nos dois modos de dano */
+    function extraMods(b,atkSide,move,mtype,physical){
+      const defSide=other(atkSide);
+      const A=activeMon(b,atkSide),D=activeMon(b,defSide),aS=activeState(b,atkSide),dS=activeState(b,defSide);
+      let add=0,pen=0;const notes=[];
       // clima
       if(b.weather){
         const w=b.weather.kind;
@@ -244,20 +264,67 @@
       if(physical&&A.abil.guts&&aS.status){add+=1;notes.push("Guts +1d6");}
       // abilities do defensor
       for(const t of D.abil.dmgTaken)if((!t.type||t.type===mtype)&&(!t.fullHp||dS.hp>=dS.maxHp)){pen-=t.dice;notes.push(`${D.abil.name} ${t.dice}d6`);}
-      const def=rules.statDice(effStat(b,defSide,physical?"def":"spd"));
-      let defDice=def.dice,defFixed=def.fixed;
-      if(mult>=4){defDice=0;defFixed=0;}else if(mult>=2){defDice=Math.floor(defDice/2);defFixed=Math.floor(defFixed/2);}
-      let critFixed=0;
-      if(crit){critFixed=base*(critKind==="natural"?6:4);base=0;if(critKind==="natural")defDice=Math.max(0,defDice-1);}
-      let dice=Math.max(0,base+bonusDice+add-pen-defDice);
-      if(dice<=0&&!critFixed)dice=1;
-      const rolls=roll(dice);
-      let total=Math.max(1,sum(rolls)+fixed+critFixed-defFixed);
+      return {add,pen,notes};
+    }
+    function finalMods(b,atkSide,cat,physical,total,notes){
+      const aS=activeState(b,atkSide),dS=activeState(b,other(atkSide));
       if(physical&&aS.status==="dbrn"){total=Math.max(1,Math.floor(total/2));notes.push("Deep Burn ½");}
       if(aS.nextDouble&&(aS.nextDouble==="any"||aS.nextDouble===cat)){total*=2;notes.push("dano dobrado");aS.nextDouble=null;}
       if(dS.nextHalf){total=Math.max(1,Math.floor(total/2));notes.push("defesa reforçada ½");dS.nextHalf=false;}
-      ev.dice=(ev.dice||0)+dice;ev.rolls=[...(ev.rolls||[]),...rolls];ev.fixed=(ev.fixed||0)+fixed+critFixed-defFixed;
-      if(notes.length)ev.notes=[...new Set([...(ev.notes||[]),...notes])];
+      return total;
+    }
+
+    /* ---------- Dano experimental (Damage Matrix v0.2 da ficha) ----------
+       Poder efetivo (Technician, Tough Claws, Mega Launcher, vários acertos)
+       define quantos dados; a Qualidade do ATK/SP.ATK atual menos a da
+       DEF/SP.DEF atual do alvo define o dado (QD d4…d20). Super efetivo
+       +1 dado e QD +1 degrau; resistido −1 dado e QD −1; imune 0.
+       STAB +1d6 (Adaptability 1+⌈dados/2⌉), + nível÷5 fixo. Crítico
+       natural: dados da QD no máximo; crítico aumentado: rola 2 vezes cada
+       dado da QD e fica com o maior. Bônus/penalidades em d6 (clima,
+       Burn, abilities) somam ou tiram d6 extras. */
+    const QDS=["d4","d6","d8","d10","d12","d12+d4","d12+d6","d20"];
+    const QD_SIDES={d4:[4],d6:[6],d8:[8],d10:[10],d12:[12],"d12+d4":[12,4],"d12+d6":[12,6],d20:[20]};
+    const quality=v=>v<=49?0:v<=75?1:v<=100?2:v<=125?3:v<=150?4:v<=175?5:v<=200?6:v<=225?7:8;
+    const pdice=p=>p<=0?0:p<=20?1:p<=40?2:p<=60?3:p<=80?4:p<=100?5:6;
+    function matrixDamage(b,atkSide,move,ev,{crit,critKind,power,hits}){
+      const defSide=other(atkSide);
+      const A=activeMon(b,atkSide);
+      const cat=String(move.category||"").toLowerCase(),physical=cat==="physical";
+      const mtype=normT(move.type)||"Normal";
+      const mult=typeMult(b,atkSide,mtype);
+      ev.mult=mult;ev.mode="matrix";
+      if(mult===0){ev.amount=0;ev.immune=true;return 0;}
+      const ab=key(A.abil.name);
+      let bp=power;
+      if(ab==="technician"&&bp<=60)bp=Math.floor(bp*1.5);
+      if(ab==="tough claws"&&physical)bp=Math.floor(bp*1.3);
+      if(ab==="mega launcher"&&/(pulse|aura)/i.test(move.name||""))bp=Math.floor(bp*1.5);
+      const bpDice=pdice(bp*hits);
+      const offQ=quality(effStat(b,atkSide,physical?"atk":"spa")),defQ=quality(effStat(b,defSide,physical?"def":"spd"));
+      const gap=offQ-defQ;
+      let qi=gap<0?0:Math.min(7,gap+1),count=bpDice;
+      if(mult>1){count++;qi=Math.min(7,qi+1);}
+      else if(mult<1){count=Math.max(1,count-1);qi=Math.max(0,qi-1);}
+      const qd=QDS[qi];
+      const atkTypes=typesOf(b,atkSide);
+      let stab=atkTypes.includes(mtype)?(ab==="adaptability"?1+Math.ceil(bpDice/2):1):0;
+      const ex=extraMods(b,atkSide,move,mtype,physical);
+      let extra=stab+ex.add-ex.pen;
+      if(extra<0){count=Math.max(1,count+extra);extra=0;}
+      const level=Math.floor(Number(A.level||1)/5);
+      const rolls=[];let total=0;
+      for(const sides of QD_SIDES[qd])for(let i=0;i<count;i++){
+        let v=critKind==="natural"&&crit?sides:d(sides);
+        if(crit&&critKind==="boosted")v=Math.max(v,d(sides));
+        rolls.push(v);total+=v;
+      }
+      const d6=roll(extra);rolls.push(...d6);total+=sum(d6)+level;
+      total=Math.max(1,finalMods(b,atkSide,cat,physical,total,ex.notes));
+      ev.stab=stab>0;ev.qd=qd;ev.count=count;ev.extra=extra;ev.level=level;ev.gap=gap;ev.offQ=offQ;ev.defQ=defQ;
+      ev.expr=`${QD_SIDES[qd].map(x=>`${count}d${x}`).join("+")}${extra?` +${extra}d6`:""}${level?` +${level}`:""}`;
+      ev.dice=count*QD_SIDES[qd].length+extra;ev.rolls=rolls;ev.fixed=level;
+      if(ex.notes.length)ev.notes=[...new Set([...(ev.notes||[]),...ex.notes])];
       return total;
     }
 
@@ -397,7 +464,8 @@
       if(fx.hits)hits=A.abil.maxHits?fx.hits.max:fx.hits.min+Math.floor(rand()*(fx.hits.max-fx.hits.min+1));
       const hit={k:"hit",side:tSide,crit};
       let amount=0;
-      for(let i=0;i<hits;i++)amount+=damage(b,s,move,hit,{crit,critKind:ev.critKind,power});
+      if(b.damage==="matrix")amount=matrixDamage(b,s,move,hit,{crit,critKind:ev.critKind,power,hits});
+      else for(let i=0;i<hits;i++)amount+=damage(b,s,move,hit,{crit,critKind:ev.critKind,power});
       if(hits>1)hit.hits=hits;
       if(hit.immune){hit.amount=0;hit.hp=tS.hp;events.push(hit);
         const ab=abil(b,tSide);const mt=normT(move.type);

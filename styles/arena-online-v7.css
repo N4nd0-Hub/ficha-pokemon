@@ -489,3 +489,8 @@ body.ar7-open{overflow:hidden}
 .ar7-p.s-abpop.me{right:2.5%;left:auto;top:52%;border-radius:12px 0 0 12px;text-align:right}
 .ar7-p.s-abpop small{font:700 8px var(--cl-pixel,monospace);text-transform:uppercase;opacity:.8}
 .ar7-p.s-abpop b{font:700 12px var(--cl-pixel,monospace);text-transform:uppercase;color:#ffd23f}
+.ar7-dmg-pick{display:grid;gap:6px;margin-top:12px}
+.ar7-dmg-pick small{font-weight:700;color:var(--cl-muted,#666)}
+.ar7-dmg-pick span{display:flex;gap:6px;flex-wrap:wrap}
+.ar7-dmg-pick span .ar7-btn{flex:1 1 140px}
+.ar7-dmg-pick em{font-style:normal;font-size:12px;color:var(--cl-muted,#666)}

@@ -39,6 +39,9 @@
   let scene=(()=>{const v=ls.get("hh_arena_scene");if(v==="random"||sceneOk(v))return v;const c=typeof current!=="undefined"?current?.combatArena:"";return sceneOk(c)?c:"standard";})();
   const pickScene=v=>v==="random"||!sceneOk(v)?SCENES[Math.floor(Math.random()*SCENES.length)].v:v;
   const sceneLabel=v=>SCENES.find(x=>x.v===v)?.label||"Padrão";
+  /* Dano: "classic" (regra da ficha) ou "matrix" (🧪 Dano experimental / QD) */
+  let dmgMode=(()=>{const v=ls.get("hh_arena_dmg");if(v==="matrix"||v==="classic")return v;return state.damageMatrix&&state.damageMatrix.enabled!==false?"matrix":"classic";})();
+  const DMG_LABEL={classic:"Dano da ficha",matrix:"🧪 Dano experimental (QD)"};
   let people={},chat=[],outgoing=null,incoming=null,myTeamCache=null;
   // batalha atual: {id,role:'p1'|'p2'|'spec',host:bool,state,teams,format,opp,names,playing}
   let B=null;
@@ -193,8 +196,8 @@
   function challenge(to,format){
     const id="b"+uidShort();
     outgoing={id,to,format,at:Date.now()};
-    outgoing.arena=pickScene(scene);
-    send(lobby,"challenge",{id,from:me.id,fromName:me.name,to,format,arena:outgoing.arena});
+    outgoing.arena=pickScene(scene);outgoing.dmg=dmgMode;
+    send(lobby,"challenge",{id,from:me.id,fromName:me.name,to,format,arena:outgoing.arena,dmg:outgoing.dmg});
     sfx("select");render();
     setTimeout(()=>{if(outgoing&&outgoing.id===id){send(lobby,"challenge-cancel",{id});outgoing=null;toast("O desafio expirou.");render();}},45000);
   }
@@ -209,27 +212,27 @@
     if(!incoming)return;
     const p=incoming;incoming=null;
     send(lobby,"challenge-reply",{id:p.id,to:p.from,from:me.id,accept});
-    if(accept)joinBattle({id:p.id,role:"p2",format:p.format,arena:p.arena,names:{p1:p.fromName,p2:me.name}});
+    if(accept)joinBattle({id:p.id,role:"p2",format:p.format,arena:p.arena,dmg:p.dmg,names:{p1:p.fromName,p2:me.name}});
     render();
   }
   function onReply(p){
     if(p.to!==me.id||!outgoing||outgoing.id!==p.id)return;
     const o=outgoing;outgoing=null;
     if(!p.accept){toast(p.busy?"O treinador está ocupado.":"Desafio recusado.");render();return;}
-    joinBattle({id:o.id,role:"p1",format:o.format,arena:o.arena,names:{p1:me.name,p2:people[o.to]?.name||"Rival"}});
+    joinBattle({id:o.id,role:"p1",format:o.format,arena:o.arena,dmg:o.dmg,names:{p1:me.name,p2:people[o.to]?.name||"Rival"}});
   }
 
   /* ---------- Batalha: rede ---------- */
-  async function joinBattle({id,role,format,names,arena}){
-    B={id,role,arena:sceneOk(arena)?arena:"standard",host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
+  async function joinBattle({id,role,format,names,arena,dmg}){
+    B={id,role,dmg:dmg==="matrix"?"matrix":"classic",arena:sceneOk(arena)?arena:"standard",host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
     for(const k in lastHp)delete lastHp[k];
     sfx("page");render();
     battleCh=sb.channel("hh-arena-b:"+id,{config:{presence:{key:me.id},broadcast:{self:false}}});
     battleCh.on("presence",{event:"sync"},onBattlePresence);
     battleCh.on("broadcast",{event:"team"},({payload})=>{if(B?.host)hostTeam(payload);});
     battleCh.on("broadcast",{event:"action"},({payload})=>{if(B?.host)hostAction(payload.side,payload.action,payload.turn);});
-    battleCh.on("broadcast",{event:"sync"},()=>{if(B?.host&&B.state)send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena});});
-    battleCh.on("broadcast",{event:"start"},({payload})=>{if(!B||B.host)return;if(!B.teams){B.teams=payload.teams;B.names=payload.names;B.format=payload.format;}if(sceneOk(payload.arena))B.arena=payload.arena;applyState(payload.state,true);});
+    battleCh.on("broadcast",{event:"sync"},()=>{if(B?.host&&B.state)send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena,dmg:B.dmg});});
+    battleCh.on("broadcast",{event:"start"},({payload})=>{if(!B||B.host)return;if(!B.teams){B.teams=payload.teams;B.names=payload.names;B.format=payload.format;}if(sceneOk(payload.arena))B.arena=payload.arena;if(payload.dmg)B.dmg=payload.dmg;applyState(payload.state,true);});
     battleCh.on("broadcast",{event:"state"},({payload})=>{if(!B||B.host)return;applyState(payload,false);});
     battleCh.on("broadcast",{event:"emote"},({payload})=>showEmote(payload));
     await new Promise(ok=>battleCh.subscribe(st=>{if(st==="SUBSCRIBED")ok();}));
@@ -288,10 +291,10 @@
     if(!B?.host||B.state)return;
     B.pendingTeams[p.side]={id:p.id,name:p.name,team:p.team};
     if(B.pendingTeams.p1&&B.pendingTeams.p2){
-      B.state=engine.newBattle({id:B.id,format:B.format,p1:B.pendingTeams.p1,p2:B.pendingTeams.p2});
+      B.state=engine.newBattle({id:B.id,format:B.format,p1:B.pendingTeams.p1,p2:B.pendingTeams.p2,damage:B.dmg});
       B.teams=B.state.teams;B.names={p1:B.pendingTeams.p1.name,p2:B.pendingTeams.p2.name};
       B.started=true;
-      send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena});
+      send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena,dmg:B.dmg});
       applyState(pub(B.state),true);track();
     }
   }
@@ -406,7 +409,9 @@
       }else if(ev.k==="hit"){
         if(ev.immune){line=`${effText(0)}`;cls="weak";}
         else{
-          line=`${ev.crit?"<b class='ar7-crit'>CRÍTICO!</b> ":""}${esc(monName(ev.side))} perdeu <b>${ev.amount}</b> HP <span class="ar7-dice">${ev.dice}d6 [${(ev.rolls||[]).join(", ")}]${ev.fixed?` ${ev.fixed>0?"+":""}${ev.fixed}`:""}${ev.stab?" · STAB":""}</span>`;
+          line=ev.mode==="matrix"
+            ?`${ev.crit?"<b class='ar7-crit'>CRÍTICO!</b> ":""}${esc(monName(ev.side))} perdeu <b>${ev.amount}</b> HP <span class="ar7-dice">🧪 ${esc(ev.expr)} [${(ev.rolls||[]).join(", ")}] · QD ${esc(ev.qd)} (Q${ev.offQ} vs Q${ev.defQ})${ev.stab?" · STAB":""}</span>`
+            :`${ev.crit?"<b class='ar7-crit'>CRÍTICO!</b> ":""}${esc(monName(ev.side))} perdeu <b>${ev.amount}</b> HP <span class="ar7-dice">${ev.dice}d6 [${(ev.rolls||[]).join(", ")}]${ev.fixed?` ${ev.fixed>0?"+":""}${ev.fixed}`:""}${ev.stab?" · STAB":""}</span>`;
           const e=effText(ev.mult);if(e)line+=` <i>${e}</i>`;cls=ev.crit?"crit":ev.mult>=2?"super":ev.mult<1?"weak":"";
         }
         if(ev.notes?.length)line+=` <span class="ar7-dice">${ev.notes.map(esc).join(" · ")}</span>`;
@@ -541,6 +546,10 @@
         <label class="ar7-field-label">Sala<span class="ar7-room"><input id="ar7Room" maxlength="24" value="${esc(room)}" autocomplete="off" spellcheck="false"><button type="button" class="ar7-btn" data-ar="room">Entrar</button></span></label>
       </div>
       ${teamEditor()}
+      <div class="ar7-dmg-pick" role="radiogroup" aria-label="Sistema de dano"><small>Dano das suas batalhas (vale quando você desafia):</small>
+        <span>${["classic","matrix"].map(k=>`<button type="button" role="radio" aria-checked="${dmgMode===k}" class="ar7-btn${dmgMode===k?" primary":""}" data-ar="dmg" data-v="${k}">${k==="matrix"?"🧪 Experimental (QD)":"Padrão da ficha"}</button>`).join("")}</span>
+        <em>${dmgMode==="matrix"?"Poder define quantos dados; a Qualidade do seu ATK/SP.ATK contra a DEF/SP.DEF do alvo define o dado (d4 a d20). STAB +1d6 e nível÷5 fixo.":"Power vira d6, Attack/Sp.Atk somam dados e Defense/Sp.Def tiram dados."}</em>
+      </div>
       <div class="ar7-scenes-head"><small>Ambiente das suas batalhas (vale quando você desafia):</small><b>${scene==="random"?"Aleatório":esc(sceneLabel(scene))}</b></div>
       <div class="ar7-scenes" role="radiogroup" aria-label="Ambiente da batalha">
         <button type="button" role="radio" aria-checked="${scene==="random"}" class="ar7-scene rnd${scene==="random"?" on":""}" data-ar="scene" data-v="random"><i>🎲</i><b>Aleatório</b></button>
@@ -596,7 +605,7 @@
     return `<div class="ar7-modal" role="alertdialog" aria-modal="true" aria-labelledby="ar7ChTitle">
       <div class="ar7-modal-box"><span class="ar7-modal-ico" aria-hidden="true">⚔</span>
         <h3 id="ar7ChTitle">${esc(p.fromName)} te desafiou!</h3>
-        ${sceneOk(p.arena)?`<i class="ar7-modal-scene" style="background-image:url('assets/arenas/${esc(p.arena)}.png')"></i>`:""}<p>Formato: <b>${p.format===1?"1 vs 1":p.format>=6?"time todo (até 6)":`${p.format} vs ${p.format}`}</b>${sceneOk(p.arena)?` · Ambiente: <b>${esc(sceneLabel(p.arena))}</b>`:""}. Vai o time que você montou na arena (o primeiro começa).</p>
+        ${sceneOk(p.arena)?`<i class="ar7-modal-scene" style="background-image:url('assets/arenas/${esc(p.arena)}.png')"></i>`:""}<p>Formato: <b>${p.format===1?"1 vs 1":p.format>=6?"time todo (até 6)":`${p.format} vs ${p.format}`}</b>${sceneOk(p.arena)?` · Ambiente: <b>${esc(sceneLabel(p.arena))}</b>`:""} · <b>${DMG_LABEL[p.dmg==="matrix"?"matrix":"classic"]}</b>. Vai o time que você montou na arena (o primeiro começa).</p>
         <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="decline">Recusar</button><button type="button" class="ar7-btn primary" data-ar="accept">Aceitar</button></div>
       </div></div>`;
   }
@@ -661,7 +670,7 @@
       }
     }
     return `<section class="ar7-battle">
-      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""}</small></div>
+      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
       <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
@@ -700,6 +709,7 @@
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
+    else if(a==="dmg"){dmgMode=b.dataset.v==="matrix"?"matrix":"classic";ls.set("hh_arena_dmg",dmgMode);sfx("select");render();}
     else if(a==="pick-add")editPick(ids=>ids.length<6&&!ids.includes(b.dataset.id)?[...ids,b.dataset.id]:ids);
     else if(a==="pick-del")editPick(ids=>ids.filter(x=>x!==b.dataset.id));
     else if(a==="pick-lead")editPick(ids=>[b.dataset.id,...ids.filter(x=>x!==b.dataset.id)]);

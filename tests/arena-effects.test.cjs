@@ -114,3 +114,16 @@ test("Precisão tem teto de 90% e −1 de Precisão reduz a chance", () => {
   const m = turn(e, bt, M(0), M(0)).find(x => x.k === "move" && x.side === "p1");
   assert.equal(m.acc, 90); assert.equal(m.miss, true);
 });
+
+test("dano experimental (QD): dados pelo Poder, dado pela diferença de Qualidade", () => {
+  const surf = mv("Surf", "Water", "Special", 90, "");
+  const e = E(() => 0.4);
+  const a = { ...mon("Água", ["Water"], { spa: 100, spe: 100 }, [surf]), level: 50 };
+  const b = mon("Fogo", ["Fire"], { spd: 110, spe: 1 }, [tackle]);
+  const bt = e.newBattle({ id: "m", format: 1, damage: "matrix", p1: { id: "A", name: "A", team: [a] }, p2: { id: "B", name: "B", team: [b] } });
+  assert.equal(bt.damage, "matrix");
+  const hit = turn(e, bt, M(0), M(0)).find(x => x.k === "hit" && x.side === "p2");
+  // Poder 90 = 5 dados; Q2 contra Q3 → d4; super efetivo → 6 dados e d6; STAB +1d6; nível 50 → +10
+  assert.equal(hit.expr, "6d6 +1d6 +10");
+  assert.equal(hit.qd, "d6");
+});
