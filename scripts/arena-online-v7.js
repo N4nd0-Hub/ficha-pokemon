@@ -63,7 +63,26 @@
       return c.toDataURL("image/webp",.82);
     }catch(e){return "";}
   }
-  function teamSource(){return state.pokemon.filter(p=>(p.storageGroup||"team")==="team").slice(0,6);}
+  /* Time da arena: o jogador escolhe quais Pokémon levam (até 6) e a ordem;
+     sem escolha, vai a Equipe da ficha. */
+  const fichaTeam=()=>state.pokemon.filter(p=>(p.storageGroup||"team")==="team").slice(0,6);
+  function pickIds(){
+    let ids=[];try{ids=JSON.parse(ls.get("hh_arena_pick","[]"))||[];}catch(e){}
+    const known=new Set(state.pokemon.map(p=>String(p.id)));
+    return ids.map(String).filter(id=>known.has(id)).slice(0,6);
+  }
+  function savePick(ids){ls.set("hh_arena_pick",JSON.stringify(ids.slice(0,6)));}
+  function teamSource(){
+    const ids=pickIds();
+    if(!ids.length)return fichaTeam();
+    const by=new Map(state.pokemon.map(p=>[String(p.id),p]));
+    return ids.map(id=>by.get(id)).filter(Boolean);
+  }
+  function editPick(fn){
+    let ids=pickIds();if(!ids.length)ids=fichaTeam().map(p=>String(p.id));
+    ids=fn(ids)||ids;savePick(ids);track();render();
+  }
+  function localImg(p){try{return displayPokemonImage(p)||"";}catch(e){return "";}}
   function teamPreview(){
     return teamSource().map(p=>{
       let img=displayPokemonImage(p)||"";
@@ -462,7 +481,7 @@
         <label class="ar7-field-label">Seu nome na arena<input id="ar7Name" maxlength="20" value="${esc(me.name)}" autocomplete="off"></label>
         <label class="ar7-field-label">Sala<span class="ar7-room"><input id="ar7Room" maxlength="24" value="${esc(room)}" autocomplete="off" spellcheck="false"><button type="button" class="ar7-btn" data-ar="room">Entrar</button></span></label>
       </div>
-      <div class="ar7-team-line"><small>Seu time (ordem da ficha):</small><span class="ar7-minis">${myTeam.length?teamMinis(myTeam,32):"<em>Coloque Pokémon na Equipe da ficha para lutar.</em>"}</span></div>
+      ${teamEditor()}
       <div class="ar7-scenes-head"><small>Ambiente das suas batalhas (vale quando você desafia):</small><b>${scene==="random"?"Aleatório":esc(sceneLabel(scene))}</b></div>
       <div class="ar7-scenes" role="radiogroup" aria-label="Ambiente da batalha">
         <button type="button" role="radio" aria-checked="${scene==="random"}" class="ar7-scene rnd${scene==="random"?" on":""}" data-ar="scene" data-v="random"><i>🎲</i><b>Aleatório</b></button>
@@ -470,13 +489,16 @@
       </div>
       <p class="ar7-hint">Use uma sala com nome próprio (ex.: <code>mesa-do-nando</code>) para jogar só com seus amigos. A batalha não altera a ficha: todos começam com HP cheio.</p>
     </section>
-    ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.format} vs ${outgoing.format} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
+    ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.format>=6?"time todo":`${outgoing.format} vs ${outgoing.format}`} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
     <section class="ar7-card">
       <h3>Treinadores na sala <small>${others.length}</small></h3>
       ${others.length?`<ul class="ar7-people">${others.map(p=>`<li class="ar7-person">
         <div class="ar7-person-head"><b>${esc(p.name)}</b><span class="ar7-badge ${esc(p.status)}">${p.status==="battle"?`em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"assistindo":"disponível"}</span></div>
         <span class="ar7-minis">${teamMinis(p.team)}</span>
-        ${p.status==="idle"&&!outgoing&&myTeam.length?`<div class="ar7-formats" role="group" aria-label="Desafiar ${esc(p.name)}">${[1,3,6].map(f=>`<button type="button" class="ar7-btn ${f===3?"primary":""}" data-ar="challenge" data-to="${esc(p.id)}" data-format="${f}">${f===1?"Desafiar 1v1":`${f} vs ${f}`}</button>`).join("")}</div>`:""}
+        ${p.status==="idle"&&!outgoing&&myTeam.length?`<div class="ar7-formats" role="group" aria-label="Desafiar ${esc(p.name)}">
+          <button type="button" class="ar7-btn primary ar7-ch-main" data-ar="challenge" data-to="${esc(p.id)}" data-format="6">⚔ Desafiar <small>time todo</small></button>
+          <button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="3">3 vs 3</button>
+          <button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="1">1 vs 1</button></div>`:""}
       </li>`).join("")}</ul>`:`<p class="ar7-empty-text">${status==="on"?"Ninguém mais nesta sala ainda. Mande o convite 🔗 para um amigo!":"Conectando…"}</p>`}
     </section>
     <section class="ar7-card">
@@ -490,12 +512,32 @@
       <form class="ar7-chat-form" data-ar-form="chat"><input id="ar7Chat" maxlength="160" placeholder="Mensagem…" autocomplete="off"><button type="submit" class="ar7-btn primary">Enviar</button></form>
     </section>`;
   }
+  let pickOpen=false;
+  function teamEditor(){
+    const team=teamSource(),custom=pickIds().length>0;
+    const ids=new Set(team.map(p=>String(p.id)));
+    const rest=state.pokemon.filter(p=>!ids.has(String(p.id)));
+    const face=p=>{const img=localImg(p);return img?`<img src="${esc(img)}" alt="" width="44" height="44" loading="lazy">`:`<i>${esc((p.name||"?").slice(0,1))}</i>`;};
+    return `<div class="ar7-pick">
+      <div class="ar7-pick-head"><small>Seu time na arena <b>${team.length}/6</b> ${custom?"· escolhido por você":"· Equipe da ficha"}</small>
+        ${custom?`<button type="button" class="ar7-link" data-ar="pick-reset">Usar a Equipe da ficha</button>`:""}</div>
+      ${team.length?`<ol class="ar7-pick-list">${team.map((p,i)=>`<li class="${i===0?"lead":""}" style="--t:${typeColor(p.type1)}">
+        <span class="ar7-pick-face">${face(p)}</span>
+        <span class="ar7-pick-name"><b>${esc(p.name)}</b><small>${i===0?"Começa a luta":`#${i+1}`} · Lv${Number(p.level||1)}</small></span>
+        <span class="ar7-pick-acts">
+          ${i>0?`<button type="button" data-ar="pick-lead" data-id="${esc(String(p.id))}" title="Começar com ${esc(p.name)}" aria-label="Começar com ${esc(p.name)}">★</button><button type="button" data-ar="pick-left" data-id="${esc(String(p.id))}" title="Subir na ordem" aria-label="Subir ${esc(p.name)} na ordem">▲</button>`:""}
+          <button type="button" data-ar="pick-del" data-id="${esc(String(p.id))}" title="Tirar do time" aria-label="Tirar ${esc(p.name)} do time">✕</button>
+        </span></li>`).join("")}</ol>`:`<p class="ar7-empty-text">Nenhum Pokémon no time. Adicione abaixo.</p>`}
+      ${rest.length?`<button type="button" class="ar7-btn ar7-pick-more" data-ar="pick-more" aria-expanded="${pickOpen}">${pickOpen?"Fechar lista":"＋ Adicionar Pokémon da ficha"}</button>
+      ${pickOpen?`<div class="ar7-pick-pool">${rest.map(p=>`<button type="button" data-ar="pick-add" data-id="${esc(String(p.id))}" ${team.length>=6?"disabled":""} title="Adicionar ${esc(p.name)}">${face(p)}<span>${esc(p.name)}</span><small>${p.storageGroup==="team"?"Equipe":"Caixa"}</small></button>`).join("")}</div>`:""}`:""}
+    </div>`;
+  }
   function challengeDialog(){
     const p=incoming;
     return `<div class="ar7-modal" role="alertdialog" aria-modal="true" aria-labelledby="ar7ChTitle">
       <div class="ar7-modal-box"><span class="ar7-modal-ico" aria-hidden="true">⚔</span>
         <h3 id="ar7ChTitle">${esc(p.fromName)} te desafiou!</h3>
-        ${sceneOk(p.arena)?`<i class="ar7-modal-scene" style="background-image:url('assets/arenas/${esc(p.arena)}.png')"></i>`:""}<p>Formato: <b>${p.format===1?"1 vs 1":`${p.format} vs ${p.format}`}</b>${sceneOk(p.arena)?` · Ambiente: <b>${esc(sceneLabel(p.arena))}</b>`:""}. Seu time vai na ordem da ficha.</p>
+        ${sceneOk(p.arena)?`<i class="ar7-modal-scene" style="background-image:url('assets/arenas/${esc(p.arena)}.png')"></i>`:""}<p>Formato: <b>${p.format===1?"1 vs 1":p.format>=6?"time todo (até 6)":`${p.format} vs ${p.format}`}</b>${sceneOk(p.arena)?` · Ambiente: <b>${esc(sceneLabel(p.arena))}</b>`:""}. Vai o time que você montou na arena (o primeiro começa).</p>
         <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="decline">Recusar</button><button type="button" class="ar7-btn primary" data-ar="accept">Aceitar</button></div>
       </div></div>`;
   }
@@ -537,6 +579,7 @@
         panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} desmaiou! Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
           ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>`<button type="button" class="ar7-move" data-ar="move" data-idx="${i}" style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
             <b>${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${m.power?` · ${powerToDice(m.power)}`:""}${m.accuracy!=null?` · ${m.accuracy}%`:""}</small></button>`).join("")}</div>`}
+          <p class="ar7-party-title">${mustSwitch?"Escolha quem entra:":`Trocar Pokémon <small>(gasta o turno)</small>`}</p>
           <div class="ar7-party">${team.map((m,i)=>{const st=s.team[i];const dis=st.fainted||i===s.active;return `<button type="button" class="ar7-switch" data-ar="switch" data-idx="${i}" ${dis?"disabled":""} title="Trocar para ${esc(m.name)}">
             ${m.img?`<img src="${esc(m.img)}" alt="" width="34" height="34">`:`<i>${esc(m.name.slice(0,1))}</i>`}<span><b>${esc(m.name)}</b><small class="${hpClass(hpPct(st))}">${st.fainted?"desmaiado":`${st.hp}/${st.maxHp}`}</small></span></button>`;}).join("")}</div>
           ${mustSwitch?"":`<button type="button" class="ar7-btn ar7-forfeit" data-ar="forfeit">🏳 Desistir</button>`}`;
@@ -580,6 +623,12 @@
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
+    else if(a==="pick-add")editPick(ids=>ids.length<6&&!ids.includes(b.dataset.id)?[...ids,b.dataset.id]:ids);
+    else if(a==="pick-del")editPick(ids=>ids.filter(x=>x!==b.dataset.id));
+    else if(a==="pick-lead")editPick(ids=>[b.dataset.id,...ids.filter(x=>x!==b.dataset.id)]);
+    else if(a==="pick-left")editPick(ids=>{const i=ids.indexOf(b.dataset.id);if(i>0)[ids[i-1],ids[i]]=[ids[i],ids[i-1]];return ids;});
+    else if(a==="pick-reset"){savePick([]);track();render();}
+    else if(a==="pick-more"){pickOpen=!pickOpen;render();}
     else if(a==="scene"){scene=b.dataset.v;ls.set("hh_arena_scene",scene);sfx("select");render();}
   });
   root.addEventListener("submit",e=>{
