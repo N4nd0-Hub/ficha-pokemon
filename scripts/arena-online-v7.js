@@ -33,6 +33,12 @@
   });
 
   let sb=null,lobby=null,battleCh=null,room=normRoom(new URLSearchParams(location.search).get("arena")||ls.get("hh_arena_room","geral"));
+  /* Cenários: os mesmos da Batalha da ficha (assets/arenas) */
+  const SCENES=(()=>{try{return Object.entries(COMBAT_ARENAS).map(([v,o])=>({v,label:o.label}));}catch(e){return [{v:"standard",label:"Padrão"}];}})();
+  const sceneOk=v=>SCENES.some(x=>x.v===v);
+  let scene=(()=>{const v=ls.get("hh_arena_scene");if(v==="random"||sceneOk(v))return v;const c=typeof current!=="undefined"?current?.combatArena:"";return sceneOk(c)?c:"standard";})();
+  const pickScene=v=>v==="random"||!sceneOk(v)?SCENES[Math.floor(Math.random()*SCENES.length)].v:v;
+  const sceneLabel=v=>SCENES.find(x=>x.v===v)?.label||"Padrão";
   let people={},chat=[],outgoing=null,incoming=null,myTeamCache=null;
   // batalha atual: {id,role:'p1'|'p2'|'spec',host:bool,state,teams,format,opp,names,playing}
   let B=null;
@@ -157,7 +163,8 @@
   function challenge(to,format){
     const id="b"+uidShort();
     outgoing={id,to,format,at:Date.now()};
-    send(lobby,"challenge",{id,from:me.id,fromName:me.name,to,format});
+    outgoing.arena=pickScene(scene);
+    send(lobby,"challenge",{id,from:me.id,fromName:me.name,to,format,arena:outgoing.arena});
     sfx("select");render();
     setTimeout(()=>{if(outgoing&&outgoing.id===id){send(lobby,"challenge-cancel",{id});outgoing=null;toast("O desafio expirou.");render();}},45000);
   }
@@ -172,26 +179,27 @@
     if(!incoming)return;
     const p=incoming;incoming=null;
     send(lobby,"challenge-reply",{id:p.id,to:p.from,from:me.id,accept});
-    if(accept)joinBattle({id:p.id,role:"p2",format:p.format,names:{p1:p.fromName,p2:me.name}});
+    if(accept)joinBattle({id:p.id,role:"p2",format:p.format,arena:p.arena,names:{p1:p.fromName,p2:me.name}});
     render();
   }
   function onReply(p){
     if(p.to!==me.id||!outgoing||outgoing.id!==p.id)return;
     const o=outgoing;outgoing=null;
     if(!p.accept){toast(p.busy?"O treinador está ocupado.":"Desafio recusado.");render();return;}
-    joinBattle({id:o.id,role:"p1",format:o.format,names:{p1:me.name,p2:people[o.to]?.name||"Rival"}});
+    joinBattle({id:o.id,role:"p1",format:o.format,arena:o.arena,names:{p1:me.name,p2:people[o.to]?.name||"Rival"}});
   }
 
   /* ---------- Batalha: rede ---------- */
-  async function joinBattle({id,role,format,names}){
-    B={id,role,host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
+  async function joinBattle({id,role,format,names,arena}){
+    B={id,role,arena:sceneOk(arena)?arena:"standard",host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
+    for(const k in lastHp)delete lastHp[k];
     sfx("page");render();
     battleCh=sb.channel("hh-arena-b:"+id,{config:{presence:{key:me.id},broadcast:{self:false}}});
     battleCh.on("presence",{event:"sync"},onBattlePresence);
     battleCh.on("broadcast",{event:"team"},({payload})=>{if(B?.host)hostTeam(payload);});
     battleCh.on("broadcast",{event:"action"},({payload})=>{if(B?.host)hostAction(payload.side,payload.action,payload.turn);});
-    battleCh.on("broadcast",{event:"sync"},()=>{if(B?.host&&B.state)send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format});});
-    battleCh.on("broadcast",{event:"start"},({payload})=>{if(!B||B.host)return;if(!B.teams){B.teams=payload.teams;B.names=payload.names;B.format=payload.format;}applyState(payload.state,true);});
+    battleCh.on("broadcast",{event:"sync"},()=>{if(B?.host&&B.state)send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena});});
+    battleCh.on("broadcast",{event:"start"},({payload})=>{if(!B||B.host)return;if(!B.teams){B.teams=payload.teams;B.names=payload.names;B.format=payload.format;}if(sceneOk(payload.arena))B.arena=payload.arena;applyState(payload.state,true);});
     battleCh.on("broadcast",{event:"state"},({payload})=>{if(!B||B.host)return;applyState(payload,false);});
     battleCh.on("broadcast",{event:"emote"},({payload})=>showEmote(payload));
     await new Promise(ok=>battleCh.subscribe(st=>{if(st==="SUBSCRIBED")ok();}));
@@ -209,18 +217,25 @@
   }
   function onBattlePresence(){
     if(!B||!battleCh)return;
-    const st=battleCh.presenceState();
-    const list=Object.values(st).map(a=>a[a.length-1]);
+    const list=Object.values(battleCh.presenceState()).map(a=>a[a.length-1]);
     B.specs=Object.fromEntries(list.filter(x=>x.role==="spec").map(x=>[x.id,x.name]));
+    B.seen=B.seen||{};
     const roles=new Set(list.map(x=>x.role));
-    if(B.state&&B.state.phase!=="end"&&B.started){
-      for(const s of ["p1","p2"])if(!roles.has(s)){
-        if(B.host&&s==="p2"){engine.walkover(B.state,"p2");broadcastState();}
-        else if(!B.host&&s==="p1"){B.state.phase="end";B.state.winner=null;B.state.reason="host-left";pushLog([{k:"hostleft"}]);render();}
-      }
-    }
-    if(list.some(x=>x.role==="p1")&&list.some(x=>x.role==="p2"))B.started=true;
+    roles.forEach(r=>{B.seen[r]=true;});
+    // Só conta como saída quem já esteve na sala e continua fora depois de 5 s
+    // (a presença pode chegar depois das primeiras mensagens).
+    for(const s of ["p1","p2"])if(B.seen[s]&&!roles.has(s)&&!B.gone?.[s]){
+      B.gone=B.gone||{};B.gone[s]=setTimeout(()=>checkGone(s),5000);
+    }else if(roles.has(s)&&B.gone?.[s]){clearTimeout(B.gone[s]);delete B.gone[s];}
     render();
+  }
+  function checkGone(s){
+    if(!B||!battleCh)return;
+    delete B.gone[s];
+    const still=Object.values(battleCh.presenceState()).some(a=>a[a.length-1]?.role===s);
+    if(still)return;
+    if(B.host&&s==="p2"&&B.state&&B.state.phase!=="end"){engine.walkover(B.state,"p2");broadcastState();}
+    else if(!B.host&&s==="p1"&&B.view&&B.view.phase!=="end"){B.view.phase="end";B.view.winner=null;pushLog([{k:"hostleft"}]);render();track();}
   }
   function leaveBattle(silent){
     if(!B)return;
@@ -246,7 +261,7 @@
       B.state=engine.newBattle({id:B.id,format:B.format,p1:B.pendingTeams.p1,p2:B.pendingTeams.p2});
       B.teams=B.state.teams;B.names={p1:B.pendingTeams.p1.name,p2:B.pendingTeams.p2.name};
       B.started=true;
-      send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format});
+      send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena});
       applyState(pub(B.state),true);track();
     }
   }
@@ -282,7 +297,7 @@
   function applyState(s,initial){
     if(!B)return;
     const events=s.events||[];
-    if(initial||!B.view){B.view=JSON.parse(JSON.stringify(s));B.view.events=[];if(events.length)pushLog(events);render();return;}
+    if(initial||!B.view){if(!B.view){B.intro=true;setTimeout(()=>{if(B)B.intro=false;},1200);}B.view=JSON.parse(JSON.stringify(s));B.view.events=[];if(events.length)pushLog(events);render();return;}
     if(!events.length){
       // só mudou quem já escolheu
       for(const k of ["p1","p2"])B.view.sides[k].ready=s.sides[k].ready;
@@ -348,6 +363,7 @@
     const pos=s=>(s===mySide()?"me":"foe");
     const field=root.querySelector(".ar7-field");if(!field)return;
     if(ev.k==="move"){const el=field.querySelector(`.ar7-mon.${pos(ev.side)}`);el?.classList.remove("lunge");void el?.offsetWidth;el?.classList.add("lunge");}
+    if(ev.k==="switch"){const el=field.querySelector(`.ar7-mon.${pos(ev.side)}`);el?.classList.remove("enter");void el?.offsetWidth;el?.classList.add("enter");sfx("page");}
     if(ev.k==="hit"&&!ev.immune){
       const el=field.querySelector(`.ar7-mon.${pos(ev.side)}`);
       el?.classList.remove("hurt");void el?.offsetWidth;el?.classList.add("hurt");
@@ -377,6 +393,7 @@
   function render(){
     if(root.hidden)return;
     const focus=document.activeElement?.id;
+    const keptScroll=root.querySelector(".ar7-scenes")?.scrollLeft;
     const kept={};["ar7Chat","ar7Room","ar7Name"].forEach(id=>{const el=document.getElementById(id);if(el)kept[id]=el.value;});
     root.innerHTML=`<div class="ar7-shell">
       <header class="ar7-top">
@@ -388,8 +405,12 @@
       <p class="ar7-toast" role="status" hidden></p>
       ${incoming?challengeDialog():""}
     </div>`;
+    if(keptScroll){const n=root.querySelector(".ar7-scenes");if(n)n.scrollLeft=keptScroll;}
     Object.entries(kept).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v;});
     if(focus){const el=document.getElementById(focus);if(el&&el.tagName==="INPUT"){el.focus();try{el.setSelectionRange(el.value.length,el.value.length);}catch(e){}}}
+    const bars=[...root.querySelectorAll(".ar7-hp i[data-to]")];
+    if(bars.length){requestAnimationFrame(()=>requestAnimationFrame(()=>bars.forEach(i=>i.style.setProperty("--w",i.dataset.to+"%"))));
+      root.querySelectorAll(".ar7-spot").forEach(sp=>{const i=sp.querySelector(".ar7-hp i[data-to]");if(i)lastHp[sp.classList.contains("me")?"me":"foe"]=Number(i.dataset.to);});}
     const log=root.querySelector(".ar7-log");if(log)log.scrollTop=log.scrollHeight;
     const chatBox=root.querySelector(".ar7-chat-list");if(chatBox)chatBox.scrollTop=chatBox.scrollHeight;
   }
@@ -413,6 +434,11 @@
         <label class="ar7-field-label">Sala<span class="ar7-room"><input id="ar7Room" maxlength="24" value="${esc(room)}" autocomplete="off" spellcheck="false"><button type="button" class="ar7-btn" data-ar="room">Entrar</button></span></label>
       </div>
       <div class="ar7-team-line"><small>Seu time (ordem da ficha):</small><span class="ar7-minis">${myTeam.length?teamMinis(myTeam,32):"<em>Coloque Pokémon na Equipe da ficha para lutar.</em>"}</span></div>
+      <div class="ar7-scenes-head"><small>Ambiente das suas batalhas (vale quando você desafia):</small><b>${scene==="random"?"Aleatório":esc(sceneLabel(scene))}</b></div>
+      <div class="ar7-scenes" role="radiogroup" aria-label="Ambiente da batalha">
+        <button type="button" role="radio" aria-checked="${scene==="random"}" class="ar7-scene rnd${scene==="random"?" on":""}" data-ar="scene" data-v="random"><i>🎲</i><b>Aleatório</b></button>
+        ${SCENES.map(x=>`<button type="button" role="radio" aria-checked="${x.v===scene}" class="ar7-scene${x.v===scene?" on":""}" data-ar="scene" data-v="${esc(x.v)}"><i style="background-image:url('assets/arenas/${esc(x.v)}.png')"></i><b>${esc(x.label)}</b></button>`).join("")}
+      </div>
       <p class="ar7-hint">Use uma sala com nome próprio (ex.: <code>mesa-do-nando</code>) para jogar só com seus amigos. A batalha não altera a ficha: todos começam com HP cheio.</p>
     </section>
     ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.format} vs ${outgoing.format} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
@@ -440,7 +466,7 @@
     return `<div class="ar7-modal" role="alertdialog" aria-modal="true" aria-labelledby="ar7ChTitle">
       <div class="ar7-modal-box"><span class="ar7-modal-ico" aria-hidden="true">⚔</span>
         <h3 id="ar7ChTitle">${esc(p.fromName)} te desafiou!</h3>
-        <p>Formato: <b>${p.format===1?"1 vs 1":`${p.format} vs ${p.format}`}</b>. Seu time vai na ordem da ficha.</p>
+        ${sceneOk(p.arena)?`<i class="ar7-modal-scene" style="background-image:url('assets/arenas/${esc(p.arena)}.png')"></i>`:""}<p>Formato: <b>${p.format===1?"1 vs 1":`${p.format} vs ${p.format}`}</b>${sceneOk(p.arena)?` · Ambiente: <b>${esc(sceneLabel(p.arena))}</b>`:""}. Seu time vai na ordem da ficha.</p>
         <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="decline">Recusar</button><button type="button" class="ar7-btn primary" data-ar="accept">Aceitar</button></div>
       </div></div>`;
   }
@@ -449,15 +475,15 @@
     const v=B.view,s=v.sides[side],t=B.teams[side],m=t[s.active],st=s.team[s.active];
     const pct=hpPct(st);
     return `<div class="ar7-spot ${pos}">
-      <div class="ar7-hud"><div class="ar7-hud-name"><b>${esc(m.name)}</b><small>Lv${m.level}</small></div>
+      <div class="ar7-hud"><div class="ar7-hud-name"><b>${esc(m.name)}</b><small>Lv. ${m.level}</small></div>
         <div class="ar7-hud-types">${(m.types||[]).map(x=>`<i style="--t:${typeColor(x)};--td:${typeDark(x)}">${esc(x)}</i>`).join("")}</div>
-        <div class="ar7-hp ${hpClass(pct)}"><span>HP</span><div><i style="width:${pct}%"></i></div></div>
-        ${pos==="me"?`<small class="ar7-hp-num">${st.hp} / ${st.maxHp}</small>`:""}
+        <div class="ar7-hp ${hpClass(pct)}"><span>HP</span><div><i data-to="${pct}" style="--w:${lastHp[pos]??pct}%"></i></div>${pos==="me"?`<small class="ar7-hp-num">${st.hp} / ${st.maxHp}</small>`:""}</div>
         <div class="ar7-balls">${s.team.map(x=>`<i class="${x.fainted?"out":""}"></i>`).join("")}</div>
       </div>
-      <div class="ar7-mon ${pos}${st.fainted?" fainted":""}">${m.img?`<img src="${esc(m.img)}" alt="${esc(m.name)}">`:`<i>${esc(m.name.slice(0,1))}</i>`}</div>
+      <div class="ar7-mon ${pos}${st.fainted?" fainted":""}${B.intro?" intro":""}">${m.img?`<img src="${esc(m.img)}" alt="${esc(m.name)}">`:`<i>${esc(m.name.slice(0,1))}</i>`}</div>
     </div>`;
   }
+  const lastHp={};
   function battleView(){
     if(!B.view||!B.teams)return `<div class="ar7-card ar7-empty"><b>${B.role==="spec"?"Entrando para assistir…":"Preparando a batalha…"}</b><p>${B.role==="spec"?"Buscando o estado da batalha.":"Esperando os dois times chegarem."}</p><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button></div>`;
     const v=B.view,mine=mySide(),foe=mine==="p1"?"p2":"p1";
@@ -474,7 +500,7 @@
       const s=v.sides[mine],team=B.teams[mine];
       const mustSwitch=v.phase==="switch"&&s.needSwitch;
       const waitingSwitch=v.phase==="switch"&&!s.needSwitch;
-      if(B.playing)panel=`<div class="ar7-waiting">…</div>`;
+      if(B.playing)panel=`<div class="ar7-waiting ar7-dots">Resolvendo o turno</div>`;
       else if(waitingSwitch)panel=`<div class="ar7-waiting">Esperando ${esc(sideName(foe))} escolher o próximo Pokémon…</div>`;
       else if(s.ready||B.chosen)panel=`<div class="ar7-waiting">✓ Ação escolhida. Esperando ${esc(sideName(foe))}…</div>`;
       else{
@@ -489,7 +515,12 @@
     }
     return `<section class="ar7-battle">
       <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""}</small></div>
-      <div class="ar7-field">${monCard(foe,"foe")}${monCard(mine,"me")}</div>
+      <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
+        <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
+        ${monCard(foe,"foe")}${monCard(mine,"me")}
+        <span class="ar7-scene-tag">${esc(sceneLabel(B.arena))}</span>
+      </div>
+      <div class="ar7-msg" aria-hidden="true"><p>${B.log.length?B.log[B.log.length-1].line:`${esc(sideName(foe))} quer batalhar!`}</p></div>
       <div class="ar7-emotes" role="group" aria-label="Reações">${EMOTES.map(e=>`<button type="button" data-ar="emote" data-e="${esc(e)}">${esc(e)}</button>`).join("")}</div>
       <div class="ar7-panel">${panel}</div>
       <div class="ar7-log" aria-live="polite">${B.log.map(l=>`<p class="${l.cls}">${l.line}</p>`).join("")}</div>
@@ -519,6 +550,7 @@
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
+    else if(a==="scene"){scene=b.dataset.v;ls.set("hh_arena_scene",scene);sfx("select");render();}
   });
   root.addEventListener("submit",e=>{
     const f=e.target.closest("[data-ar-form]");if(!f)return;e.preventDefault();
