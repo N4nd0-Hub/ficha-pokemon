@@ -28,7 +28,13 @@
   const STAT_LABEL=[["hp","HP"],["atk","Attack"],["def","Defense"],["spa","Sp. Atk"],["spd","Sp. Def"],["spe","Speed"]];
   const STAT_API={hp:"hp",attack:"atk",defense:"def","special-attack":"spa","special-defense":"spd",speed:"spe"};
 
-  let list=null,loading=false,loadError="";
+  let list=null,loading=false,loadError="",apiRows=null;
+  const CLASS_LABEL={fakemon:"Fakemon",rework:"Rework",official:"Oficial"};
+  function gmRows(){
+    let cat=[];try{cat=window.HH_GM_CATALOG_BRIDGE?.getCatalog()||[];}catch(e){}
+    return cat.filter(s=>!s.megaOnly).map(s=>({id:s.id,name:s.name,dex:0,gmDex:s.dex,def:true,fakemon:true,gm:true,types:(s.types||[]).filter(Boolean),gen:0,
+      img:s.image?.dataUrl||"",species:s,label:CLASS_LABEL[s.classification]||"Pokédex GM"}));
+  }
   const filt={q:"",gen:0,type:"",forms:false,fakemon:false};
   let shown=120,sel=null,detail=null,shiny=false,addLevel=5,adding=false;
   const cache=new Map();
@@ -89,9 +95,10 @@
         const r=await getJSON(REST+"pokemon?limit=1400");
         rows=(r.results||[]).map(x=>{const id=Number(x.url.split("/").filter(Boolean).pop());return {id,name:x.name,dex:id<10000?id:0,def:id<10000,types:[],gen:genOfId(id)};});
       }
-      // Fakemon do sistema
-      const fk=(typeof INTEGRATED_CUSTOM_SPECIES!=="undefined"?INTEGRATED_CUSTOM_SPECIES:[]).map(s=>({id:"fk-"+s.id,name:s.name,dex:0,def:true,fakemon:true,types:s.types||[],gen:0,img:s.image?.dataUrl||"",species:s}));
-      list=[...rows,...fk];
+      apiRows=rows;list=[...rows,...gmRows()];
+      // criações da Pokédex GM (Fakemon e Reworks publicados)
+      const br=window.HH_GM_CATALOG_BRIDGE;
+      if(br?.refresh)Promise.resolve(br.refresh()).then(()=>{if(apiRows){list=[...apiRows,...gmRows()];render();}}).catch(()=>{});
     }catch(e){loadError="Não consegui falar com a PokéAPI. Confira a internet.";}
     loading=false;render();
   }
@@ -116,7 +123,9 @@
     sel=p;detail=null;shiny=false;sfx("select");render();
     if(p.fakemon){
       const s=p.species;
-      detail={stats:s.baseStats||{},abilities:[s.ability?.name].filter(Boolean),abilityText:s.ability?.description||"",genus:s.category||"Fakemon do sistema",flavor:s.notes||"",height:null,weight:null,chain:[],cry:""};
+      const abs=(s.abilities&&s.abilities.length?s.abilities:[s.ability]).filter(a=>a&&a.name);
+      detail={stats:s.baseStats||{},abilities:abs.map(a=>a.name),abilityText:abs[0]?.description||"",genus:s.category||"Pokédex GM",flavor:s.description||s.notes||"",height:null,weight:null,chain:[],cry:"",
+        forms:(s.forms||[]).map(f=>f.name)};
       render();return;
     }
     try{
@@ -162,7 +171,7 @@
       const teamCount=state.pokemon.filter(x=>(x.storageGroup||"team")==="team").length;
       createBlankPokemon();
       const fresh=current;
-      await searchPokemonFromApi(p.fakemon?p.name:p.name);
+      await searchPokemonFromApi(p.gm?p.species.id:p.name);
       if(current!==fresh)throw new Error("A ficha mudou durante a importação.");
       fresh.storageGroup=teamCount<6?"team":"box";
       if(useShiny)fresh.imageUrl=ART_SHINY(p.id);
@@ -189,7 +198,7 @@
   function card(p){
     const c=pal(p.types[0]||"Normal");
     return `<button type="button" class="dx7-card${sel&&sel.id===p.id?" on":""}${p.fakemon?" fk":""}" data-dx="pick" data-id="${esc(p.id)}" style="--t:${c.main};--td:${c.dark}">
-      <span class="dx7-no">${p.fakemon?"FAKEMON":p.dex?"#"+String(p.dex).padStart(4,"0"):"FORMA"}</span>
+      <span class="dx7-no">${p.fakemon?esc(p.label||"FAKEMON").toUpperCase()+(p.gmDex?" #"+String(p.gmDex).padStart(3,"0"):""):p.dex?"#"+String(p.dex).padStart(4,"0"):"FORMA"}</span>
       <span class="dx7-art"><img src="${esc(p.fakemon?p.img:ART(p.id))}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'"></span>
       <b>${esc(nice(p.name))}</b>
       <span class="dx7-types">${p.types.map(t=>typeChip(t,true)).join("")}</span>
@@ -204,7 +213,7 @@
     return `<div class="dx7-detail" style="--t:${c.main};--td:${c.dark}">
       <button type="button" class="dx7-close-detail" data-dx="unpick" aria-label="Fechar detalhes">✕</button>
       <div class="dx7-hero">
-        <span class="dx7-no big">${p.fakemon?"Fakemon do sistema":p.dex?"Nº "+String(p.dex).padStart(4,"0"):"Forma alternativa"}</span>
+        <span class="dx7-no big">${p.fakemon?`${esc(p.label||"Fakemon")} · Pokédex GM${p.gmDex?" · Nº "+String(p.gmDex).padStart(3,"0"):""}`:p.dex?"Nº "+String(p.dex).padStart(4,"0"):"Forma alternativa"}</span>
         <div class="dx7-hero-art"><img src="${esc(p.fakemon?p.img:(shiny?ART_SHINY(p.id):ART(p.id)))}" alt="${esc(nice(p.name))}"></div>
         <h2>${esc(nice(p.name))}</h2>
         ${d?.genus?`<small class="dx7-genus">${esc(d.genus)}</small>`:""}
@@ -221,6 +230,7 @@
       </div>
       <div class="dx7-block dx7-facts">
         <div><small>Abilities</small><b>${d.abilities.map(esc).join(" · ")||"—"}</b>${d.abilityText?`<p>${esc(d.abilityText)}</p>`:""}</div>
+        ${d.forms?.length?`<div><small>Formas</small><b>${d.forms.map(esc).join(" · ")}</b></div>`:""}
         ${d.height!=null?`<div><small>Altura</small><b>${d.height.toLocaleString("pt-BR")} m</b></div><div><small>Peso</small><b>${d.weight.toLocaleString("pt-BR")} kg</b></div>`:""}
       </div>
       ${d.chain?.length>1?`<div class="dx7-block"><h4>Evoluções</h4><div class="dx7-chain">${d.chain.map((x,i)=>`${i&&x.depth>d.chain[i-1].depth?`<span class="dx7-arrow">→</span>`:i?`<span class="dx7-arrow alt">/</span>`:""}<button type="button" class="dx7-evo${x.id===p.dex?" on":""}" data-dx="pick" data-id="${x.id}"><img src="${ART(x.id)}" alt="" loading="lazy"><small>${esc(nice(x.name))}</small></button>`).join("")}</div></div>`:""}
@@ -252,7 +262,7 @@
             <div class="dx7-chips types" role="group" aria-label="Tipo">${TYPES.map(t=>{const c=pal(t);return `<button type="button" class="dx7-tchip${filt.type===t?" on":""}" data-dx="type" data-v="${t}" style="--t:${c.main};--td:${c.dark}">${t}</button>`;}).join("")}</div>
             <div class="dx7-toggles">
               <label><input type="checkbox" data-dx-tg="forms" ${filt.forms?"checked":""}> Formas regionais, Mega e outras</label>
-              <label><input type="checkbox" data-dx-tg="fakemon" ${filt.fakemon?"checked":""}> Só Fakemon do sistema</label>
+              <label><input type="checkbox" data-dx-tg="fakemon" ${filt.fakemon?"checked":""}> Só criações da Pokédex GM</label>
             </div>
           </div>
           <div class="dx7-grid-wrap">
@@ -292,6 +302,21 @@
     else if(a==="add")addToSheet();
   });
   root.addEventListener("keydown",e=>{if(e.key==="Escape"){if(sel){sel=null;detail=null;render();}else close();}if(e.key==="Enter"&&e.target.id==="dx7Level")addToSheet();});
+
+  /* Fichas com Fakemon antigos sem arte: preenche com a arte da Pokédex GM */
+  function fillGmArt(){
+    const br=window.HH_GM_CATALOG_BRIDGE;if(!br?.find)return;
+    let changed=false;
+    (state.pokemon||[]).forEach(p=>{
+      if(p.imageUrl)return;
+      const ref=p.apiData?.gmCatalogId?("gm-"+p.apiData.gmCatalogId):(p.apiData?.integratedSpeciesId||"");
+      if(!ref)return;
+      const sp=br.find(ref)||br.find(p.name);
+      const img=sp?.image?.dataUrl;if(img){p.imageUrl=img;changed=true;}
+    });
+    if(changed){try{saveState();renderAll();}catch(e){}}
+  }
+  (function waitBridge(n){const br=window.HH_GM_CATALOG_BRIDGE;if(br?.refresh)Promise.resolve(br.refresh()).then(fillGmArt).catch(()=>{});else if(n<40)setTimeout(()=>waitBridge(n+1),500);})(0);
 
   /* O ＋ do PC e o "Novo" passam a abrir a Pokédex */
   const btn=document.getElementById("drawerNewBtn");
