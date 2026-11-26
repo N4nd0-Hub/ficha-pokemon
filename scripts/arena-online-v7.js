@@ -63,14 +63,14 @@
   }
 
   /* ---------- Cópia do time ---------- */
-  async function compactImage(src){
+  async function compactImage(src,max=160){
     if(!src)return "";
     try{
       const abs=new URL(src,location.href).href;
       if(!abs.startsWith("data:"))return abs;
       const img=new Image();img.decoding="async";
       await new Promise((ok,ko)=>{img.onload=ok;img.onerror=ko;img.src=abs;});
-      const s=Math.min(1,160/Math.max(img.naturalWidth,img.naturalHeight));
+      const s=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
       const c=document.createElement("canvas");c.width=Math.max(1,Math.round(img.naturalWidth*s));c.height=Math.max(1,Math.round(img.naturalHeight*s));
       c.getContext("2d").drawImage(img,0,0,c.width,c.height);
       return c.toDataURL("image/webp",.82);
@@ -111,8 +111,19 @@
     return teamSource().map(p=>{
       let img=displayPokemonImage(p)||"";
       try{img=new URL(img,location.href).href;}catch(e){}
-      return {n:p.name,lv:Number(p.level||1),t:[p.type1,p.type2].filter(Boolean),img:img.startsWith("data:")?"":img};
+      return {n:p.name,lv:Number(p.level||1),t:[p.type1,p.type2].filter(Boolean),img:img.startsWith("data:")?(thumbs.get(img.length+":"+img.slice(-40))||""):img};
     });
+  }
+  /* Miniaturas pequenas (56px) das artes enviadas na ficha, para a lista da sala */
+  const thumbs=new Map();let thumbBusy=false;
+  async function ensureThumbs(){
+    if(thumbBusy)return;thumbBusy=true;let changed=false;
+    for(const p of teamSource()){
+      const img=displayPokemonImage(p)||"";if(!img.startsWith("data:"))continue;
+      const k=img.length+":"+img.slice(-40);if(thumbs.has(k))continue;
+      thumbs.set(k,await compactImage(img,56));changed=true;
+    }
+    thumbBusy=false;if(changed){track();render();}
   }
   async function buildTeam(limit){
     const list=teamSource().slice(0,limit);
@@ -135,7 +146,7 @@
   document.body.appendChild(root);
   function open(){
     root.hidden=false;document.body.classList.add("ar7-open");sfx("page");
-    connect();render();
+    connect();render();ensureThumbs();
   }
   function close(){
     if(B&&B.role!=="spec"&&B.state&&B.state.phase!=="end"&&!confirm("Sair da arena desiste da batalha atual. Sair mesmo?"))return;
@@ -143,7 +154,7 @@
     root.hidden=true;document.body.classList.remove("ar7-open");
     disconnect();
   }
-  window.hhArena={open,close,get battle(){return B;}};
+  window.hhArena={open,close,get battle(){return B;},get rank(){return RANK;}};
 
   /* Botão ⚔ Arena no topo (computador e celular) */
   const brand=document.querySelector(".topbar .brand");
@@ -173,7 +184,7 @@
         if(outgoing&&!people[outgoing.to]){outgoing=null;toast("O treinador saiu do lobby.");}
         render();
       });
-      lobby.on("broadcast",{event:"chat"},({payload})=>{chat.push(payload);chat=chat.slice(-60);render();if(!root.hidden)sfx("type");});
+      lobby.on("broadcast",{event:"chat"},({payload})=>{chat.push(payload);chat=chat.slice(-60);if(tab!=="chat")unread++;render();if(!root.hidden)sfx("type");});
       lobby.on("broadcast",{event:"challenge"},({payload})=>onChallenge(payload));
       lobby.on("broadcast",{event:"challenge-cancel"},({payload})=>{if(incoming&&incoming.id===payload.id){incoming=null;render();}});
       lobby.on("broadcast",{event:"challenge-reply"},({payload})=>onReply(payload));
@@ -561,55 +572,120 @@
   function teamMinis(team,size=28){
     return (team||[]).map(m=>`<span class="ar7-mini" title="${esc(m.n)} Lv${m.lv}" style="--t:${typeColor(m.t?.[0])}">${m.img?`<img src="${esc(m.img)}" alt="" loading="lazy" width="${size}" height="${size}">`:`<i>${esc((m.n||"?").slice(0,1))}</i>`}</span>`).join("");
   }
+  /* ---------- Lobby (repaginado): herói, modos, abas ---------- */
+  const PX=(n,sz)=>window.hhArenaPix?window.hhArenaPix.svg(n,sz):"";
+  let tab=(()=>{const t=ls.get("hh_arena_tab","sala");return ["sala","time","ranking","chat","ajustes"].includes(t)?t:"sala";})();
+  let unread=0;
+  const TABS=[["sala","people","Sala"],["time","ball","Meu time"],["ranking","trophy","Ranking"],["chat","chat","Chat"],["ajustes","gear","Ajustes"]];
   function lobbyView(){
     if(status==="error")return `<div class="ar7-card ar7-empty"><b>Não foi possível conectar à arena.</b><p>Confira a internet e tente de novo.</p><button type="button" class="ar7-btn primary" data-ar="retry">Tentar de novo</button></div>`;
     const list=Object.values(people).sort((a,b)=>(a.id===me.id?-1:b.id===me.id?1:a.name.localeCompare(b.name)));
     const others=list.filter(p=>p.id!==me.id);
     const battles={};
     list.filter(p=>p.status==="battle"&&p.battle).forEach(p=>{battles[p.battle]=battles[p.battle]||{id:p.battle,players:[],names:p.names};battles[p.battle].players.push(p.name);});
-    const watchers={};list.filter(p=>p.status==="watch").forEach(p=>{watchers[p.battle]=(watchers[p.battle]||0)+1;});
     const myTeam=teamPreview();
-    return `
-    ${survivalCard(myTeam)}
-    <section class="ar7-card ar7-me">
-      <div class="ar7-me-row">
-        <label class="ar7-field-label">Seu nome na arena<input id="ar7Name" maxlength="20" value="${esc(me.name)}" autocomplete="off"></label>
-        <label class="ar7-field-label">Sala<span class="ar7-room"><input id="ar7Room" maxlength="24" value="${esc(room)}" autocomplete="off" spellcheck="false"><button type="button" class="ar7-btn" data-ar="room">Entrar</button></span></label>
+    const lead=myTeam[0];const leadMon=teamSource()[0];const leadImg=leadMon?localImg(leadMon):"";
+    const bg=scene==="random"?"standard":scene;
+    const best=Number(state.arenaSurvivalBest||0);
+    const top=RANK.list?.[0];
+    const nBattles=Object.keys(battles).length;
+    if(tab==="chat")unread=0;
+    const counts={sala:others.length,chat:unread};
+    return `<div class="ar8">
+    <section class="ar8-hero" style="background-image:linear-gradient(100deg,rgba(14,16,30,.82) 0%,rgba(14,16,30,.45) 50%,rgba(14,16,30,.08) 100%),url('assets/arenas/${esc(bg)}.png')">
+      <div class="ar8-hero-me">
+        <span class="ar8-avatar" style="--t:${typeColor(lead?.t?.[0])}">${leadImg?`<img src="${esc(leadImg)}" alt="">`:PX("ball",40)}</span>
+        <div class="ar8-hero-txt">
+          <small>Treinador</small>
+          <b>${esc(me.name)}</b>
+          <span class="ar8-pills"><span class="ar8-pill ${status==="on"?"on":""}"><i></i>${statusText()}</span><span class="ar8-pill">Sala <code>${esc(room)}</code></span></span>
+        </div>
       </div>
-      ${teamEditor()}
-      <div class="ar7-dmg-pick" role="radiogroup" aria-label="Sistema de dano"><small>Dano das suas batalhas (vale quando você desafia):</small>
-        <span>${["classic","matrix"].map(k=>`<button type="button" role="radio" aria-checked="${dmgMode===k}" class="ar7-btn${dmgMode===k?" primary":""}" data-ar="dmg" data-v="${k}">${k==="matrix"?"🧪 Experimental (QD)":"Padrão da ficha"}</button>`).join("")}</span>
-        <em>${dmgMode==="matrix"?"Poder define quantos dados; a Qualidade do seu ATK/SP.ATK contra a DEF/SP.DEF do alvo define o dado (d4 a d20). STAB +1d6 e nível÷5 fixo.":"Power vira d6, Attack/Sp.Atk somam dados e Defense/Sp.Def tiram dados."}</em>
-      </div>
-      <div class="ar7-scenes-head"><small>Ambiente das suas batalhas (vale quando você desafia):</small><b>${scene==="random"?"Aleatório":esc(sceneLabel(scene))}</b></div>
-      <div class="ar7-scenes" role="radiogroup" aria-label="Ambiente da batalha">
-        <button type="button" role="radio" aria-checked="${scene==="random"}" class="ar7-scene rnd${scene==="random"?" on":""}" data-ar="scene" data-v="random"><i>🎲</i><b>Aleatório</b></button>
-        ${SCENES.map(x=>`<button type="button" role="radio" aria-checked="${x.v===scene}" class="ar7-scene${x.v===scene?" on":""}" data-ar="scene" data-v="${esc(x.v)}"><i style="background-image:url('assets/arenas/${esc(x.v)}.png')"></i><b>${esc(x.label)}</b></button>`).join("")}
-      </div>
-      <p class="ar7-hint">Use uma sala com nome próprio (ex.: <code>mesa-do-nando</code>) para jogar só com seus amigos. A batalha não altera a ficha: todos começam com HP cheio.</p>
+      <div class="ar8-hero-team" aria-label="Seu time">${myTeam.length?teamSource().map(p=>{const im=localImg(p);return `<span class="ar7-mini" title="${esc(p.name)} Lv${Number(p.level||1)}" style="--t:${typeColor(p.type1)}">${im?`<img src="${esc(im)}" alt="" width="34" height="34">`:`<i>${esc((p.name||"?").slice(0,1))}</i>`}</span>`;}).join(""):`<em>Monte seu time na aba Meu time.</em>`}</div>
     </section>
     ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.format>=6?"time todo":`${outgoing.format} vs ${outgoing.format}`} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
-    <section class="ar7-card">
-      <h3>Treinadores na sala <small>${others.length}</small></h3>
-      ${others.length?`<ul class="ar7-people">${others.map(p=>`<li class="ar7-person">
-        <div class="ar7-person-head"><b>${esc(p.name)}</b><span class="ar7-badge ${esc(p.status)}">${p.status==="battle"?`em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"assistindo":p.status==="survival"?`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`:"disponível"}</span></div>
-        <span class="ar7-minis">${teamMinis(p.team)}</span>
+    <section class="ar8-modes">
+      <article class="ar8-mode friends">
+        <span class="ar8-mode-ico">${PX("swords",64)}</span>
+        <div class="ar8-mode-txt"><small>Multijogador</small><h3>Batalha entre amigos</h3>
+          <p>${others.length?`<b>${others.length}</b> treinador${others.length>1?"es":""} na sala`:"Ninguém na sala ainda"}${nBattles?` · <b>${nBattles}</b> batalha${nBattles>1?"s":""} ao vivo`:""}</p></div>
+        <div class="ar8-mode-act">${others.length?`<button type="button" class="ar7-btn primary" data-ar="tab" data-v="sala">⚔ Desafiar</button>`:`<button type="button" class="ar7-btn primary" data-ar="share">🔗 Convidar</button>`}</div>
+      </article>
+      <article class="ar8-mode endless">
+        <span class="ar8-mode-ico tower">${PX("tower",56)}</span>
+        <div class="ar8-mode-txt"><small>Solo · ondas infinitas</small><h3>Desafio Sem Fim</h3>
+          <p>Recorde: <b>${best}</b> onda${best===1?"":"s"}${top?` · Líder: <b>${esc(top.player)}</b> (${top.waves})`:""}</p></div>
+        <div class="ar8-mode-act"><button type="button" class="ar7-btn primary" data-ar="surv-start" ${myTeam.length?"":"disabled"}>▶ Começar</button><button type="button" class="ar7-btn" data-ar="tab" data-v="ranking">🏆</button></div>
+      </article>
+    </section>
+    <nav class="ar8-tabs" role="tablist" aria-label="Seções da arena">${TABS.map(([k,ico,label])=>`<button type="button" role="tab" aria-selected="${tab===k}" class="ar8-tab${tab===k?" on":""}" data-ar="tab" data-v="${k}">${PX(ico,20)}<span>${label}</span>${counts[k]?`<i class="ar8-count">${counts[k]}</i>`:""}</button>`).join("")}</nav>
+    <section class="ar8-panel" role="tabpanel">${tab==="sala"?roomTab(others,battles,myTeam):tab==="time"?`<div class="ar8-sec"><h3>${PX("ball",22)} Seu time na arena</h3><p class="ar8-sub">Quem vai para as batalhas e para o Desafio Sem Fim. O primeiro começa a luta.</p>${teamEditor()}</div>`:tab==="ranking"?rankTab():tab==="chat"?chatTab():settingsTab()}</section>
+    </div>`;
+  }
+  function roomTab(others,battles,myTeam){
+    const watchers={};Object.values(people).filter(p=>p.status==="watch").forEach(p=>{watchers[p.battle]=(watchers[p.battle]||0)+1;});
+    const badge=p=>p.status==="battle"?`⚔ em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"👁 assistindo":p.status==="survival"?`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`:"● disponível";
+    return `<div class="ar8-sec">
+      <h3>${PX("people",24)} Treinadores na sala <small>${others.length}</small></h3>
+      ${others.length?`<ul class="ar8-people">${others.map(p=>{const l=(p.team||[])[0];return `<li class="ar8-person ${esc(p.status)}">
+        <span class="ar8-avatar sm" style="--t:${typeColor(l?.t?.[0])}">${l?.img?`<img src="${esc(l.img)}" alt="">`:PX("ball",28)}</span>
+        <div class="ar8-person-txt"><b>${esc(p.name)}</b><span class="ar7-badge ${esc(p.status)}">${badge(p)}</span><span class="ar7-minis">${teamMinis(p.team,26)}</span></div>
         ${p.status==="idle"&&!outgoing&&myTeam.length?`<div class="ar7-formats" role="group" aria-label="Desafiar ${esc(p.name)}">
           <button type="button" class="ar7-btn primary ar7-ch-main" data-ar="challenge" data-to="${esc(p.id)}" data-format="6">⚔ Desafiar <small>time todo</small></button>
           <button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="3">3 vs 3</button>
           <button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="1">1 vs 1</button></div>`:""}
-      </li>`).join("")}</ul>`:`<p class="ar7-empty-text">${status==="on"?"Ninguém mais nesta sala ainda. Mande o convite 🔗 para um amigo!":"Conectando…"}</p>`}
-    </section>
-    <section class="ar7-card">
-      <h3>Batalhas acontecendo <small>${Object.keys(battles).length}</small></h3>
-      ${Object.keys(battles).length?`<ul class="ar7-battles">${Object.values(battles).map(b=>`<li><span><b>${esc(b.names?.p1||b.players[0]||"?")}</b> vs <b>${esc(b.names?.p2||b.players[1]||"?")}</b>${watchers[b.id]?` <small>👁 ${watchers[b.id]}</small>`:""}</span>
-        <button type="button" class="ar7-btn" data-ar="watch" data-id="${esc(b.id)}" data-p1="${esc(b.names?.p1||"")}" data-p2="${esc(b.names?.p2||"")}">👁 Assistir</button></li>`).join("")}</ul>`:`<p class="ar7-empty-text">Nenhuma batalha agora.</p>`}
-    </section>
-    <section class="ar7-card ar7-chat">
-      <h3>Chat da sala</h3>
-      <div class="ar7-chat-list" aria-live="polite">${chat.length?chat.map(c=>`<p><b>${esc(c.name)}:</b> ${esc(c.text)}</p>`).join(""):`<p class="ar7-empty-text">Diga oi! 👋</p>`}</div>
+      </li>`;}).join("")}</ul>`:`<div class="ar8-empty">${PX("people",48)}<p>${status==="on"?"Ninguém mais nesta sala ainda.":"Conectando…"}</p>${status==="on"?`<button type="button" class="ar7-btn primary" data-ar="share">🔗 Mandar convite</button>`:""}</div>`}
+    </div>
+    <div class="ar8-sec">
+      <h3>${PX("eye",24)} Batalhas ao vivo <small>${Object.keys(battles).length}</small></h3>
+      ${Object.keys(battles).length?`<ul class="ar7-battles">${Object.values(battles).map(b=>`<li><span><b>${esc(b.names?.p1||b.players[0]||"?")}</b> <i class="ar8-vs">VS</i> <b>${esc(b.names?.p2||b.players[1]||"?")}</b>${watchers[b.id]?` <small>👁 ${watchers[b.id]}</small>`:""}</span>
+        <button type="button" class="ar7-btn" data-ar="watch" data-id="${esc(b.id)}" data-p1="${esc(b.names?.p1||"")}" data-p2="${esc(b.names?.p2||"")}">👁 Assistir</button></li>`).join("")}</ul>`:`<p class="ar7-empty-text">Nenhuma batalha agora. Quando alguém lutar, aparece aqui para assistir.</p>`}
+    </div>`;
+  }
+  function rankTab(){
+    const list=RANK.list,best=Number(state.arenaSurvivalBest||0);
+    const me_=playerKey();
+    const pod=list?.slice(0,3)||[];
+    const card=(r,i)=>`<div class="ar8-pod p${i+1}${r.player_key===me_?" me":""}">
+      ${i===0?`<span class="ar8-crown">${PX("crown",30)}</span>`:""}
+      <span class="ar8-avatar" style="--t:#ffd23f">${r.team?.[0]?.img?`<img src="${esc(r.team[0].img)}" alt="">`:PX("ball",34)}</span>
+      <b>${esc(r.player)}</b><strong>${r.waves}<small> onda${r.waves===1?"":"s"}</small></strong><i class="ar8-step">${i+1}</i></div>`;
+    return `<div class="ar8-sec ar8-rank">
+      <div class="ar8-rank-top"><h3>${PX("trophy",24)} Ranking do Desafio Sem Fim</h3><button type="button" class="ar7-link" data-ar="rank-reload">atualizar</button></div>
+      <p class="ar8-sub">Melhor corrida de cada treinador. Seu recorde: <b>${best}</b> onda${best===1?"":"s"}.</p>
+      ${RANK.loading&&!list?`<p class="ar7-empty-text">Carregando…</p>`:RANK.error&&!list?`<p class="ar7-empty-text">${esc(RANK.error)}</p>`:!list||!list.length?`<div class="ar8-empty">${PX("tower",40)}<p>Ninguém no ranking ainda. Seja o primeiro!</p></div>`:`
+      <div class="ar8-podium">${[1,0,2].filter(i=>pod[i]).map(i=>card(pod[i],i)).join("")}</div>
+      ${list.length>3?`<ol class="ar7-rank-list" start="4">${list.slice(3).map((r,i)=>`<li class="${r.player_key===me_?"me":""}"><span class="ar7-rank-pos">${i+4}</span>
+        <span class="ar7-rank-name"><b>${esc(r.player)}</b><small>${(r.team||[]).map(t=>esc(t.n)).join(", ")}${r.damage_mode==="matrix"?" · 🧪":""}${r.last_foe?` · caiu para ${esc(r.last_foe)}`:""}</small></span>
+        <span class="ar7-rank-minis">${teamMinis((r.team||[]).map(t=>({n:t.n,lv:t.lv,t:[],img:t.img||""})),24)}</span>
+        <b class="ar7-rank-score">${r.waves}<small>onda${r.waves===1?"":"s"}</small></b></li>`).join("")}</ol>`:""}`}
+    </div>`;
+  }
+  function chatTab(){
+    return `<div class="ar8-sec ar7-chat">
+      <h3>${PX("chat",24)} Chat da sala</h3>
+      <div class="ar7-chat-list" aria-live="polite">${chat.length?chat.map(c=>`<p class="${c.name===me.name?"mine":""}"><b>${esc(c.name)}</b><span>${esc(c.text)}</span></p>`).join(""):`<p class="ar7-empty-text">Diga oi! 👋</p>`}</div>
       <form class="ar7-chat-form" data-ar-form="chat"><input id="ar7Chat" maxlength="160" placeholder="Mensagem…" autocomplete="off"><button type="submit" class="ar7-btn primary">Enviar</button></form>
-    </section>`;
+    </div>`;
+  }
+  function settingsTab(){
+    return `<div class="ar8-sec">
+      <h3>${PX("gear",24)} Ajustes</h3>
+      <div class="ar7-me-row">
+        <label class="ar7-field-label">Seu nome na arena<input id="ar7Name" maxlength="20" value="${esc(me.name)}" autocomplete="off"></label>
+        <label class="ar7-field-label">Sala<span class="ar7-room"><input id="ar7Room" maxlength="24" value="${esc(room)}" autocomplete="off" spellcheck="false"><button type="button" class="ar7-btn" data-ar="room">Entrar</button></span></label>
+      </div>
+      <p class="ar7-hint">Use uma sala com nome próprio (ex.: <code>mesa-do-nando</code>) para jogar só com seus amigos, e mande o <button type="button" class="ar7-link" data-ar="share">convite 🔗</button>. A batalha não altera a ficha: todos começam com HP cheio.</p>
+      <div class="ar7-dmg-pick" role="radiogroup" aria-label="Sistema de dano"><small>Dano das suas batalhas (vale quando você desafia e no Desafio Sem Fim):</small>
+        <span>${["classic","matrix"].map(k=>`<button type="button" role="radio" aria-checked="${dmgMode===k}" class="ar7-btn${dmgMode===k?" primary":""}" data-ar="dmg" data-v="${k}">${k==="matrix"?"🧪 Experimental (QD)":"Padrão da ficha"}</button>`).join("")}</span>
+        <em>${dmgMode==="matrix"?"Poder define quantos dados; a Qualidade do seu ATK/SP.ATK contra a DEF/SP.DEF do alvo define o dado (d4 a d20). STAB +1d6 e nível÷5 fixo.":"Power vira d6, Attack/Sp.Atk somam dados e Defense/Sp.Def tiram dados."}</em>
+      </div>
+      <div class="ar7-scenes-head"><small>Ambiente das suas batalhas:</small><b>${scene==="random"?"Aleatório":esc(sceneLabel(scene))}</b></div>
+      <div class="ar7-scenes" role="radiogroup" aria-label="Ambiente da batalha">
+        <button type="button" role="radio" aria-checked="${scene==="random"}" class="ar7-scene rnd${scene==="random"?" on":""}" data-ar="scene" data-v="random"><i>🎲</i><b>Aleatório</b></button>
+        ${SCENES.map(x=>`<button type="button" role="radio" aria-checked="${x.v===scene}" class="ar7-scene${x.v===scene?" on":""}" data-ar="scene" data-v="${esc(x.v)}"><i style="background-image:url('assets/arenas/${esc(x.v)}.png')"></i><b>${esc(x.label)}</b></button>`).join("")}
+      </div>
+    </div>`;
   }
   let pickOpen=false;
   function teamEditor(){
@@ -632,23 +708,6 @@
     </div>`;
   }
   /* ---------- Desafio Sem Fim ---------- */
-  function survivalCard(myTeam){
-    const best=Number(state.arenaSurvivalBest||0);
-    const list=RANK.list;
-    return `<section class="ar7-card ar7-surv">
-      <div class="ar7-surv-head"><span class="ar7-surv-ico">🗼</span><div><h3>Desafio Sem Fim</h3>
-        <p>Enfrente Pokémon aleatórios da PokéAPI, um atrás do outro. A cada onda eles ficam mais fortes, com atributos distribuídos para aguentar mais ou bater mais. A cada 5 ondas vem uma Elite e a cada 10 um Chefe. O HP do seu time continua de uma onda para a outra.</p></div></div>
-      <div class="ar7-surv-actions"><button type="button" class="ar7-btn primary" data-ar="surv-start" ${myTeam.length?"":"disabled"}>▶ Começar com o meu time</button>
-        <small>Seu recorde: <b>${best}</b> onda${best===1?"":"s"} · ${DMG_LABEL[dmgMode]}</small></div>
-      <div class="ar7-rank"><div class="ar7-rank-head"><b>🏆 Ranking</b><button type="button" class="ar7-link" data-ar="rank-reload">atualizar</button></div>
-        ${RANK.loading&&!list?`<p class="ar7-empty-text">Carregando…</p>`:RANK.error&&!list?`<p class="ar7-empty-text">${esc(RANK.error)}</p>`:!list||!list.length?`<p class="ar7-empty-text">Ninguém no ranking ainda. Seja o primeiro!</p>`:
-        `<ol class="ar7-rank-list">${list.map((r,i)=>`<li class="${r.player_key===playerKey()?"me":""}"><span class="ar7-rank-pos">${i<3?["🥇","🥈","🥉"][i]:i+1}</span>
-          <span class="ar7-rank-name"><b>${esc(r.player)}</b><small>${(r.team||[]).map(t=>esc(t.n)).join(", ")}${r.damage_mode==="matrix"?" · 🧪":""}${r.last_foe?` · caiu para ${esc(r.last_foe)}`:""}</small></span>
-          <span class="ar7-rank-minis">${teamMinis((r.team||[]).map(t=>({n:t.n,lv:t.lv,t:[],img:t.img||""})),24)}</span>
-          <b class="ar7-rank-score">${r.waves}<small>onda${r.waves===1?"":"s"}</small></b></li>`).join("")}</ol>`}
-      </div>
-    </section>`;
-  }
   async function loadRank(force){
     if(RANK.loading||(!force&&RANK.list&&Date.now()-(RANK.at||0)<60000))return;
     RANK.loading=true;RANK.error="";render();
@@ -861,6 +920,7 @@
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
+    else if(a==="tab"){tab=b.dataset.v;ls.set("hh_arena_tab",tab);if(tab==="ranking")loadRank();sfx("select");render();root.querySelector(".ar8-tabs")?.scrollIntoView({block:"nearest",behavior:"smooth"});}
     else if(a==="surv-start")startRun();
     else if(a==="surv-retry"){if(RUN){RUN.error="";RUN.wave--;nextWave();}}
     else if(a==="surv-reward")applyReward(b.dataset.v);
