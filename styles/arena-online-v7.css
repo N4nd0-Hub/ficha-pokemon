@@ -120,54 +120,125 @@ body.ar7-open{overflow:hidden}
 .ar7-vs{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;font-size:15px}
 .ar7-vs span{font-weight:900;color:var(--cl-banner,#c0392b);font-style:italic}
 .ar7-vs small{flex-basis:100%;text-align:center;color:var(--cl-muted,#666)}
+/* ---------- Campo de batalha: mesmos cenários em pixel art da Batalha da ficha ---------- */
 .ar7-field{
-  position:relative;overflow:hidden;height:min(62vw,340px);min-height:250px;border-radius:16px;
-  border:3px solid var(--cl-frame,#333);
-  background:
-    radial-gradient(ellipse 34% 9% at 74% 40%,rgba(0,0,0,.18),transparent 70%),
-    radial-gradient(ellipse 40% 10% at 27% 88%,rgba(0,0,0,.2),transparent 70%),
-    linear-gradient(180deg,color-mix(in srgb,var(--cl-banner,#c0392b) 22%,#cfe9ff) 0 52%,color-mix(in srgb,var(--cl-banner,#c0392b) 14%,#bfe3a3) 52% 100%);
+  --scene:url("../assets/arenas/standard.png");
+  --plat:url("../assets/arenas/standard-platform.png");
+  position:relative;overflow:hidden;isolation:isolate;
+  aspect-ratio:2/1;max-height:62vh;width:100%;border-radius:14px;
+  border:3px solid var(--cl-ink,#181a24);
+  box-shadow:0 0 0 3px var(--cl-card,#fff),0 0 0 6px var(--cl-ink,#181a24),0 10px 0 6px rgba(0,0,0,.18);
+  background:var(--scene) center 62%/cover no-repeat,#77b9e8;
+  image-rendering:pixelated;margin:6px;width:calc(100% - 12px);
 }
+.ar7-field[data-scene="desert"]{--scene:url("../assets/arenas/desert.png");--plat:url("../assets/arenas/desert-platform.png")}
+.ar7-field[data-scene="water"]{--scene:url("../assets/arenas/water.png");--plat:url("../assets/arenas/water-platform.png")}
+.ar7-field[data-scene="night"]{--scene:url("../assets/arenas/night.png");--plat:url("../assets/arenas/night-platform.png")}
+.ar7-field[data-scene="rain"]{--scene:url("../assets/arenas/rain.png");--plat:url("../assets/arenas/rain-platform.png")}
+.ar7-field[data-scene="forest"]{--scene:url("../assets/arenas/forest.png");--plat:url("../assets/arenas/forest-platform.png")}
+.ar7-field[data-scene="sky"]{--scene:url("../assets/arenas/sky.png");--plat:url("../assets/arenas/sky-platform.png")}
+.ar7-field[data-scene="cave"]{--scene:url("../assets/arenas/cave.png");--plat:url("../assets/arenas/cave-platform.png")}
+.ar7-field[data-scene="volcanic"]{--scene:url("../assets/arenas/volcanic.png");--plat:url("../assets/arenas/volcanic-platform.png")}
+.ar7-field[data-scene="temple"]{--scene:url("../assets/arenas/temple.png");--plat:url("../assets/arenas/temple-platform.png")}
+.ar7-field[data-scene="city"]{--scene:url("../assets/arenas/city.png");--plat:url("../assets/arenas/city-platform.png")}
+.ar7-field[data-scene="mountain"]{--scene:url("../assets/arenas/mountain.png");--plat:url("../assets/arenas/mountain-platform.png")}
+.ar7-field[data-scene="ocean"]{--scene:url("../assets/arenas/ocean.png");--plat:url("../assets/arenas/ocean-platform.png")}
+.ar7-field>*{image-rendering:auto}
+.ar7-field::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.16),transparent 55%),radial-gradient(ellipse at 50% 125%,rgba(0,0,0,.28),transparent 60%)}
 .ar7-field.shake{animation:ar7-shake .4s}
-.ar7-spot{position:absolute;inset:0;pointer-events:none}
-.ar7-mon{position:absolute;display:grid;place-items:center}
-.ar7-mon img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18))}
-.ar7-mon i{font-style:normal;font-weight:900;font-size:48px;opacity:.5}
-.ar7-mon.foe{right:8%;top:10%;width:30%;height:42%}
-.ar7-mon.me{left:7%;bottom:2%;width:38%;height:52%}
+
+/* Efeitos animados (iguais aos da ficha). O atraso negativo mantém o
+   movimento contínuo mesmo quando a tela é redesenhada. */
+.ar7-fx{position:absolute;inset:0;z-index:1;overflow:hidden;pointer-events:none;image-rendering:pixelated}
+.ar7-fx::before,.ar7-fx::after{content:"";position:absolute;pointer-events:none;background-repeat:repeat;image-rendering:pixelated;animation-delay:var(--ar7-t,0s)!important}
+.ar7-field:is([data-scene="standard"],[data-scene="water"],[data-scene="sky"],[data-scene="mountain"],[data-scene="ocean"]) .ar7-fx::before{
+  left:0;top:2%;width:200%;height:36%;background:url("../assets/arenas/fx-clouds.png") 0 0/auto 100% repeat-x;opacity:.8;animation:arenaDrift 90s linear infinite}
+.ar7-field[data-scene="sky"] .ar7-fx::after{left:0;bottom:6%;width:200%;height:30%;background:url("../assets/arenas/fx-clouds.png") 0 0/auto 100% repeat-x;opacity:.55;animation:arenaDrift 45s linear infinite reverse}
+.ar7-field:is([data-scene="water"],[data-scene="ocean"]) .ar7-fx::after{left:0;right:0;top:50%;bottom:0;background-image:url("../assets/arenas/fx-sparkle.png");background-size:320px 160px;animation:arenaTwinkle 1.6s steps(2) infinite}
+.ar7-field[data-scene="night"] .ar7-fx::before{left:0;right:0;top:0;height:46%;background-image:url("../assets/arenas/fx-stars.png");background-size:320px 160px;animation:arenaTwinkle 2.4s steps(2) infinite}
+.ar7-field[data-scene="night"] .ar7-fx::after{left:0;right:0;top:0;height:200%;background-image:url("../assets/arenas/fx-glint.png");background-size:240px 120px;opacity:.7;animation:arenaRise 18s linear infinite}
+.ar7-field[data-scene="forest"] .ar7-fx::before{left:-50%;top:-100%;width:200%;height:200%;background-image:url("../assets/arenas/fx-leaves.png");background-size:320px 240px;animation:arenaFall 16s linear infinite}
+.ar7-field[data-scene="desert"] .ar7-fx::before{left:0;top:40%;width:200%;height:60%;background-image:url("../assets/arenas/fx-dust.png");background-size:320px 240px;opacity:.75;animation:arenaDrift 14s linear infinite}
+.ar7-field:is([data-scene="cave"],[data-scene="temple"]) .ar7-fx::before{left:0;right:0;top:0;bottom:30%;background-image:url("../assets/arenas/fx-glint.png");background-size:320px 160px;animation:arenaTwinkle 2s steps(2) infinite}
+.ar7-field[data-scene="volcanic"] .ar7-fx::before{left:0;right:0;top:0;height:200%;background-image:url("../assets/arenas/fx-embers.png");background-size:320px 240px;animation:arenaRise 9s linear infinite}
+.ar7-field[data-scene="volcanic"] .ar7-fx::after{inset:0;background:radial-gradient(ellipse at 55% 100%,rgba(255,110,30,.28),transparent 60%);animation:arenaGlow 3s ease-in-out infinite alternate}
+.ar7-field[data-scene="mountain"] .ar7-fx::after{left:-50%;top:-100%;width:200%;height:200%;background-image:url("../assets/arenas/fx-snow.png");background-size:320px 240px;opacity:.8;animation:arenaFall 22s linear infinite}
+.ar7-field[data-scene="rain"] .ar7-fx::before{inset:-20% 0 0 -20%;width:140%;opacity:.45;
+  background:repeating-linear-gradient(105deg,transparent 0 22px,rgba(220,238,255,.7) 22px 24px,transparent 24px 46px);animation:ar7-rain .6s linear infinite}
+@keyframes ar7-rain{to{transform:translate(-46px,60px)}}
+
+/* Plataformas */
+.ar7-plat{position:absolute;z-index:2;aspect-ratio:128/40;background:var(--plat) center/100% 100% no-repeat;image-rendering:pixelated;pointer-events:none}
+.ar7-plat.foe{right:7%;top:43%;width:36%}
+.ar7-plat.me{left:-3%;bottom:-6%;width:56%}
+
+/* Pokémon */
+.ar7-spot{position:absolute;inset:0;z-index:3;pointer-events:none}
+.ar7-mon{position:absolute;display:grid;place-items:end center}
+.ar7-mon img{width:100%;height:100%;object-fit:contain;object-position:50% 100%;filter:drop-shadow(0 3px 0 rgba(0,0,0,.2))}
+.ar7-mon i{font-style:normal;font-weight:900;font-size:48px;opacity:.6;color:#fff;-webkit-text-stroke:2px #222}
+.ar7-mon.foe{right:12%;top:8%;width:26%;height:44%}
+.ar7-mon.me{left:6%;bottom:6%;width:36%;height:62%}
 .ar7-mon.me img{transform:scaleX(-1)}
+.ar7-mon:not(.fainted):not(.intro):not(.enter) img{animation:ar7-bob 2.4s ease-in-out infinite;animation-delay:var(--ar7-t,0s)}
+.ar7-mon.me:not(.fainted):not(.intro):not(.enter) img{animation-name:ar7-bob-me}
 .ar7-mon.fainted{animation:ar7-faint .7s forwards}
 .ar7-mon.lunge.foe{animation:ar7-lunge-foe .35s}
 .ar7-mon.lunge.me{animation:ar7-lunge-me .35s}
 .ar7-mon.hurt{animation:ar7-hurt .5s}
+.ar7-mon.intro.foe{animation:ar7-in-foe .8s cubic-bezier(.2,.8,.3,1) both}
+.ar7-mon.intro.me{animation:ar7-in-me .8s cubic-bezier(.2,.8,.3,1) both}
+.ar7-mon.enter{animation:ar7-enter .55s cubic-bezier(.2,.9,.3,1.3) both}
+
+/* Caixas de status no estilo da Batalha da ficha */
 .ar7-hud{
-  position:absolute;width:min(48%,250px);padding:6px 9px;border-radius:10px;
-  background:var(--cl-card,#fff);border:2px solid var(--cl-frame,#333);box-shadow:3px 3px 0 rgba(0,0,0,.25);
+  position:absolute;z-index:4;width:min(44%,300px);padding:7px 10px 8px;border-radius:12px;
+  background:linear-gradient(180deg,#fbfbf6,#e1e1d6);color:#1f2230;
+  border:3px solid var(--cl-ink,#181a24);
+  box-shadow:inset 0 2px 0 #fff,inset 0 -3px 0 rgba(0,0,0,.08),4px 4px 0 rgba(0,0,0,.32);
   font-size:12px;
 }
-.ar7-spot.foe .ar7-hud{left:3%;top:5%}
-.ar7-spot.me .ar7-hud{right:3%;bottom:8%}
+.ar7-spot.foe .ar7-hud{left:2.5%;top:5%}
+.ar7-spot.me .ar7-hud{right:2.5%;bottom:7%}
+.ar7-spot.me .ar7-hud::after{content:"";position:absolute;left:-12px;bottom:10px;border:6px solid transparent;border-right:8px solid var(--cl-ink,#181a24)}
 .ar7-hud-name{display:flex;justify-content:space-between;gap:6px;align-items:baseline}
-.ar7-hud-name b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ar7-hud-types{display:flex;gap:3px;margin:2px 0}
-.ar7-hud-types i{font-style:normal;font-size:9.5px;font-weight:800;color:#fff;padding:1px 6px;border-radius:5px;background:var(--t);border:1px solid var(--td);text-transform:uppercase}
-.ar7-hp{display:flex;align-items:center;gap:5px}
-.ar7-hp span{font-size:10px;font-weight:900;color:#f6b73c;background:#333;border-radius:4px;padding:0 4px}
-.ar7-hp div{flex:1;height:8px;border-radius:5px;background:#555;border:1px solid #222;overflow:hidden}
-.ar7-hp div i{display:block;height:100%;background:#3fcf6a;transition:width .8s ease,background-color .3s}
-.ar7-hp.mid div i{background:#f2c230}
-.ar7-hp.low div i{background:#e0432f}
-.ar7-hp-num{display:block;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
-.ar7-balls{display:flex;gap:3px;margin-top:3px}
-.ar7-balls i{width:9px;height:9px;border-radius:50%;background:linear-gradient(#e2463b 0 45%,#222 45% 55%,#fff 55%);border:1px solid #222}
-.ar7-balls i.out{filter:grayscale(1);opacity:.45}
-.ar7-dmg{position:absolute;font-size:26px;font-weight:900;color:#fff;-webkit-text-stroke:1.5px #b0201a;text-shadow:0 2px 0 #b0201a;animation:ar7-float 1.2s forwards;z-index:2}
-.ar7-spot.foe .ar7-dmg{right:20%;top:12%}
-.ar7-spot.me .ar7-dmg{left:22%;top:44%}
+.ar7-hud-name b{font:700 11px var(--cl-pixel,monospace);letter-spacing:.04em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ar7-hud-name small{font:700 11px var(--cl-pixel,monospace);text-transform:uppercase}
+.ar7-hud-types{display:flex;gap:4px;margin:4px 0 5px}
+.ar7-hud-types i{font:700 8.5px var(--cl-pixel,monospace);font-style:normal;color:#fff;padding:3px 7px;border-radius:5px;background:var(--t);border:2px solid var(--td);text-transform:uppercase;text-shadow:0 1px 0 rgba(0,0,0,.35)}
+.ar7-hp{display:flex;align-items:center;gap:6px}
+.ar7-hp>span{font:700 9px var(--cl-pixel,monospace);color:#1f2230}
+.ar7-hp>div{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.ar7-hp>div>i{display:block;height:9px;flex:1;border-radius:99px;border:2px solid #2b2e3a;background:#3c3f4a;overflow:hidden;position:relative}
+.ar7-hp>div>i::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--w,100%);border-radius:99px}
+.ar7-hp-num{font:700 9.5px var(--cl-pixel,monospace);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ar7-balls{display:flex;gap:3px;margin-top:5px}
+.ar7-balls i{width:10px;height:10px;border-radius:50%;background:linear-gradient(#e2463b 0 44%,#222 44% 56%,#fff 56%);border:1.5px solid #222}
+.ar7-balls i.out{filter:grayscale(1);opacity:.4}
+.ar7-scene-tag{position:absolute;z-index:4;left:2.5%;bottom:4%;padding:3px 8px;border-radius:7px;font:700 8px var(--cl-pixel,monospace);text-transform:uppercase;color:#fff;background:rgba(15,18,30,.6);border:2px solid rgba(255,255,255,.35)}
+.ar7-dmg{position:absolute;z-index:5;font:900 26px var(--cl-pixel,system-ui);color:#fff;-webkit-text-stroke:1.5px #b0201a;text-shadow:0 3px 0 #b0201a;animation:ar7-float 1.2s forwards}
+.ar7-spot.foe .ar7-dmg{right:22%;top:12%}
+.ar7-spot.me .ar7-dmg{left:22%;top:40%}
 .ar7-dmg.crit{font-size:34px;color:#ffd23f}
-.ar7-emote{position:absolute;bottom:10%;display:flex;flex-direction:column;align-items:center;animation:ar7-rise 2.6s forwards;z-index:3;pointer-events:none}
+.ar7-emote{position:absolute;bottom:10%;z-index:6;display:flex;flex-direction:column;align-items:center;animation:ar7-rise 2.6s forwards;pointer-events:none}
 .ar7-emote b{font-size:30px;line-height:1;color:#fff;-webkit-text-stroke:1px #333}
 .ar7-emote small{font-size:10px;font-weight:800;background:rgba(0,0,0,.55);color:#fff;padding:1px 6px;border-radius:6px}
+
+/* Caixa de texto da batalha, como nos jogos */
+.ar7-msg{
+  margin:4px 6px 0;padding:4px;border-radius:12px;background:var(--cl-ink,#181a24);
+  box-shadow:0 4px 0 rgba(0,0,0,.2);
+}
+.ar7-msg p{
+  margin:0;min-height:52px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:10px 14px;border-radius:9px;
+  background:#fbfbf6;color:#1f2230;border:3px solid #6d7fb8;box-shadow:inset 0 0 0 2px #fff;
+  font:700 12px/1.5 var(--cl-pixel,inherit);
+}
+.ar7-msg .ar7-dice{font-size:10px;color:#5a6280}
+.ar7-msg .ar7-mv{color:color-mix(in srgb,var(--t) 80%,#000)}
+.ar7-msg small{flex-basis:100%;font-size:10.5px;color:#5a6280}
+.ar7-msg .ar7-crit{color:#c0392b}
 .ar7-emotes{display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
 .ar7-emotes button{min-width:40px;min-height:34px;border-radius:99px;font-size:16px;font-weight:900;cursor:pointer;background:var(--cl-card,#fff);border:2px solid var(--cl-line,#ccc);color:var(--cl-text,#222)}
 .ar7-emotes button:active{transform:scale(.92)}
@@ -220,13 +291,21 @@ body.ar7-open{overflow:hidden}
 .ar7-toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:6;margin:0;padding:9px 16px;border-radius:12px;background:#222;color:#fff;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.35)}
 
 @media (max-width:560px){
-  .ar7-field{height:72vw}
-  .ar7-hud{width:56%;padding:5px 7px}
-  .ar7-hud-name b{font-size:13px}
-  .ar7-mon.foe{width:34%}
-  .ar7-mon.me{width:42%;height:46%}
+  .ar7-field{aspect-ratio:4/3;max-height:none}
+  .ar7-hud{width:52%;padding:5px 7px 6px;border-width:2px}
+  .ar7-hud-name b,.ar7-hud-name small{font-size:9px}
+  .ar7-hud-types i{font-size:7px;padding:2px 5px}
+  .ar7-hp-num{font-size:8.5px}
+  .ar7-plat.foe{top:44%;width:46%;right:2%}
+  .ar7-plat.me{width:70%;left:-8%}
+  .ar7-mon.foe{width:36%;height:38%;right:7%;top:12%}
+  .ar7-mon.me{width:48%;height:52%;left:2%}
+  .ar7-spot.me .ar7-hud{bottom:5%}
+  .ar7-spot.me .ar7-hud::after{display:none}
+  .ar7-msg p{min-height:46px;font-size:10.5px;padding:8px 10px}
   .ar7-move{min-height:54px}
   .ar7-move b{font-size:14px}
+}
 }
 
 @keyframes ar7-spin{to{transform:rotate(360deg)}}
@@ -241,3 +320,26 @@ body.ar7-open{overflow:hidden}
 @keyframes ar7-float{to{transform:translateY(-40px);opacity:0}}
 @keyframes ar7-rise{0%{transform:translateY(0) scale(.6);opacity:0}15%{transform:translateY(-10px) scale(1.1);opacity:1}100%{transform:translateY(-140px);opacity:0}}
 @media (prefers-reduced-motion:reduce){.ar7 *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+@keyframes ar7-bob{50%{transform:translateY(-3%)}}
+@keyframes ar7-bob-me{0%,100%{transform:scaleX(-1)}50%{transform:scaleX(-1) translateY(-2.5%)}}
+@keyframes ar7-in-foe{from{transform:translateX(-160%);filter:brightness(0)}70%{filter:brightness(0)}}
+@keyframes ar7-in-me{from{transform:translateX(160%);filter:brightness(0)}70%{filter:brightness(0)}}
+@keyframes ar7-enter{from{transform:scale(.1);opacity:0;filter:brightness(3)}60%{filter:brightness(2)}}
+/* Seletor de ambiente no lobby */
+.ar7-scenes-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ar7-scenes-head small{font-weight:700;color:var(--cl-muted,#666)}
+.ar7-scenes-head b{font-size:13px}
+.ar7-scenes{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.ar7-scene{flex:0 0 92px;scroll-snap-align:start;display:grid;gap:4px;padding:4px;border-radius:10px;cursor:pointer;text-align:left;
+  background:var(--cl-card,#fff);border:2px solid var(--cl-ink,#181a24);color:var(--cl-text,#222);transition:transform .12s}
+.ar7-scene:hover{transform:translateY(-2px)}
+.ar7-scene i{display:grid;place-items:center;aspect-ratio:2/1;border-radius:6px;background:#77b9e8 center/cover no-repeat;image-rendering:pixelated;font:900 18px var(--cl-pixel,system-ui);font-style:normal;color:#fff;-webkit-text-stroke:1px #222}
+.ar7-scene.rnd i{background:repeating-linear-gradient(45deg,#5865c9 0 8px,#4752ad 8px 16px)}
+.ar7-scene b{font:700 8.5px var(--cl-pixel,monospace);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ar7-scene.on{box-shadow:0 0 0 3px var(--cl-banner,#e3262f)}
+.ar7-modal-scene{display:block;height:84px;margin:10px -4px 0;border-radius:10px;border:2px solid var(--cl-ink,#181a24);background:center 62%/cover no-repeat;image-rendering:pixelated}
+.ar7-hp>div>i::before{background:linear-gradient(180deg,#7ef08f 0 35%,#3fc957 35%);transition:width .8s ease}
+.ar7-hp.mid>div>i::before{background:linear-gradient(180deg,#ffe27a 0 35%,#f0b92a 35%)}
+.ar7-hp.low>div>i::before{background:linear-gradient(180deg,#ff8b78 0 35%,#e0432f 35%)}
+.ar7-dots::after{content:"";display:inline-block;width:1.4em;text-align:left;animation:ar7-dots 1.2s steps(4) infinite}
+@keyframes ar7-dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
