@@ -42,8 +42,13 @@
   wrap.innerHTML=`
     <div class="tc-toolbar">
       <button type="button" data-tc="flip">⟲ VIRAR CARTÃO</button>
+      <button type="button" data-tc="order" aria-pressed="false">⇅ ORGANIZAR EQUIPE</button>
       <button type="button" data-tc="edit" aria-pressed="false">✎ EDITAR CARTÃO</button>
     </div>
+    <section class="tc-order" hidden aria-label="Ordem da equipe">
+      <p class="tc-order-hint">Arraste os Pokémon (ou use ◀ ▶) para escolher a ordem da equipe no cartão. A mesma ordem vale para a faixa da equipe, o PC e a Arena.</p>
+      <ol class="tc-order-list"></ol>
+    </section>
     <details class="tc-custom">
       <summary>⚙ PERSONALIZAR VISUAL</summary>
       <div class="tc-custom-fields">
@@ -228,8 +233,76 @@
     custom.querySelector('select[name="pattern"]').value=pattern;
   }
 
+  /* ---------- Ordem da equipe ----------
+     Reordena os Pokémon da Equipe dentro de state.pokemon, mantendo os
+     da Caixa onde estão; assim todas as telas seguem a nova ordem. */
+  const orderBox=wrap.querySelector(".tc-order"),orderList=orderBox.querySelector(".tc-order-list");
+  function setTeamOrder(ids){
+    const all=state.pokemon;
+    const isTeam=p=>(p.storageGroup||"team")==="team";
+    const byId=new Map(all.map(p=>[String(p.id),p]));
+    const ordered=[...ids.map(id=>byId.get(String(id))).filter(Boolean),...all.filter(p=>isTeam(p)&&!ids.includes(String(p.id)))];
+    let k=0;
+    state.pokemon=all.map(p=>isTeam(p)?ordered[k++]:p);
+    try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
+    try{if(typeof renderAll==="function")renderAll();else render();}catch(e){render();}
+    renderOrder();sfx("select");
+  }
+  function renderOrder(){
+    if(orderBox.hidden)return;
+    const party=team();
+    orderList.innerHTML=party.length?party.map((p,i)=>{const src=img(p);return `<li class="tc-order-item" data-id="${esc(String(p.id))}" draggable="false">
+      <span class="tc-order-n">${i+1}</span>
+      <span class="tc-order-grip" aria-hidden="true">⠿</span>
+      <span class="tc-order-mon">${src?`<img src="${esc(src)}" alt="" draggable="false">`:"◓"}</span>
+      <span class="tc-order-name"><b>${esc(p.name)}</b><small>Lv. ${Number(p.level||1)}</small></span>
+      <span class="tc-order-btns"><button type="button" data-tco="left" aria-label="Mover ${esc(p.name)} para trás" ${i===0?"disabled":""}>◀</button><button type="button" data-tco="right" aria-label="Mover ${esc(p.name)} para frente" ${i===party.length-1?"disabled":""}>▶</button></span>
+    </li>`;}).join(""):`<li class="tc-order-empty">Nenhum Pokémon na Equipe.</li>`;
+  }
+  orderList.addEventListener("click",e=>{
+    const b=e.target.closest("[data-tco]");if(!b)return;
+    const ids=team().map(p=>String(p.id)),id=b.closest("[data-id]").dataset.id,i=ids.indexOf(id);
+    const j=b.dataset.tco==="left"?i-1:i+1;if(i<0||j<0||j>=ids.length)return;
+    [ids[i],ids[j]]=[ids[j],ids[i]];setTeamOrder(ids);
+    orderList.querySelector(`[data-id="${CSS.escape(id)}"] [data-tco="${b.dataset.tco}"]`)?.focus();
+  });
+  // arrastar (mouse e toque)
+  let drag=null;
+  orderList.addEventListener("pointerdown",e=>{
+    const item=e.target.closest(".tc-order-item");
+    if(!item||e.target.closest("button"))return;
+    e.preventDefault();
+    const r=item.getBoundingClientRect();
+    drag={item,id:item.dataset.id,startX:e.clientX,startY:e.clientY,moved:false,ghost:null,dx:e.clientX-r.left,dy:e.clientY-r.top,w:r.width};
+    item.setPointerCapture?.(e.pointerId);
+  });
+  orderList.addEventListener("pointermove",e=>{
+    if(!drag)return;
+    if(!drag.moved&&Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)<6)return;
+    if(!drag.moved){
+      drag.moved=true;drag.item.classList.add("dragging");
+      const g=drag.item.cloneNode(true);g.classList.add("tc-order-ghost");g.style.width=drag.w+"px";document.body.appendChild(g);drag.ghost=g;
+    }
+    drag.ghost.style.transform=`translate(${e.clientX-drag.dx}px,${e.clientY-drag.dy}px)`;
+    const over=document.elementFromPoint(e.clientX,e.clientY)?.closest(".tc-order-item");
+    if(over&&over!==drag.item&&orderList.contains(over)){
+      const r=over.getBoundingClientRect();
+      const after=(e.clientX-r.left)>r.width/2||(e.clientY-r.top)>r.height*.75;
+      orderList.insertBefore(drag.item,after?over.nextSibling:over);
+    }
+  });
+  function endDrag(){
+    if(!drag)return;
+    const d=drag;drag=null;
+    d.ghost?.remove();d.item.classList.remove("dragging");
+    if(d.moved)setTeamOrder([...orderList.querySelectorAll(".tc-order-item")].map(x=>x.dataset.id));
+  }
+  orderList.addEventListener("pointerup",endDrag);
+  orderList.addEventListener("pointercancel",endDrag);
+
   function render(){
     if(window.hhDefer?.("pageTrainer",render))return;
+    renderOrder();
     const t=typeof ensureTrainerData==="function"?ensureTrainerData():state.trainer||{};
     renderAppearance(t.cardAppearance);
     wrap.querySelector(".tc-front").innerHTML=front(t);
@@ -279,6 +352,10 @@
     const b=e.target.closest("[data-tc]");
     if(!b)return;
     if(b.dataset.tc==="flip")flip();
+    if(b.dataset.tc==="order"){
+      const on=orderBox.hidden;orderBox.hidden=!on;b.setAttribute("aria-pressed",String(on));
+      b.textContent=on?"✓ PRONTO":"⇅ ORGANIZAR EQUIPE";renderOrder();sfx("page");
+    }
     if(b.dataset.tc==="edit"){
       const on=!page.classList.contains("tc-editing");
       page.classList.toggle("tc-editing",on);
