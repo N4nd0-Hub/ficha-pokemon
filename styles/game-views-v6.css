@@ -1005,3 +1005,23 @@ html body #pageTrainer.tc-editing .tc-dossier{display:none}
   .tc-body{grid-template-columns:minmax(0,1fr) 96px}
   .tcd-attrs{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Organizar a ordem da equipe (Trainer Card) */
+.tc-order{width:min(960px,100%);padding:10px 12px;border:2px solid var(--cl-ink);border-radius:10px;background:var(--cl-paper);color:var(--cl-text)}
+.tc-order[hidden]{display:none}
+.tc-order-hint{margin:0 0 8px;font-size:12px;color:var(--cl-muted,#666)}
+.tc-order-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;touch-action:none}
+.tc-order-item{position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto auto;justify-items:center;gap:2px;padding:8px 6px 6px;border:3px solid var(--cl-ink);border-radius:10px;background:var(--cl-card,#fff);box-shadow:0 3px 0 var(--cl-ink);cursor:grab;user-select:none;-webkit-user-select:none}
+.tc-order-item.dragging{opacity:.35}
+.tc-order-n{position:absolute;left:6px;top:4px;font:700 11px var(--cl-pixel);color:var(--cl-banner,#e3262f)}
+.tc-order-grip{position:absolute;right:7px;top:3px;font-size:14px;color:var(--cl-muted,#888)}
+.tc-order-mon{grid-column:1/-1;width:64px;height:64px;display:grid;place-items:center}
+.tc-order-mon img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
+.tc-order-name{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;min-width:0;max-width:100%}
+.tc-order-name b{font:700 11px var(--cl-pixel);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-order-name small{font-size:10px;color:var(--cl-muted,#666)}
+.tc-order-btns{grid-column:1/-1;display:flex;gap:6px;margin-top:4px}
+.tc-order-btns button{width:34px;height:30px;border:2px solid var(--cl-ink);border-radius:7px;background:var(--cl-paper);color:var(--cl-text);font-weight:900;cursor:pointer}
+.tc-order-btns button:disabled{opacity:.35;cursor:default}
+.tc-order-ghost{position:fixed;left:0;top:0;z-index:9999;pointer-events:none;opacity:.92;box-shadow:0 10px 24px rgba(0,0,0,.35);list-style:none}
+.tc-order-empty{font-size:13px;color:var(--cl-muted,#666)}
