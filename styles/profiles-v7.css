@@ -1,0 +1,53 @@
+/* V7 — Fichas de jogador (usa a moldura e as faixas da Arena/ficha) */
+.pf7-open-btn{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;margin-left:8px;padding:7px 12px;min-height:36px;border-radius:10px;cursor:pointer;
+  font:800 13px/1 inherit;color:#1b1d2a;background:linear-gradient(180deg,#fff,#e4e7ef);border:2px solid #1b1d2a;box-shadow:0 2px 0 #1b1d2a}
+.pf7-open-btn:hover{filter:brightness(1.05)}
+.pf7-open-btn:active{transform:translateY(1px);box-shadow:0 1px 0 #1b1d2a}
+.pf7-open-btn .px-ico{width:18px;height:auto}
+@media (max-width:760px){.pf7-open-btn{margin-left:0;margin-right:6px;padding:7px 8px}.pf7-open-btn span{display:none}}
+.pf7-body{display:grid;gap:18px}
+.pf7-toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.pf7-form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-top:12px;padding:12px;border-radius:12px;background:var(--cl-card,#fff);border:3px solid var(--cl-ink,#181a24);box-shadow:0 3px 0 var(--cl-ink,#181a24)}
+.pf7-form label{display:flex;flex-direction:column;gap:4px;font:700 10px var(--cl-pixel,inherit);text-transform:uppercase;color:var(--cl-muted,#666)}
+.pf7-form>div{display:flex;gap:6px}
+.pf7-card .pf7-form{grid-template-columns:1fr auto;margin:12px 16px 0}
+@media (max-width:640px){.pf7-form{grid-template-columns:1fr}.pf7-form>div{justify-content:flex-end}}
+.pf7 input{width:100%;min-height:40px;padding:7px 10px;border-radius:9px;border:3px solid var(--cl-ink,#181a24);background:var(--cl-card,#fff);color:var(--cl-text,#222);font:700 13px var(--cl-pixel,inherit);box-sizing:border-box}
+.pf7-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
+@media (max-width:420px){.pf7-grid{grid-template-columns:1fr}}
+.pf7-card{position:relative;overflow:hidden;display:grid;gap:12px;padding:0 0 16px;background:var(--cl-paper,#f4f1e8);animation:ar8-in .3s ease both;transition:transform .15s}
+.pf7-card:hover{transform:translateY(-3px)}
+.pf7-card.active{border-color:#ffd23f!important}
+.pf7-card-head{position:relative;display:flex;align-items:center;gap:14px;padding:16px;color:#fff;border-bottom:3px solid var(--cl-ink,#181a24);
+  background:var(--cl-scan),radial-gradient(circle at 12% 50%,color-mix(in srgb,var(--t) 55%,transparent),transparent 55%),linear-gradient(135deg,#2a3050,#141729)}
+.pf7-card.active .pf7-card-head{background:var(--cl-scan),radial-gradient(circle at 12% 50%,color-mix(in srgb,var(--t) 55%,transparent),transparent 55%),linear-gradient(135deg,color-mix(in srgb,var(--cl-banner,#e3262f) 90%,#fff),var(--cl-banner-dark,#7a1f16))}
+.pf7-card-head .ar8-avatar{width:78px;height:78px}
+.pf7-names{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pf7-label{font:700 9px var(--cl-pixel,monospace);letter-spacing:.1em;text-transform:uppercase;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf7-names b{font:400 20px var(--cl-title,inherit);letter-spacing:.03em;text-shadow:2px 2px 0 rgba(0,0,0,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf7-names span{font-size:12px;opacity:.9}
+.pf7-names strong{color:#ffd23f}
+.pf7-badge{position:absolute;top:10px;right:10px;padding:3px 9px;border-radius:99px;font:700 9px var(--cl-pixel,monospace);text-transform:uppercase;color:#1b1d2a;background:#ffd23f;border:2px solid var(--cl-ink,#181a24)}
+.pf7-party{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 16px;padding:10px;border-radius:14px;background:var(--cl-inset,rgba(0,0,0,.06));border:2px solid var(--cl-line,#ccc)}
+.pf7-party .ar8-slot{width:100%;height:auto;aspect-ratio:1}
+.pf7-party .ar8-slot.empty{background:rgba(0,0,0,.05);border-color:var(--cl-line,#bbb)}
+.pf7-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 16px}
+.pf7-stats div{padding:6px 8px;border-radius:10px;background:var(--cl-card,#fff);border:2px solid var(--cl-line,#ccc);text-align:center;min-width:0}
+.pf7-stats dt{font:700 8px var(--cl-pixel,monospace);text-transform:uppercase;color:var(--cl-muted,#666)}
+.pf7-stats dd{margin:3px 0 0;font:700 12px var(--cl-pixel,inherit);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf7-actions{display:flex;gap:6px;margin:0 16px}
+.pf7-actions .ar7-btn{font:700 11px var(--cl-pixel,inherit);text-transform:uppercase;border:3px solid var(--cl-ink,#181a24);box-shadow:0 3px 0 var(--cl-ink,#181a24);min-width:42px}
+.pf7-actions .ar7-btn.primary{flex:1;background:var(--cl-scan),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner,#e3262f) 85%,#fff),var(--cl-banner,#e3262f) 60%,var(--cl-banner-dark,#7a1f16));color:#fff}
+.pf7-card.active .pf7-actions .ar7-btn.primary{background:linear-gradient(180deg,#ffe27a,#ffd23f 55%,#e0a81a);color:#1b1d2a}
+.pf7-actions .ar7-btn.danger:hover{background:#ffd9d6}
+.pf7 .ar7-btn{font:700 11px var(--cl-pixel,inherit);text-transform:uppercase;border:3px solid var(--cl-ink,#181a24);box-shadow:0 3px 0 var(--cl-ink,#181a24)}
+.pf7 .ar7-btn.primary{background:var(--cl-scan),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner,#e3262f) 85%,#fff),var(--cl-banner,#e3262f) 60%,var(--cl-banner-dark,#7a1f16));color:#fff}
+.pf7 .ar7-btn:active{transform:translateY(3px);box-shadow:none}
+.pf7-intro .ar8-sub{margin-bottom:12px}
+.pf7-card{grid-template-columns:minmax(0,1fr)}
+.pf7-party{min-width:0}
+.pf7-party .ar8-slot{min-width:0}
+.pf7-party .ar8-slot img{max-width:84%;max-height:84%}
+.pf7-stats,.pf7-actions{min-width:0}
+.pf7-actions .ar7-btn:not(.primary){flex:0 0 auto;padding:6px 8px}
+.pf7-card-head{padding-right:90px}
