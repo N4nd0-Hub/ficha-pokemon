@@ -26,7 +26,8 @@
   const typeDark=t=>{try{return moveTypePalette(t).dark;}catch(e){return "#4a5060";}};
 
   const me={id:(()=>{let v="";try{v=sessionStorage.getItem("hh_arena_id")||"";}catch(e){}if(!v){v="t"+uidShort();try{sessionStorage.setItem("hh_arena_id",v);}catch(e){}}return v;})(),
-    name:ls.get("hh_arena_name")||(typeof ensureTrainerData==="function"?(ensureTrainerData().name||""):"")||"Treinador"};
+    /* O nome na arena é sempre o do personagem do Trainer Card */
+    get name(){let n="";try{n=String(ensureTrainerData().name||"").trim();}catch(e){}return (n||"Treinador").slice(0,24);}};
   const engine=window.hhArenaEngine.create({
     statDice:v=>statDice(v),powerToDice:p=>powerToDice(p),
     typeMultiplier:(t,defs)=>defensiveMultiplier(t,defs),normalizeType:t=>normalizeTypeName(t)
@@ -154,6 +155,7 @@
     root.hidden=true;document.body.classList.remove("ar7-open");
     disconnect();
   }
+  document.addEventListener("hh:render",()=>{if(lobby&&!B&&me.name!==lastTrackedName)track();});
   window.hhArena={open,close,get battle(){return B;},get rank(){return RANK;}};
 
   /* Botão ⚔ Arena no topo (computador e celular) */
@@ -170,7 +172,7 @@
   }
 
   /* ---------- Rede: lobby ---------- */
-  let connecting=false,status="off";
+  let connecting=false,status="off",lastTrackedName="";
   async function connect(){
     if(lobby||connecting)return;
     connecting=true;status="connecting";render();
@@ -210,6 +212,7 @@
   }
   async function track(){
     if(!lobby)return;
+    lastTrackedName=me.name;
     try{await lobby.track({id:me.id,name:me.name,team:teamPreview(),at:Date.now(),...myStatus(),names:B?.names||null});}catch(e){}
   }
   const send=(ch,event,payload)=>ch?.send({type:"broadcast",event,payload});
@@ -683,7 +686,7 @@
     return `<div class="ar8-sec">
       <h3>${PX("gear",24)} Ajustes</h3>
       <div class="ar7-me-row">
-        <label class="ar7-field-label">Seu nome na arena<input id="ar7Name" maxlength="20" value="${esc(me.name)}" autocomplete="off"></label>
+        <label class="ar7-field-label">Nome do treinador <small>(o mesmo do Trainer Card)</small><input id="ar7Name" maxlength="24" value="${esc(me.name)}" autocomplete="off"></label>
         <label class="ar7-field-label">Sala<span class="ar7-room"><input id="ar7Room" maxlength="24" value="${esc(room)}" autocomplete="off" spellcheck="false"><button type="button" class="ar7-btn" data-ar="room">Entrar</button></span></label>
       </div>
       <p class="ar7-hint">Use uma sala com nome próprio (ex.: <code>mesa-do-nando</code>) para jogar só com seus amigos, e mande o <button type="button" class="ar7-link" data-ar="share">convite 🔗</button>. A batalha não altera a ficha: todos começam com HP cheio.</p>
@@ -953,7 +956,11 @@
     const msg={name:me.name,text,at:Date.now()};chat.push(msg);chat=chat.slice(-60);send(lobby,"chat",msg);input.value="";render();
   });
   root.addEventListener("change",e=>{
-    if(e.target.id==="ar7Name"){me.name=String(e.target.value||"").trim().slice(0,20)||"Treinador";ls.set("hh_arena_name",me.name);track();render();}
+    if(e.target.id==="ar7Name"){
+      const n=String(e.target.value||"").trim().slice(0,24);
+      if(n){try{ensureTrainerData().name=n;(typeof debouncedSave==="function"?debouncedSave:saveState)();if(typeof renderAll==="function")renderAll();}catch(err){}}
+      track();render();
+    }
   });
   root.addEventListener("keydown",e=>{
     if(e.key==="Enter"&&e.target.id==="ar7Room"){e.preventDefault();switchRoom(e.target.value);}
