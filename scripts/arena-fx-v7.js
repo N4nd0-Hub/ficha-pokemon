@@ -247,6 +247,56 @@
     if(ev.k==="heal"){aura(l,center(field,P(ev.side)),look("Grass"));label(field,center(field,P(ev.side)),"+"+ev.amount,"heal");return 800;}
     if(ev.k==="blocked"){const at=center(field,P(ev.side));shield(l,at,LOOK.Water);label(field,at,"Protegido!","weak");return 900;}
     if(ev.k==="faint"){const at=center(field,P(ev.side));burst(l,{...at,y:at.y+at.s*.3},{shape:"dot",colors:["#ffffff","#d0d0d0","#a0a0a0"],glow:"#fff"},{n:16,size:10,dur:900});return 1100;}
+    if(ev.k==="stage"&&ev.applied){
+      const at=center(field,P(ev.side)),up=ev.applied>0;
+      const col=up?["#ff6a3c","#ffb347","#fff0c8"]:["#3c8cff","#7fc3ff","#dff1ff"];
+      for(let i=0;i<9;i++){
+        const w=at.s*.13,x=at.x+R(-at.s*.38,at.s*.38),a=el(l,"s-arrow"+(up?"":" down"),{width:w+"px",height:w*1.3+"px","--c":col[i%3]});
+        const y0=up?at.y+at.s*.35:at.y-at.s*.55,y1=up?at.y-at.s*.6:at.y+at.s*.35;
+        anim(a,[{transform:`translate(${x}px,${y0}px)`,opacity:0},{opacity:1,offset:.2},{opacity:1,offset:.75},{transform:`translate(${x}px,${y1}px)`,opacity:0}],{duration:700,delay:i*55,easing:"ease-in-out"});
+      }
+      monAnim(field,P(ev.side),[{filter:"none"},{filter:`brightness(1.4) drop-shadow(0 0 8px ${up?"#ff8a4d":"#4da3ff"})`},{filter:"none"}],{duration:700});
+      label(field,at,`${{atk:"Attack",def:"Defense",spa:"Sp.Atk",spd:"Sp.Def",spe:"Speed",acc:"Precisão",eva:"Evasão"}[ev.stat]||ev.stat} ${ev.applied>0?"+":""}${ev.applied}`,up?"up":"down");
+      return 820;
+    }
+    if(ev.k==="status"&&!ev.fail){
+      const at=center(field,P(ev.side));
+      const C={psn:"#b65ed8",tox:"#8a2fb0",brn:"#ff6a2c",dbrn:"#c2240e",par:"#f5d22e",slp:"#9aa6c8",frz:"#8fe3ff",cnf:"#ff7ac0"}[ev.st]||"#fff";
+      const shape={psn:"bubble",tox:"bubble",brn:"flame",dbrn:"flame",par:"spark",slp:"ring",frz:"shard",cnf:"star"}[ev.st]||"dot";
+      burst(l,at,{shape,colors:[C,"#ffffff",C],glow:C,rise:ev.st!=="frz"},{n:16,size:Math.max(10,at.s*.12),dur:800});
+      monAnim(field,P(ev.side),[{filter:"none"},{filter:`drop-shadow(0 0 10px ${C}) brightness(1.3)`},{filter:"none"},{filter:`drop-shadow(0 0 10px ${C})`},{filter:"none"}],{duration:800});
+      label(field,at,{psn:"Envenenado!",tox:"Toxic!",brn:"Queimado!",dbrn:"Deep Burn!",par:"Paralisado!",slp:"Dormiu!",frz:"Congelado!",cnf:"Confuso!"}[ev.st]||"",ev.st);
+      return 900;
+    }
+    if(ev.k==="sdmg"){
+      const at=center(field,P(ev.side));
+      const C={psn:"#b65ed8",tox:"#8a2fb0",brn:"#ff6a2c",dbrn:"#c2240e",sand:"#d8b46a",hail:"#bfefff",cnf:"#ff7ac0",recoil:"#ffffff"}[ev.src]||"#fff";
+      burst(l,at,{shape:ev.src==="brn"||ev.src==="dbrn"?"flame":ev.src==="hail"?"shard":ev.src==="sand"?"rock":"bubble",colors:[C,"#fff",C],glow:C,rise:true},{n:10,size:Math.max(8,at.s*.1),dur:700});
+      monAnim(field,P(ev.side),[{opacity:1},{opacity:.3},{opacity:1},{opacity:.3},{opacity:1}],{duration:500});
+      return 800;
+    }
+    if(ev.k==="cant"){const at=center(field,P(ev.side));label(field,at,{slp:"Zzz…",frz:"Congelado",par:"Paralisado!",flinch:"Hesitou!",cnf:"Confuso!",powder:"Imune"}[ev.reason]||"…","weak");
+      if(ev.reason==="slp")for(let i=0;i<3;i++){const z=document.createElement("b");z.className="ar7-p s-label slp";z.textContent="Z";l.appendChild(z);anim(z,[{transform:`translate(${at.x+i*10}px,${at.y-at.s*.3}px) scale(.6)`,opacity:0},{opacity:1,offset:.3},{transform:`translate(${at.x+30+i*14}px,${at.y-at.s*.9}px) scale(1.2)`,opacity:0}],{duration:1100,delay:i*220});}
+      return 900;}
+    if(ev.k==="statusEnd"){const at=center(field,P(ev.side));burst(l,at,{shape:"star",colors:["#ffffff","#fff4b0"],glow:"#fff"},{n:10,size:10});return 650;}
+    if(ev.k==="ability"){
+      const pos=P(ev.side);
+      const pop=document.createElement("div");pop.className="ar7-p s-abpop "+pos;
+      pop.innerHTML=`<small></small><b></b>`;pop.querySelector("small").textContent=ev.mon;pop.querySelector("b").textContent=ev.name;
+      l.appendChild(pop);
+      anim(pop,[{transform:`translateX(${pos==="foe"?"-110%":"110%"})`,opacity:0},{transform:"translateX(0)",opacity:1,offset:.18},{transform:"translateX(0)",opacity:1,offset:.82},{transform:`translateX(${pos==="foe"?"-110%":"110%"})`,opacity:0}],{duration:1500,easing:"cubic-bezier(.2,.8,.3,1)"});
+      return 1100;
+    }
+    if(ev.k==="weather"&&!ev.end){
+      const C={rain:"rgba(60,110,200,.45)",sun:"rgba(255,200,80,.55)",sand:"rgba(200,160,90,.55)",hail:"rgba(200,240,255,.6)"}[ev.kind]||"rgba(255,255,255,.4)";
+      flash(field,C,700);return 900;
+    }
+    if(ev.k==="field"&&!ev.end){
+      const at=center(field,P(ev.side));
+      for(let i=0;i<14;i++){const sz=R(8,14),p=particle(l,"star",["#ffd23f","#fff2a8","#ffb6d9"][i%3],sz),x=R(0,field.clientWidth);
+        anim(p,[{transform:`translate(${x}px,-20px) rotate(0)`,opacity:0},{opacity:1,offset:.2},{transform:`translate(${x+R(-30,30)}px,${field.clientHeight*.8}px) rotate(${R(-200,200)}deg)`,opacity:0}],{duration:1300,delay:i*50});}
+      label(field,{...at,y:field.clientHeight*.45},"👑 Campo Real","royal");return 1100;
+    }
     if(ev.k==="switch"){const at=center(field,P(ev.side));rings(l,at,{colors:["#ffffff","#ffd23f","#ff5a4d"]},2,1.2);burst(l,at,{shape:"star",colors:["#ffffff","#ffe27a"],glow:"#fff"},{n:10,size:10});return 800;}
     return 0;
   }
