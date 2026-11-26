@@ -115,3 +115,4 @@
   .dx7-grid-wrap{padding:2px}
 }
 @media (max-width:560px){.dx7-tchip{flex:0 0 auto}}
+.dx7-tr{font-style:normal;color:var(--cl-muted,#777)}
