@@ -1,0 +1,192 @@
+/* ============================================================
+   V7 — Peles dos temas (uma por geração)
+   Arquivo gerado por scripts/build-theme-skins.py — edite lá.
+   ============================================================ */
+
+/* kanto: FireRed/LeafGreen (GBA): caixas brancas com moldura dupla clara e fundo xadrez das telas de resumo */
+html[data-theme-skin="kanto"]{
+  --sk-radius:10px;
+  --sk-radius-sm:6px;
+  --sk-border:4px solid color-mix(in srgb,var(--cl-frame) 55%,#fff);
+  --sk-shadow:0 0 0 3px var(--cl-ink),inset 0 0 0 3px #fff,inset 0 0 0 5px color-mix(in srgb,var(--cl-frame) 35%,#fff),5px 5px 0 2px rgba(0,0,0,.35);
+  --sk-clip:none;
+  --sk-head:repeating-linear-gradient(90deg,rgba(255,255,255,.10) 0 8px,transparent 8px 16px),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner) 78%,#fff) 0 50%,var(--cl-banner) 50% 100%);
+  --sk-dt:repeating-linear-gradient(90deg,rgba(255,255,255,.10) 0 6px,transparent 6px 12px),linear-gradient(180deg,color-mix(in srgb,var(--cl-frame) 78%,#fff) 0 50%,var(--cl-frame) 50% 100%);
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.25),transparent 70%),repeating-linear-gradient(90deg,rgba(0,90,30,.10) 0 6px,transparent 6px 12px) 0 100%/100% 40% no-repeat,linear-gradient(180deg,#a8d8ff,#e8f6ff 60%,#8fd16a 60.5%,#6cba4a);
+  --sk-body:conic-gradient(from 0deg,color-mix(in srgb,var(--accent2) 24%,var(--bg)) 0 25%,var(--bg) 0 50%,color-mix(in srgb,var(--accent2) 24%,var(--bg)) 0 75%,var(--bg) 0) 0 0/48px 48px;
+}
+
+/* johto: Gold/Silver/Crystal (Game Boy Color): borda preta de linha dupla, cantos retos e faixas lisas */
+html[data-theme-skin="johto"]{
+  --sk-radius:2px;
+  --sk-radius-sm:2px;
+  --sk-border:3px solid var(--cl-ink);
+  --sk-shadow:inset 0 0 0 3px var(--cl-paper),inset 0 0 0 5px var(--cl-ink),5px 5px 0 0 rgba(0,0,0,.45);
+  --sk-clip:none;
+  --sk-head:var(--cl-banner);
+  --sk-dt:var(--cl-frame);
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.25),transparent 70%),linear-gradient(180deg,#f8b878 0,#f8d8a8 45%,#f8f0c8 60%,#a8c878 60.5%,#789848);
+  --sk-body:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 2px,transparent 2px 4px),radial-gradient(circle at 50% 0,color-mix(in srgb,var(--accent) 24%,transparent),transparent 60%),var(--bg);
+}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="johto"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .panel>.panel-head,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="johto"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .combat-info-card>.combat-card-head,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="johto"] body #page1 #sumScreen .sum-tabs{border-bottom:5px double var(--cl-ink)!important;}
+
+/* hoenn: Ruby/Sapphire/Emerald (GBA): janelas arredondadas com brilho em cima e faixas em duas cores na diagonal */
+html[data-theme-skin="hoenn"]{
+  --sk-radius:16px;
+  --sk-radius-sm:10px;
+  --sk-border:4px solid var(--cl-frame);
+  --sk-shadow:0 0 0 3px var(--cl-ink),inset 0 3px 0 0 rgba(255,255,255,.65),0 8px 0 -1px rgba(0,0,0,.35);
+  --sk-clip:none;
+  --sk-head:linear-gradient(115deg,var(--cl-banner) 0 58%,color-mix(in srgb,var(--cl-frame) 70%,#fff) 58% 61%,var(--cl-frame) 61% 100%);
+  --sk-dt:linear-gradient(115deg,var(--cl-frame) 0 78%,color-mix(in srgb,var(--cl-frame) 60%,#fff) 78% 82%,var(--cl-frame-dark) 82%);
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.22),transparent 70%),repeating-linear-gradient(170deg,rgba(255,255,255,.4) 0 3px,transparent 3px 14px) 0 52%/100% 14% no-repeat,linear-gradient(180deg,#78c8f8,#c8ecff 50%,#4aa8e0 50.5%,#3a90d0 64%,#f0dca0 64.5%,#e8c878);
+  --sk-body:repeating-radial-gradient(circle at 50% 120%,color-mix(in srgb,var(--accent2) 24%,transparent) 0 2px,transparent 2px 38px),linear-gradient(180deg,color-mix(in srgb,var(--accent2) 30%,var(--bg)),var(--bg));
+}
+
+/* sinnoh: Diamond/Pearl/Platinum (DS): botões brilhantes com reflexo, cantos bem redondos e o LCD verde do Pokétch */
+html[data-theme-skin="sinnoh"]{
+  --sk-radius:20px;
+  --sk-radius-sm:12px;
+  --sk-border:3px solid var(--cl-frame-dark);
+  --sk-shadow:0 0 0 3px var(--cl-ink),inset 0 0 0 2px rgba(255,255,255,.75),0 6px 0 0 rgba(0,0,0,.4);
+  --sk-clip:none;
+  --sk-head:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.14) 48%,transparent 52%),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner) 72%,#fff),var(--cl-banner) 55%,var(--cl-banner-dark));
+  --sk-dt:linear-gradient(180deg,rgba(255,255,255,.45),rgba(255,255,255,.1) 48%,transparent 52%),linear-gradient(180deg,color-mix(in srgb,var(--cl-frame) 75%,#fff),var(--cl-frame-dark));
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.22),transparent 70%),radial-gradient(circle,rgba(255,255,255,.95) 0 1.5px,transparent 2px) 0 0/22px 22px,linear-gradient(180deg,#b8c8e8,#e8f0ff 58%,#ffffff 58.5%,#dfe8f2);
+  --sk-body:linear-gradient(180deg,rgba(255,255,255,.05) 50%,transparent 50%) 0 0/100% 6px,radial-gradient(ellipse at 50% -20%,color-mix(in srgb,var(--accent2) 48%,transparent),transparent 65%),var(--bg);
+}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="sinnoh"] body .sheet #page1 .cl-dialog{background:linear-gradient(180deg,rgba(0,0,0,.05) 50%,transparent 50%) 0 0/100% 4px,#b8d8a0!important;border-color:#3a5a30!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="sinnoh"] body .sheet #page1 .cl-dialog *{color:#1f3a18!important}
+
+/* unova: Black/White e C-Gear: cantos cortados na diagonal, preto forte e grade de circuito */
+html[data-theme-skin="unova"]{
+  --sk-radius:0px;
+  --sk-radius-sm:0px;
+  --sk-border:3px solid var(--cl-ink);
+  --sk-shadow:inset 0 0 0 3px var(--cl-frame),inset 0 0 0 5px var(--cl-ink);
+  --sk-clip:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);
+  --sk-head:linear-gradient(100deg,var(--cl-ink) 0 14px,var(--cl-banner) 14px calc(100% - 46px),var(--cl-ink) calc(100% - 46px) calc(100% - 40px),var(--cl-banner-dark) calc(100% - 40px));
+  --sk-dt:linear-gradient(100deg,var(--cl-ink) 0 8px,var(--cl-frame) 8px);
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.35),transparent 70%),linear-gradient(90deg,transparent 0 10%,rgba(255,255,255,.18) 10% 11%,transparent 11% 30%,rgba(255,255,255,.12) 30% 31%,transparent 31%) 0 0/100% 60% no-repeat,linear-gradient(180deg,#1c2430,#3a4658 60%,#5a6474 60.5%,#2a303a);
+  --sk-body:linear-gradient(90deg,color-mix(in srgb,var(--accent) 20%,transparent) 1px,transparent 1px) 0 0/56px 56px,linear-gradient(0deg,color-mix(in srgb,var(--accent) 20%,transparent) 1px,transparent 1px) 0 0/56px 56px,var(--bg);
+}
+
+/* kalos: X/Y e Holo Caster: bordas finas com brilho azul, cantos suaves e faixas translúcidas */
+html[data-theme-skin="kalos"]{
+  --sk-radius:16px;
+  --sk-radius-sm:10px;
+  --sk-border:2px solid color-mix(in srgb,var(--cl-frame) 70%,#fff);
+  --sk-shadow:0 0 0 3px var(--cl-ink),0 0 18px 2px color-mix(in srgb,var(--cl-frame) 50%,transparent),inset 0 0 0 2px rgba(255,255,255,.55);
+  --sk-clip:none;
+  --sk-head:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent),linear-gradient(90deg,var(--cl-banner),color-mix(in srgb,var(--cl-banner) 50%,var(--cl-frame)));
+  --sk-dt:linear-gradient(90deg,var(--cl-frame),color-mix(in srgb,var(--cl-frame) 55%,#9fd8ff));
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.22),transparent 70%),repeating-linear-gradient(0deg,rgba(120,200,255,.12) 0 1px,transparent 1px 4px),linear-gradient(180deg,#cfe6ff,#f4f8ff 58%,#d8e8f0 58.5%,#b8d0e0);
+  --sk-body:conic-gradient(from 200deg at 50% -10%,transparent 0 20deg,color-mix(in srgb,var(--accent2) 24%,transparent) 20deg 26deg,transparent 26deg 46deg,color-mix(in srgb,var(--accent) 20%,transparent) 46deg 52deg,transparent 52deg 72deg,color-mix(in srgb,var(--accent2) 24%,transparent) 72deg 78deg,transparent 78deg),var(--bg);
+}
+
+/* alola: Sun/Moon e Rotom Dex: janelas bem redondas e alegres, faixas de pôr do sol e céu tropical */
+html[data-theme-skin="alola"]{
+  --sk-radius:24px;
+  --sk-radius-sm:14px;
+  --sk-border:4px solid var(--cl-frame);
+  --sk-shadow:0 0 0 3px var(--cl-ink),inset 0 0 0 3px rgba(255,255,255,.55),0 7px 0 0 rgba(0,0,0,.35);
+  --sk-clip:none;
+  --sk-head:radial-gradient(circle at 94% 150%,rgba(255,236,150,.9) 0 20px,transparent 21px),linear-gradient(180deg,color-mix(in srgb,var(--cl-banner) 68%,#ffd27a),var(--cl-banner) 70%,var(--cl-banner-dark));
+  --sk-dt:linear-gradient(180deg,color-mix(in srgb,var(--cl-frame) 70%,#ffe0a0),var(--cl-frame));
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.22),transparent 70%),radial-gradient(circle at 78% 30%,#fff6c0 0 20px,rgba(255,220,120,.55) 21px 32px,transparent 33px),linear-gradient(180deg,#ff9e6e,#ffd38a 50%,#7fd4e8 50.5%,#48b6d6 66%,#f6e2a8 66.5%,#eccb86);
+  --sk-body:radial-gradient(circle at 85% 8%,color-mix(in srgb,var(--accent) 45%,transparent) 0 60px,transparent 170px),linear-gradient(180deg,color-mix(in srgb,var(--accent) 24%,var(--bg)),var(--bg) 70%);
+}
+
+/* galar: Sword/Shield: faixas inclinadas de placar de estádio, listras diagonais e borda lateral grossa */
+html[data-theme-skin="galar"]{
+  --sk-radius:4px;
+  --sk-radius-sm:3px;
+  --sk-border:3px solid var(--cl-ink);
+  --sk-shadow:7px 7px 0 0 rgba(0,0,0,.4);
+  --sk-clip:none;
+  --sk-head:repeating-linear-gradient(-45deg,rgba(255,255,255,.14) 0 6px,transparent 6px 14px),linear-gradient(100deg,var(--cl-banner) 0 calc(100% - 60px),var(--cl-ink) calc(100% - 60px) calc(100% - 54px),var(--cl-frame) calc(100% - 54px));
+  --sk-dt:repeating-linear-gradient(-45deg,rgba(255,255,255,.12) 0 5px,transparent 5px 12px),var(--cl-frame);
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.22),transparent 70%),linear-gradient(90deg,transparent 49.6%,rgba(255,255,255,.75) 49.6% 50.4%,transparent 50.4%) 0 100%/100% 40% no-repeat,repeating-linear-gradient(90deg,#4cae4c 0 24px,#3f9c40 24px 48px) 0 100%/100% 40% no-repeat,linear-gradient(180deg,#9ec8f0,#e4f0fb);
+  --sk-body:repeating-linear-gradient(-45deg,color-mix(in srgb,var(--accent) 16%,transparent) 0 14px,transparent 14px 40px),var(--bg);
+  --sk-border-left:12px solid var(--cl-frame);
+}
+
+/* paldea: Scarlet/Violet: contorno preto grosso de quadrinho, sombra sólida deslocada e faixas inclinadas com retícula */
+html[data-theme-skin="paldea"]{
+  --sk-radius:12px;
+  --sk-radius-sm:8px;
+  --sk-border:4px solid var(--cl-ink);
+  --sk-shadow:8px 8px 0 0 var(--cl-ink);
+  --sk-clip:none;
+  --sk-head:radial-gradient(circle,rgba(255,255,255,.24) 1.4px,transparent 1.8px) 0 0/8px 8px,linear-gradient(95deg,var(--cl-banner) 0 72%,color-mix(in srgb,var(--cl-banner) 55%,#fff) 72% 74.5%,var(--cl-banner-dark) 74.5%);
+  --sk-dt:radial-gradient(circle,rgba(255,255,255,.2) 1.2px,transparent 1.6px) 0 0/7px 7px,var(--cl-frame);
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(0,0,0,.22),transparent 70%),radial-gradient(circle,rgba(0,0,0,.07) 1.3px,transparent 1.7px) 0 0/9px 9px,linear-gradient(180deg,#8fd0ff,#e2f4ff 56%,#c6e48a 56.5%,#9cc860);
+  --sk-body:radial-gradient(circle,color-mix(in srgb,var(--accent) 28%,transparent) 1.6px,transparent 2px) 0 0/18px 18px,linear-gradient(160deg,color-mix(in srgb,var(--accent) 22%,var(--bg)),var(--bg) 60%);
+}
+
+/* hisui: Legends: Arceus: pergaminho, bordas de tinta e faixas como traço de pincel */
+html[data-theme-skin="hisui"]{
+  --sk-radius:6px;
+  --sk-radius-sm:4px;
+  --sk-border:3px solid #4a3a26;
+  --sk-shadow:0 0 0 2px #2a2016,inset 0 0 22px rgba(120,90,40,.28),5px 5px 0 0 rgba(0,0,0,.35);
+  --sk-clip:none;
+  --sk-head:linear-gradient(90deg,transparent 0 6px,var(--cl-banner) 6px calc(100% - 10px),transparent calc(100% - 10px)),linear-gradient(0deg,transparent 0 4px,var(--cl-banner-dark) 4px calc(100% - 4px),transparent calc(100% - 4px));
+  --sk-dt:linear-gradient(90deg,var(--cl-frame-dark),var(--cl-frame) 85%,transparent);
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,rgba(60,40,20,.25),transparent 70%),linear-gradient(180deg,#e9dcbc,#f4ecd6 58%,#c9d4a4 58.5%,#a9b884);
+  --sk-body:radial-gradient(ellipse at 50% 0,color-mix(in srgb,var(--accent) 20%,transparent),transparent 60%),repeating-linear-gradient(0deg,rgba(255,240,210,.03) 0 1px,transparent 1px 3px),var(--bg);
+  --sk-paper:radial-gradient(ellipse at 30% 20%,rgba(255,255,255,.35),transparent 60%),color-mix(in srgb,#efe2c2 85%,var(--cl-paper));
+}
+
+/* lumiose: Legends Z-A: Lumiose à noite, vidro escuro com contorno neon e brilho de letreiro */
+html[data-theme-skin="lumiose"]{
+  --sk-radius:10px;
+  --sk-radius-sm:6px;
+  --sk-border:2px solid color-mix(in srgb,var(--accent) 80%,#fff);
+  --sk-shadow:0 0 0 3px var(--cl-ink),0 0 16px 1px color-mix(in srgb,var(--accent) 60%,transparent),inset 0 0 12px color-mix(in srgb,var(--accent) 22%,transparent);
+  --sk-clip:none;
+  --sk-head:linear-gradient(90deg,color-mix(in srgb,var(--accent) 22%,#0c120c),color-mix(in srgb,var(--accent) 55%,#0c120c));
+  --sk-dt:linear-gradient(90deg,#0c120c,color-mix(in srgb,var(--accent) 45%,#0c120c));
+  --sk-portrait:radial-gradient(ellipse 58% 12% at 50% 86%,color-mix(in srgb,var(--accent) 50%,transparent),transparent 70%),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px) 0 0/26px 26px,linear-gradient(180deg,#0b1020,#1a2440 60%,#20283a 60.5%,#0c1018);
+  --sk-body:radial-gradient(circle at 20% 30%,color-mix(in srgb,var(--accent) 24%,transparent),transparent 30%),radial-gradient(circle at 80% 70%,color-mix(in srgb,#a050ff 24%,transparent),transparent 32%),var(--bg);
+}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="lumiose"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .panel>.panel-head,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="lumiose"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .combat-info-card>.combat-card-head,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="lumiose"] body #page1 #sumScreen .sum-tabs{border-bottom:2px solid var(--accent)!important;text-shadow:0 0 6px color-mix(in srgb,var(--accent) 80%,#fff)!important;}
+
+/* ---------- Regras comuns a todas as peles ---------- */
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) :is(.panel,.page-intro,.combat-info-card),
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body #page1 #sumScreen{
+  border:var(--sk-border)!important;
+  border-radius:var(--sk-radius)!important;
+  box-shadow:var(--sk-shadow)!important;
+  clip-path:var(--sk-clip)!important;
+  -webkit-clip-path:var(--sk-clip)!important;
+}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="galar"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) :is(.panel,.page-intro,.combat-info-card),
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="galar"] body #page1 #sumScreen{border-left:var(--sk-border-left)!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="hisui"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) :is(.panel,.page-intro,.combat-info-card),
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="hisui"] body #page1 #sumScreen{background:var(--sk-paper)!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body #page1 #sumScreen .sum-adopted.panel,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body #page1 #sumScreen .sum-adopted.pokemon-held-item-console,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body #page1 #sumScreen .sum-namebar,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .stat-row{border-radius:var(--sk-radius-sm)!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .panel>.panel-head,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .combat-info-card>.combat-card-head,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body #page1 #sumScreen .sum-tabs{background:var(--sk-head)!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body #page1 #sumScreen .sum-table dt{background:var(--sk-dt)!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body .sheet #page1 .portrait,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body #page1 #sumScreen .sum-stage{background:var(--sk-portrait)!important;border-radius:var(--sk-radius-sm)!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"]) body{background:var(--sk-body)!important;background-attachment:fixed!important}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="galar"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .panel>.panel-head,
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="galar"] body .sheet :is(#page1,#pageTrainer,#page2,#page3,#page5) .combat-info-card>.combat-card-head{clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%)}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="unova"] body #page1 #sumScreen .sum-tabs button.active{clip-path:polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+html[data-theme-skin]:not([data-sheet-mode="pokedex"])[data-theme-skin="paldea"] body #page1 #sumScreen .sum-tabs button{border-right:3px solid var(--cl-ink)!important}
+@media (max-width:900px){
+  html[data-theme-skin="unova"]{--sk-clip:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+  html[data-theme-skin="paldea"]{--sk-shadow:5px 5px 0 0 var(--cl-ink)}
+  html[data-theme-skin="galar"]{--sk-border-left:8px solid var(--cl-frame)}
+}
+@media (prefers-reduced-motion:reduce){html[data-theme-skin] body{background-attachment:scroll!important}}
