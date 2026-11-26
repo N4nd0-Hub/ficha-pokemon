@@ -107,10 +107,10 @@
     for(const p of list){
       const moves=(p.moves||[]).filter(m=>m.active&&!(typeof isMoveLevelLocked==="function"&&isMoveLevelLocked(m))).slice(0,5)
         .map(m=>({name:m.name,type:normalizeTypeName(m.type)||"Normal",category:m.category||"Status",power:Number(m.power||0),
-          accuracy:m.alwaysHits||m.accuracy==null||m.accuracy===""?null:Number(m.accuracy),alwaysHits:!!m.alwaysHits,desc:String(m.description||"").slice(0,220)}));
+          accuracy:m.alwaysHits||m.accuracy==null||m.accuracy===""?null:Number(m.accuracy),alwaysHits:!!m.alwaysHits,desc:String(m.description||"").slice(0,420)}));
       out.push({name:p.name||"Pokémon",level:Number(p.level||1),types:[normalizeTypeName(p.type1),normalizeTypeName(p.type2)].filter(Boolean),
         stats:{hp:Number(p.stats?.hp||0),atk:Number(p.stats?.atk||0),def:Number(p.stats?.def||0),spa:Number(p.stats?.spa||0),spd:Number(p.stats?.spd||0),spe:Number(p.stats?.spe||0)},
-        maxHp:Math.max(1,Number(p.maxHp||p.stats?.hp||1)),ability:p.abilityName||"",img:await compactImage(displayPokemonImage(p)),
+        maxHp:Math.max(1,Number(p.maxHp||p.stats?.hp||1)),ability:p.abilityName||"",abilityText:String(p.abilityText||"").slice(0,900),img:await compactImage(displayPokemonImage(p)),
         moves:moves.length?moves:[{name:"Struggle",type:"Normal",category:"Physical",power:50,accuracy:null,desc:"Sem golpes ativos na ficha."}]});
     }
     return out;
@@ -305,7 +305,9 @@
   function pub(s){
     // estado sem os times (que já foram enviados no início)
     return {id:s.id,format:s.format,turn:s.turn,phase:s.phase,winner:s.winner,reason:s.reason,events:s.events||[],
-      sides:Object.fromEntries(["p1","p2"].map(k=>[k,{name:s.sides[k].name,active:s.sides[k].active,needSwitch:s.sides[k].needSwitch,ready:!!s.sides[k].pending,team:s.sides[k].team}]))};
+      sides:Object.fromEntries(["p1","p2"].map(k=>[k,{name:s.sides[k].name,active:s.sides[k].active,needSwitch:s.sides[k].needSwitch,ready:!!s.sides[k].pending,
+        team:s.sides[k].team.map(t=>({hp:t.hp,maxHp:t.maxHp,fainted:t.fainted,status:t.status||null})),...(engine.view?engine.view(s,k):{})}])),
+      weather:s.weather?{...s.weather}:null};
   }
   function broadcastState(waitingOnly){
     const p=pub(B.state);if(waitingOnly)p.events=[];
@@ -343,7 +345,7 @@
       for(const ev of s.events){
         if(!B)return;
         pushLog([ev]);
-        if(ev.k==="hit"||ev.k==="heal"){B.view.sides[ev.side].team[B.view.sides[ev.side].active].hp=ev.hp;}
+        applyEventToView(ev);
         if(ev.k==="switch"){B.view.sides[ev.side].active=s.sides[ev.side].active;}
         if(ev.k==="faint"){B.view.sides[ev.side].team[B.view.sides[ev.side].active].fainted=true;}
         if(ev.k==="switch")render(true);else patch();
@@ -368,6 +370,27 @@
   function sideName(s){return B?.names?.[s]||s;}
   function monName(side,idx){const t=B?.teams?.[side];const i=idx??B?.view?.sides?.[side]?.active;return t?.[i]?.name||"Pokémon";}
   function effText(m){return m===0?"Não teve efeito…":m>=4?"Extremamente efetivo!":m>=2?"É super efetivo!":m<=.25?"Quase não teve efeito…":m<=.5?"Não é muito efetivo…":"";}
+  /* Atualiza o que a tela mostra a cada evento (HP, status, estágios, clima) */
+  function applyEventToView(ev){
+    const v=B.view;if(!v)return;
+    const sd=ev.side?v.sides[ev.side]:null,t=sd?sd.team[sd.active]:null;
+    if((ev.k==="hit"||ev.k==="heal"||ev.k==="sdmg")&&t&&ev.hp!=null)t.hp=ev.hp;
+    if(ev.k==="status"&&!ev.fail&&sd){if(ev.st==="cnf")sd.cnf=true;else if(t)t.status=ev.st;}
+    if(ev.k==="statusEnd"&&sd){if(ev.st==="cnf")sd.cnf=false;else if(t)t.status=null;}
+    if(ev.k==="stage"&&sd&&ev.applied){sd.stg=sd.stg||{};sd.stg[ev.stat]=ev.total;if(!ev.total)delete sd.stg[ev.stat];}
+    if(ev.k==="weather")v.weather=ev.end?null:{kind:ev.kind,turns:ev.turns};
+    if(ev.k==="field"&&sd){sd.field=sd.field||{};sd.field[ev.kind]=ev.end?0:ev.turns;}
+    if(ev.k==="switch"&&sd){sd.stg={};sd.cnf=false;}
+    if(ev.k==="faint"&&t){t.fainted=true;t.status=null;sd.stg={};sd.cnf=false;}
+  }
+  const ST_LABEL={psn:"Envenenado",tox:"gravemente envenenado (Toxic)",brn:"Queimado",dbrn:"com Deep Burn",par:"Paralisado",slp:"Dormindo",frz:"Congelado",cnf:"Confuso"};
+  const ST_SHORT={psn:"PSN",tox:"TOX",brn:"BRN",dbrn:"BRN+",par:"PAR",slp:"SLP",frz:"FRZ",cnf:"CNF"};
+  const STAT_PT={atk:"Attack",def:"Defense",spa:"Sp.Atk",spd:"Sp.Def",spe:"Speed",acc:"Precisão",eva:"Evasão"};
+  const STAT_SHORT={atk:"ATK",def:"DEF",spa:"SPA",spd:"SPD",spe:"SPE",acc:"PRE",eva:"EVA"};
+  const W_LABEL={rain:"Chuva",sun:"Sol forte",sand:"Tempestade de areia",hail:"Granizo"};
+  const W_ICON={rain:"🌧",sun:"☀",sand:"🌪",hail:"❄"};
+  const SRC_LABEL={psn:"o veneno",tox:"o veneno (Toxic)",brn:"a queimadura",dbrn:"a queimadura profunda",sand:"a tempestade de areia",hail:"o granizo",cnf:"a confusão",recoil:"o recuo"};
+  const CANT={slp:"está dormindo.",frz:"está congelado!",par:"está paralisado e não conseguiu se mover!",flinch:"hesitou e não atacou!",cnf:"está confuso e se feriu!",powder:"é imune a golpes de pó."};
   function pushLog(events){
     for(const ev of events){
       let line="",cls="";
@@ -378,13 +401,35 @@
         if(ev.protect){line+=" — se protegeu!";}
         if(ev.status&&ev.desc)line+=`<small>${esc(ev.desc)}</small>`;
         if(ev.noTarget)line+=" — sem alvo.";
+        if(ev.fail)line+=` — <i>falhou${ev.why?` (${esc(ev.why)})`:""}.</i>`;
+        if(ev.critKind==="boosted"&&ev.crit)line+=" <small>crítico pela margem aumentada</small>";
       }else if(ev.k==="hit"){
         if(ev.immune){line=`${effText(0)}`;cls="weak";}
         else{
           line=`${ev.crit?"<b class='ar7-crit'>CRÍTICO!</b> ":""}${esc(monName(ev.side))} perdeu <b>${ev.amount}</b> HP <span class="ar7-dice">${ev.dice}d6 [${(ev.rolls||[]).join(", ")}]${ev.fixed?` ${ev.fixed>0?"+":""}${ev.fixed}`:""}${ev.stab?" · STAB":""}</span>`;
           const e=effText(ev.mult);if(e)line+=` <i>${e}</i>`;cls=ev.crit?"crit":ev.mult>=2?"super":ev.mult<1?"weak":"";
         }
-      }else if(ev.k==="heal")line=`${esc(monName(ev.side))} recuperou <b>${ev.amount}</b> HP.`;
+        if(ev.notes?.length)line+=` <span class="ar7-dice">${ev.notes.map(esc).join(" · ")}</span>`;
+        if(ev.hits>1)line+=` <i>(${ev.hits} acertos)</i>`;
+      }else if(ev.k==="heal")line=`${esc(monName(ev.side))} recuperou <b>${ev.amount}</b> HP${ev.src?` <small class="ar7-src">${esc(ev.src)}</small>`:""}.`;
+      else if(ev.k==="sdmg"){line=`${esc(ev.mon)} perdeu <b>${ev.amount}</b> HP por ${SRC_LABEL[ev.src]||esc(ev.src)}.`;cls="weak";}
+      else if(ev.k==="stage"){
+        const lab=STAT_PT[ev.stat]||ev.stat;
+        if(ev.blocked)line=`${esc(ev.mon)} não perdeu ${lab} <small class="ar7-src">${esc(ev.src||"")}</small>.`;
+        else if(!ev.applied)line=`${lab} de ${esc(ev.mon)} não ${ev.n>0?"sobe":"desce"} mais.`;
+        else{const a=Math.abs(ev.applied);line=`${ev.applied>0?"⬆":"⬇"} ${lab} de <b>${esc(ev.mon)}</b> ${ev.applied>0?(a>=2?"subiu muito":"subiu"):(a>=2?"caiu muito":"caiu")} (${ev.total>0?"+":""}${ev.total})${ev.src?` <small class="ar7-src">${esc(ev.src)}</small>`:""}`;cls=ev.applied>0?"up":"down";}
+      }
+      else if(ev.k==="status"){
+        if(ev.fail)line=`${esc(ev.mon)} não pode ficar ${ST_LABEL[ev.st]||ev.st}${ev.src?` (${esc(ev.src)})`:" (tipo)"}.`;
+        else{line=`<b>${esc(ev.mon)}</b> ficou <b class="ar7-st ${ev.st}">${ST_LABEL[ev.st]||ev.st}</b>!${ev.src?` <small class="ar7-src">${esc(ev.src)}</small>`:""}`;cls="status";}
+      }
+      else if(ev.k==="statusEnd")line=`${esc(ev.mon)} ${ev.st==="slp"?"acordou!":ev.st==="frz"?"descongelou!":ev.st==="cnf"?"saiu da confusão.":"se recuperou."}`;
+      else if(ev.k==="cant"){line=`${esc(ev.mon)} ${CANT[ev.reason]||"não conseguiu agir."}${ev.src&&ev.reason==="powder"?` <small class="ar7-src">${esc(ev.src)}</small>`:""}`;cls="miss";}
+      else if(ev.k==="weather")line=ev.end?`${W_ICON[ev.kind]||""} ${W_LABEL[ev.kind]||ev.kind} acabou.`:`${W_ICON[ev.kind]||""} <b>${W_LABEL[ev.kind]||ev.kind}</b> por ${ev.turns} turnos!${ev.src?` <small class="ar7-src">${esc(ev.src)}</small>`:""}`;
+      else if(ev.k==="field")line=ev.end?`👑 O Campo Real de ${esc(sideName(ev.side))} acabou.`:`👑 <b>Campo Real</b> ${ev.extended?"estendido":"ativo"}: ${ev.turns} turnos.`;
+      else if(ev.k==="ability"){line=`✦ <b>${esc(ev.mon)}</b>: <b class="ar7-ab">${esc(ev.name)}</b>${ev.text?` ${esc(ev.text)}`:""}`;cls="ability";}
+      else if(ev.k==="hazard")line=ev.cleared?`${esc(ev.mon)} absorveu os Toxic Spikes.`:`Toxic Spikes no lado de ${esc(sideName(ev.side))} (${ev.layers} camada${ev.layers>1?"s":""}).`;
+      else if(ev.k==="info")line=esc(ev.text);
       else if(ev.k==="blocked")line=`${esc(monName(ev.side))} se protegeu do ataque!`;
       else if(ev.k==="faint"){line=`<b>${esc(ev.mon)}</b> desmaiou!`;cls="faint";}
       else if(ev.k==="switch")line=`${esc(sideName(ev.side))} trocou ${esc(ev.from)} por <b>${esc(ev.to)}</b>!`;
@@ -427,7 +472,10 @@
       const num=sp.querySelector(".ar7-hp-num");if(num)num.textContent=`${st.hp} / ${st.maxHp}`;
       sp.querySelectorAll(".ar7-balls i").forEach((b,i)=>b.classList.toggle("out",!!s.team[i]?.fainted));
       sp.querySelector(".ar7-mon")?.classList.toggle("fainted",!!st.fainted);
+      const bd=sp.querySelector(".ar7-badges");if(bd)bd.innerHTML=hudBadges(s);
     }
+    field.dataset.weather=B.view.weather?.kind||"";
+    const ch=field.querySelector(".ar7-chips");if(ch)ch.innerHTML=fieldChips();
     const msg=root.querySelector(".ar7-msg p");if(msg&&B.log.length)msg.innerHTML=B.log[B.log.length-1].line;
     const log=root.querySelector(".ar7-log");if(log){log.innerHTML=B.log.map(l=>`<p class="${l.cls}">${l.line}</p>`).join("");log.scrollTop=log.scrollHeight;}
   }
@@ -553,6 +601,21 @@
       </div></div>`;
   }
 
+  function hudBadges(s){
+    const st=s.team[s.active]||{};let h="";
+    if(st.status)h+=`<b class="ar7-st ${st.status}" title="${esc(ST_LABEL[st.status]||"")}">${ST_SHORT[st.status]||st.status}</b>`;
+    if(s.cnf)h+=`<b class="ar7-st cnf" title="Confuso">CNF</b>`;
+    for(const [k,v] of Object.entries(s.stg||{}))if(v)h+=`<i class="ar7-stg ${v>0?"up":"down"}" title="${STAT_PT[k]} ${v>0?"+":""}${v}">${STAT_SHORT[k]} ${v>0?"+":""}${v}</i>`;
+    if(s.crit)h+=`<i class="ar7-stg up" title="Crítico aumentado">CRIT +${s.crit}</i>`;
+    if(s.swagger)h+=`<i class="ar7-stg swag" title="Swagger Mode">SWAGGER</i>`;
+    return h;
+  }
+  function fieldChips(){
+    const v=B.view;let h="";
+    if(v.weather)h+=`<b class="ar7-chip w-${v.weather.kind}">${W_ICON[v.weather.kind]||""} ${W_LABEL[v.weather.kind]||""} <small>${v.weather.turns}</small></b>`;
+    for(const k of ["p1","p2"]){const f=v.sides[k].field||{};if(f.royal>0)h+=`<b class="ar7-chip royal">👑 Campo Real · ${esc(sideName(k))} <small>${f.royal}</small></b>`;}
+    return h;
+  }
   function monCard(side,pos){
     const v=B.view,s=v.sides[side],t=B.teams[side],m=t[s.active],st=s.team[s.active];
     const pct=hpPct(st);
@@ -561,6 +624,7 @@
         <div class="ar7-hud-types">${(m.types||[]).map(x=>`<i style="--t:${typeColor(x)};--td:${typeDark(x)}">${esc(x)}</i>`).join("")}</div>
         <div class="ar7-hp ${hpClass(pct)}"><span>HP</span><div><i data-to="${pct}" style="--w:${lastHp[pos]??pct}%"></i></div>${pos==="me"?`<small class="ar7-hp-num">${st.hp} / ${st.maxHp}</small>`:""}</div>
         <div class="ar7-balls">${s.team.map(x=>`<i class="${x.fainted?"out":""}"></i>`).join("")}</div>
+        <div class="ar7-badges">${hudBadges(s)}</div>
       </div>
       <div class="ar7-mon ${pos}${st.fainted?" fainted":""}${B.intro?" intro":""}">${m.img?`<img src="${esc(m.img)}" alt="${esc(m.name)}">`:`<i>${esc(m.name.slice(0,1))}</i>`}</div>
     </div>`;
@@ -598,10 +662,12 @@
     }
     return `<section class="ar7-battle">
       <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""}</small></div>
-      <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
+      <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
         ${B.intro?`<div class="ar7-vsintro" aria-hidden="true"><b class="l">${esc(sideName(foe))}</b><span>VS</span><b class="r">${esc(sideName(mine))}</b></div>`:""}
+        <div class="ar7-wx" aria-hidden="true"></div>
+        <div class="ar7-chips">${fieldChips()}</div>
         <span class="ar7-scene-tag">${esc(sceneLabel(B.arena))}</span>
       </div>
       <div class="ar7-msg" aria-hidden="true"><p>${B.log.length?B.log[B.log.length-1].line:`${esc(sideName(foe))} quer batalhar!`}</p></div>

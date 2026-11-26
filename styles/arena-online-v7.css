@@ -445,3 +445,47 @@ body.ar7-open{overflow:hidden}
 .ar7-formats .ar7-ch-main{flex:2 1 100%}
 .ar7-party-title{margin:2px 0 0;font-size:13px;font-weight:800}
 .ar7-party-title small{font-weight:600;color:var(--cl-muted,#666)}
+
+/* ---------- Status, estágios, clima e abilities ---------- */
+.ar7-badges{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;min-height:0}
+.ar7-badges:empty{display:none}
+.ar7-st{display:inline-block;padding:2px 6px;border-radius:5px;font:700 8.5px var(--cl-pixel,monospace);color:#fff;text-transform:uppercase;border:2px solid rgba(0,0,0,.35);text-shadow:0 1px 0 rgba(0,0,0,.35)}
+.ar7-st.psn{background:#a040a0}.ar7-st.tox{background:#6a1f88}.ar7-st.brn{background:#f08030}.ar7-st.dbrn{background:#b0200c}
+.ar7-st.par{background:#d8b81c;color:#2a2200;text-shadow:none}.ar7-st.slp{background:#8c8ca8}.ar7-st.frz{background:#58c8e8}.ar7-st.cnf{background:#e868a8}
+.ar7-stg{font:700 8.5px var(--cl-pixel,monospace);font-style:normal;padding:2px 5px;border-radius:5px;border:2px solid}
+.ar7-stg.up{color:#b5300c;background:#ffe3d6;border-color:#f0a080}
+.ar7-stg.down{color:#1b4f9c;background:#dcebff;border-color:#8cb4ec}
+.ar7-stg.swag{color:#6a3c00;background:#ffe27a;border-color:#d6a820}
+.ar7-log .ar7-st{font-size:9px;padding:1px 5px}
+.ar7-log .up{color:#ffb08a}.ar7-log .down{color:#9cc6ff}.ar7-log .status{color:#e6b8ff}.ar7-log .ability b.ar7-ab{color:#ffd23f}
+.ar7-src{opacity:.7;font-size:.85em}
+.ar7-chips{position:absolute;z-index:6;right:2.5%;top:4%;display:flex;flex-direction:column;align-items:flex-end;gap:4px;pointer-events:none}
+.ar7-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:8px;font:700 8.5px var(--cl-pixel,monospace);text-transform:uppercase;color:#fff;background:rgba(15,18,30,.7);border:2px solid rgba(255,255,255,.4)}
+.ar7-chip small{background:rgba(255,255,255,.25);padding:0 4px;border-radius:4px}
+.ar7-chip.w-rain{background:rgba(40,90,180,.85)}.ar7-chip.w-sun{background:rgba(220,140,20,.88)}.ar7-chip.w-sand{background:rgba(150,110,50,.88)}.ar7-chip.w-hail{background:rgba(90,160,200,.88)}
+.ar7-chip.royal{background:linear-gradient(90deg,#b8860b,#e6b422);color:#2b1a00;border-color:#fff1b0}
+/* clima por cima do cenário */
+.ar7-wx{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .6s}
+.ar7-field[data-weather]:not([data-weather=""]) .ar7-wx{opacity:1}
+.ar7-field[data-weather="rain"] .ar7-wx{background:linear-gradient(180deg,rgba(30,50,90,.28),rgba(30,50,90,.12))}
+.ar7-field[data-weather="rain"] .ar7-wx::before{content:"";position:absolute;inset:-30% -10% 0 -30%;background:repeating-linear-gradient(105deg,transparent 0 18px,rgba(210,232,255,.75) 18px 20px,transparent 20px 40px);animation:ar7-rain .5s linear infinite;animation-delay:var(--ar7-t,0s)}
+.ar7-field[data-weather="sun"] .ar7-wx{background:radial-gradient(circle at 85% 0%,rgba(255,240,170,.75),rgba(255,200,90,.25) 30%,transparent 60%)}
+.ar7-field[data-weather="sun"] .ar7-wx::before{content:"";position:absolute;right:-10%;top:-30%;width:70%;height:120%;background:repeating-conic-gradient(from 200deg at 100% 0%,rgba(255,240,180,.35) 0 4deg,transparent 4deg 12deg);animation:ar7-sunspin 20s linear infinite}
+.ar7-field[data-weather="sand"] .ar7-wx{background:rgba(190,150,80,.28)}
+.ar7-field[data-weather="sand"] .ar7-wx::before{content:"";position:absolute;inset:0 -100% 0 0;background:repeating-linear-gradient(170deg,transparent 0 10px,rgba(230,200,140,.55) 10px 12px,transparent 12px 26px);animation:ar7-sand 1.2s linear infinite;animation-delay:var(--ar7-t,0s)}
+.ar7-field[data-weather="hail"] .ar7-wx{background:rgba(200,230,255,.2)}
+.ar7-field[data-weather="hail"] .ar7-wx::before{content:"";position:absolute;inset:-100% 0 0 0;background-image:radial-gradient(circle,#fff 0 2px,transparent 3px),radial-gradient(circle,#e8f7ff 0 1.5px,transparent 2.5px);background-size:46px 46px,30px 30px;background-position:0 0,15px 20px;animation:ar7-hail 1.4s linear infinite;animation-delay:var(--ar7-t,0s)}
+@keyframes ar7-sunspin{to{transform:rotate(25deg)}}
+@keyframes ar7-sand{to{transform:translateX(-50%)}}
+@keyframes ar7-hail{to{transform:translateY(50%)}}
+/* setas de estágio e balão de ability */
+.ar7-p.s-arrow{background:var(--c);clip-path:polygon(50% 0,100% 45%,68% 45%,68% 100%,32% 100%,32% 45%,0 45%);filter:drop-shadow(0 0 4px var(--c))}
+.ar7-p.s-arrow.down{clip-path:polygon(32% 0,68% 0,68% 55%,100% 55%,50% 100%,0 55%,32% 55%)}
+.ar7-p.s-label.up{color:#ffb08a}.ar7-p.s-label.down{color:#9cc6ff}
+.ar7-p.s-label.psn,.ar7-p.s-label.tox{color:#e6a6ff}.ar7-p.s-label.brn,.ar7-p.s-label.dbrn{color:#ffa060}.ar7-p.s-label.par{color:#ffe35a}
+.ar7-p.s-label.slp{color:#d6dcf0}.ar7-p.s-label.frz{color:#bff0ff}.ar7-p.s-label.cnf{color:#ffb0dc}.ar7-p.s-label.royal{color:#ffd23f;font-size:18px}
+.ar7-p.s-abpop{display:flex;flex-direction:column;gap:2px;padding:6px 14px;min-width:120px;max-width:60%;background:linear-gradient(90deg,#2a2f4a,#3d4570);color:#fff;border:3px solid #ffd23f;box-shadow:3px 3px 0 rgba(0,0,0,.35);z-index:3}
+.ar7-p.s-abpop.foe{left:2.5%;top:36%;right:auto;border-radius:0 12px 12px 0}
+.ar7-p.s-abpop.me{right:2.5%;left:auto;top:52%;border-radius:12px 0 0 12px;text-align:right}
+.ar7-p.s-abpop small{font:700 8px var(--cl-pixel,monospace);text-transform:uppercase;opacity:.8}
+.ar7-p.s-abpop b{font:700 12px var(--cl-pixel,monospace);text-transform:uppercase;color:#ffd23f}
