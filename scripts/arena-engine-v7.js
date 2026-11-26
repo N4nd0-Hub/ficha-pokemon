@@ -20,7 +20,16 @@
      Confusion (1d3 turnos; 1–3 no 1d6 se fere em 1d6 e perde a ação);
    • clima: Chuva (Water +1d6, Fire −1d6), Sol (o contrário),
      Tempestade de areia e Granizo (1d6 por turno em quem não resiste);
-   • efeitos dos textos de golpes e abilities lidos por arena-rules-v7.js.
+   • efeitos dos textos de golpes e abilities lidos por arena-rules-v7.js;
+   • Evasão (regra 3): Reativa (junto do golpe, Precisão inimiga −25) e
+     Ativa (gasta a ação, −50). Depois de 3 evasões seguidas cada nova
+     custa 1d6 de HP (com Pressure do rival: depois de 2, 2d6). Crítico
+     natural ignora; Freeze e Sleep impedem;
+   • gimmicks (uma de cada por time na batalha): Mega Evolução (nova
+     forma: tipos, atributos e ability), Terastalização (vira o Tera Type,
+     STAB do Tera Type +2d6) e Z-Move (golpe do tipo do Cristal Z com
+     Power turbinado que não erra). Mega e Tera não vão no mesmo Pokémon;
+   • itens da Bolsa (só nos modos solo): curas, reviver, curar status.
    Não depende da tela: recebe as funções de regra por injeção.
    ============================================================ */
 (function(root){
@@ -49,16 +58,19 @@
     /* ---------- Preparação ---------- */
     function prepMon(m){
       const moves=(m.moves||[]).map(mv=>({...mv,fx:RULES.parseMove(mv)}));
-      return {...m,moves,abil:RULES.parseAbility(m.ability||"",m.abilityText||"")};
+      const g=m.gimmick||{};
+      const gimmick={megaForms:(g.megaForms||[]).filter(f=>f&&f.name&&f.stats).slice(0,3),teraType:normT(g.teraType)||"",zType:normT(g.zType)||""};
+      return {...m,moves,gimmick,origTypes:(m.types||[]).map(normT).filter(Boolean),abil:RULES.parseAbility(m.ability||"",m.abilityText||"")};
     }
     function monState(m){
       const hp=Math.max(1,Number(m.maxHp||m.stats?.hp||1));
       return {hp,maxHp:hp,fainted:false,status:null,slp:0,tox:0,cnf:0,stages:[],persist:{},crit:0,
         flinch:false,enteredTurn:1,lastMove:"",lastType:"",fury:0,swagger:0,nextPhys:0,nextDouble:null,nextHalf:false,
-        hurt:{phys:0,spec:0,any:false},used:{},protectStreak:0,abilStages:[]};
+        hurt:{phys:0,spec:0,any:false},used:{},protectStreak:0,abilStages:[],evadeStreak:0,part:false};
     }
     function newBattle({id,format,p1,p2,damage:dmgMode}){
       const side=(info)=>({id:info.id,name:info.name,active:0,needSwitch:false,pending:null,hazards:{tspikes:0},field:{},faintedLastTurn:false,
+        gim:{mega:null,tera:null,z:false},items:!!info.items,healMult:info.healMult??1,
         team:info.team.map(monState)});
       const b={id,format,turn:1,phase:"choose",winner:null,reason:"",weather:null,damage:dmgMode==="matrix"?"matrix":"classic",
         sides:{p1:side(p1),p2:side(p2)},teams:{p1:p1.team.map(prepMon),p2:p2.team.map(prepMon)},events:[]};
@@ -145,6 +157,7 @@
     }
     function onEnter(b,s,events,start){
       const side=b.sides[s],ms=activeState(b,s),mon=activeMon(b,s),A=mon.abil,foe=other(s);
+      ms.part=true;
       ms.enteredTurn=start?1:(b.phase==="switch"?b.turn:b.turn+1);
       // Toxic Spikes
       if(side.hazards.tspikes>0){
@@ -174,7 +187,7 @@
       if(A.onEnter.foeAccFirstTurn&&!activeState(b,foe).fainted){say();addStage(b,foe,"acc",A.onEnter.foeAccFirstTurn,events,{src:A.name,fromFoe:true,rounds:1});}
     }
     function resetVolatile(ms){
-      ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;
+      ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;ms.evadeStreak=0;
       if(ms.status==="tox")ms.tox=1;
     }
 
@@ -192,13 +205,115 @@
       if(action.kind==="switch"){
         const t=side.team[action.idx];
         if(!t||t.fainted||action.idx===side.active)return false;
+        action={kind:"switch",idx:action.idx};
       }else if(action.kind==="move"){
         if(b.phase==="switch")return false;
         const mon=activeMon(b,s);if(!mon?.moves?.[action.idx]&&action.idx!==-1)return false;
+        const g=action.gimmick&&gimmickOptions(b,s);
+        const okG=!action.gimmick||(action.gimmick==="mega"&&g.mega.length&&g.mega[Number(action.form)||0])||(action.gimmick==="tera"&&g.tera)
+          ||(action.gimmick==="z"&&g.z&&zMoveOk(mon,mon.moves[action.idx],g.z));
+        if(!okG)return false;
+        action={kind:"move",idx:action.idx,react:!!action.react,gimmick:action.gimmick||"",form:Number(action.form)||0};
+      }else if(action.kind==="evade"){
+        if(b.phase==="switch")return false;
+        action={kind:"evade"};
+      }else if(action.kind==="item"){
+        if(b.phase==="switch"||!side.items)return false;
+        const t=side.team[action.target];const e=action.effect||{};
+        if(!t||!e.kind)return false;
+        const revive=/^revive/.test(e.kind);
+        if(revive!==!!t.fainted)return false;
+        action={kind:"item",target:action.target,name:String(action.name||"Item").slice(0,40),slug:String(action.slug||""),effect:{...e}};
       }else return false;
       side.pending=action;
       if(b.phase==="switch")return ["p1","p2"].every(x=>!b.sides[x].needSwitch||b.sides[x].pending);
       return !!(b.sides.p1.pending&&b.sides.p2.pending);
+    }
+
+    /* ---------- Gimmicks ---------- */
+    /* O que o Pokémon ativo ainda pode usar nesta batalha */
+    function gimmickOptions(b,s){
+      const side=b.sides[s],mon=activeMon(b,s),g=mon.gimmick||{},idx=side.active;
+      return {
+        mega:side.gim.mega==null&&side.gim.tera!==idx&&!mon.mega?(g.megaForms||[]):[],
+        tera:side.gim.tera==null&&side.gim.mega!==idx&&!mon.mega&&g.teraType?g.teraType:"",
+        z:!side.gim.z&&g.zType?g.zType:""
+      };
+    }
+    function zMoveOk(mon,move,zType){
+      return !!move&&String(move.category||"").toLowerCase()!=="status"&&normT(move.type)===zType;
+    }
+    /* Power do Z-Move (tabela oficial) */
+    function zPower(p){
+      p=Number(p||0);
+      return p<=55?100:p<=65?120:p<=75?140:p<=85?160:p<=95?175:p<=100?180:p<=110?185:p<=125?190:p<=130?195:200;
+    }
+    function megaEvolve(b,s,formIdx,events){
+      const side=b.sides[s],idx=side.active,mon=activeMon(b,s),ms=activeState(b,s);
+      const f=(mon.gimmick.megaForms||[])[formIdx]||mon.gimmick.megaForms[0];if(!f)return;
+      const from=mon.name;
+      const types=(f.types||[]).map(normT).filter(Boolean);
+      const next={...mon,name:f.name,types:types.length?types:mon.types,origTypes:types.length?types:mon.origTypes,stats:{...mon.stats,...f.stats},
+        ability:f.ability||mon.ability,abilityText:f.abilityText||(f.ability?"":mon.abilityText),img:f.img||mon.img,mega:true,baseName:from};
+      next.abil=RULES.parseAbility(next.ability||"",next.abilityText||"");
+      const newMax=Math.max(1,Number(f.maxHp||f.stats?.hp||ms.maxHp));
+      if(newMax>ms.maxHp){ms.hp+=newMax-ms.maxHp;ms.maxHp=newMax;}
+      b.teams[s][idx]=next;side.gim.mega=idx;
+      events.push({k:"gimmick",kind:"mega",side:s,idx,mon:from,to:next.name,img:next.img,types:next.types,ability:next.ability,hp:ms.hp,maxHp:ms.maxHp});
+      const A=next.abil;
+      if(A.onEnter.weather){events.push({k:"ability",side:s,mon:next.name,name:A.name});setWeather(b,A.onEnter.weather.kind,A.onEnter.weather.turns,events,A.name);}
+    }
+    function terastallize(b,s,events){
+      const side=b.sides[s],idx=side.active,mon=activeMon(b,s);
+      const t=mon.gimmick.teraType;if(!t)return;
+      b.teams[s][idx]={...mon,types:[t],tera:t};side.gim.tera=idx;
+      events.push({k:"gimmick",kind:"tera",side:s,idx,mon:mon.name,type:t,types:[t]});
+    }
+    /* STAB: tipo atual ou original (+1d6); Tera Type +2d6 */
+    function stabDice(b,s,mtype){
+      const mon=activeMon(b,s);
+      if(mon.tera&&mon.tera===mtype)return 2;
+      return typesOf(b,s).includes(mtype)||(mon.origTypes||[]).includes(mtype)?1:0;
+    }
+
+    /* ---------- Itens da Bolsa ---------- */
+    const COND_CODE={"Envenenado":["psn","tox"],"Queimado":["brn","dbrn"],"Congelado":["frz"],"Dormindo":["slp"],"Paralisado":["par"],"Confuso":["cnf"]};
+    function useItem(b,s,a,events){
+      const side=b.sides[s],ms=side.team[a.target],mon=b.teams[s][a.target],e=a.effect;
+      if(!ms)return;
+      const ev={k:"item",side:s,idx:a.target,mon:mon.name,item:a.name,slug:a.slug};
+      const isActive=a.target===side.active;
+      const healTo=n=>{const before=ms.hp;ms.hp=Math.min(ms.maxHp,ms.hp+Math.max(0,Math.floor(n)));ev.healed=ms.hp-before;};
+      const cure=(codes)=>{let did=false;if(ms.status&&(!codes||codes.includes(ms.status))){ms.status=null;ms.slp=0;ms.tox=0;did=true;}if((!codes||codes.includes("cnf"))&&ms.cnf>0){ms.cnf=0;did=true;}if(did)ev.cured=true;};
+      if(e.kind==="reviveFraction"||e.kind==="reviveFull"){
+        if(!ms.fainted){ev.fail=true;events.push(ev);return;}
+        ms.fainted=false;ms.status=null;ms.hp=e.kind==="reviveFull"?ms.maxHp:Math.max(1,Math.floor(ms.maxHp*(e.num||1)/(e.den||2)));ev.revived=true;
+      }else if(ms.fainted){ev.fail=true;events.push(ev);return;}
+      else if(e.kind==="healFlat")healTo(e.amount||20);
+      else if(e.kind==="healFraction")healTo(ms.maxHp*(e.num||1)/(e.den||4));
+      else if(e.kind==="healFull")healTo(ms.maxHp);
+      else if(e.kind==="fullRestore"){healTo(ms.maxHp);cure(null);}
+      else if(e.kind==="cureCondition")cure(COND_CODE[e.condition]||null);
+      else if(e.kind==="cureAll")cure(null);
+      else if(e.kind==="stage"&&isActive){const st=e.stat==="accuracy"?"acc":e.stat==="evasion"?"eva":e.stat;events.push(ev);addStage(b,s,st,Number(e.amount||1),events,{src:a.name});return;}
+      else{ev.fail=true;}
+      ev.hp=ms.hp;ev.maxHp=ms.maxHp;ev.status=ms.status||null;ev.cnf=ms.cnf>0;
+      events.push(ev);
+    }
+
+    /* ---------- Evasão (regra 3) ---------- */
+    function declareEvade(b,s,kind,events,ctx){
+      const side=b.sides[s],ms=activeState(b,s),mon=activeMon(b,s);
+      if(ms.fainted)return;
+      if(ms.status==="frz"||ms.status==="slp"){events.push({k:"evade",side:s,mon:mon.name,kind,fail:true,why:ms.status});ms.evadeStreak=0;return;}
+      const pressure=key(abil(b,other(s)).name)==="pressure";
+      const limit=pressure?2:3;
+      const tired=ms.evadeStreak>=limit;
+      ms.evadeStreak++;ms.evadedThisTurn=true;
+      const pen=kind==="active"?50:25;
+      ctx.evade[s]=Math.max(ctx.evade[s]||0,pen);
+      events.push({k:"evade",side:s,mon:mon.name,kind,pen,streak:ms.evadeStreak,limit,tired});
+      if(tired)hurt(b,s,sum(roll(pressure?2:1)),events,"evade");
     }
 
     /* ---------- Dano ---------- */
@@ -220,9 +335,9 @@
       if(mult===0){ev.amount=0;ev.immune=true;return 0;}
       let base=powerDice(power);
       const bonusStat=rules.statDice(effStat(b,atkSide,physical?"atk":"spa"));
-      const stab=atkTypes.includes(mtype);
-      let bonusDice=bonusStat.dice+(stab?1:0),fixed=bonusStat.fixed;
-      ev.stab=stab;
+      const sd=stabDice(b,atkSide,mtype),stab=sd>0;
+      let bonusDice=bonusStat.dice+sd,fixed=bonusStat.fixed;
+      ev.stab=stab;if(sd>1)ev.tera=true;
       let add=0,pen=0;
       if(mult>=4)add=2;else if(mult>=2)add=1;
       else if(mult<=.25){bonusDice=0;fixed=0;pen=2;}
@@ -307,8 +422,8 @@
       if(mult>1){count++;qi=Math.min(7,qi+1);}
       else if(mult<1){count=Math.max(1,count-1);qi=Math.max(0,qi-1);}
       const qd=QDS[qi];
-      const atkTypes=typesOf(b,atkSide);
-      let stab=atkTypes.includes(mtype)?(ab==="adaptability"?1+Math.ceil(bpDice/2):1):0;
+      const sd=stabDice(b,atkSide,mtype);
+      let stab=sd?(ab==="adaptability"?1+Math.ceil(bpDice/2):1)+(sd>1?1:0):0;if(sd>1)ev.tera=true;
       const ex=extraMods(b,atkSide,move,mtype,physical);
       let extra=stab+ex.add-ex.pen;
       if(extra<0){count=Math.max(1,count+extra);extra=0;}
@@ -331,6 +446,7 @@
     function hpEvent(events,k,s,b,amount,src){const ms=activeState(b,s);events.push({k,side:s,mon:activeMon(b,s).name,amount,hp:ms.hp,src});}
     function heal(b,s,amount,events,src){
       const ms=activeState(b,s);if(ms.fainted||amount<=0)return 0;
+      const hm=b.sides[s].healMult??1;if(hm!==1)amount=Math.max(1,Math.floor(amount*hm));
       const before=ms.hp;ms.hp=Math.min(ms.maxHp,ms.hp+amount);
       if(ms.hp>before)hpEvent(events,"heal",s,b,ms.hp-before,src);
       return ms.hp-before;
@@ -364,7 +480,9 @@
       const A=activeMon(b,s),aS=activeState(b,s);
       if(aS.fainted)return;
       const tSide=other(s);
-      const move=A.moves[idx]||{name:"Struggle",type:"Normal",category:"Physical",power:50,accuracy:null,fx:RULES.parseMove({name:"Struggle",category:"Physical"})};
+      let move=A.moves[idx]||{name:"Struggle",type:"Normal",category:"Physical",power:50,accuracy:null,fx:RULES.parseMove({name:"Struggle",category:"Physical"})};
+      const isZ=ctx.z?.has(s)&&zMoveOk(A,move,A.gimmick?.zType);
+      if(isZ){b.sides[s].gim.z=true;move={...move,name:"Z-"+move.name,power:zPower(move.power),accuracy:null,alwaysHits:true,zBase:move.name};}
       const fx=move.fx;
       const cat=String(move.category||"").toLowerCase();
       const k=key(move.name);
@@ -385,6 +503,7 @@
         if(aS.cnf===0)events.push({k:"statusEnd",side:s,mon:A.name,st:"cnf"});
       }
       const ev={k:"move",side:s,mon:A.name,move:move.name,type:move.type,category:move.category};
+      if(isZ){ev.z=true;ev.power=move.power;}
       events.push(ev);
       const prevMove=aS.lastMove;aS.lastMove=k;
       const prevType=aS.lastType;aS.lastType=normT(move.type);
@@ -403,8 +522,8 @@
       // golpes de status
       if(cat==="status"){
         if(affectsFoe&&!tS.fainted&&move.accuracy!=null&&!move.alwaysHits&&!fx.neverMiss&&(fx.stages.some(x=>x.who==="foe")||fx.status.some(x=>x.who==="foe"))){
-          const acc=accuracyFor(b,s,move);const r=d(100);ev.roll=r;ev.acc=acc;
-          if(r>acc&&r>5){ev.miss=true;return;}
+          const acc=accuracyFor(b,s,move,ctx);const r=d(100);ev.roll=r;ev.acc=acc;
+          if(r>acc&&r>5){ev.miss=true;if(ctx.evade?.[tSide]&&r<=acc+ctx.evade[tSide])ev.dodged=true;return;}
         }
         if(ctx.protected.has(tSide)&&affectsFoe){events.push({k:"blocked",side:tSide});return;}
         applySecondary(b,s,move,events,{hit:true,status:true});
@@ -432,13 +551,13 @@
       if(tS.fainted){ev.noTarget=true;return;}
       // precisão e crítico
       const r=d(100);
-      const acc=move.accuracy==null||move.alwaysHits||fx.neverMiss?null:accuracyFor(b,s,move);
+      const acc=move.accuracy==null||move.alwaysHits||fx.neverMiss?null:accuracyFor(b,s,move,ctx);
       ev.roll=r;ev.acc=acc;
       const natural=r<=5;
       const crit=natural||(r<=critMargin(b,s,move)&&(acc==null||r<=acc));
       ev.crit=crit;ev.critKind=natural?"natural":crit?"boosted":"";
       if(!crit&&acc!=null&&r>acc){
-        ev.miss=true;aS.fury=0;
+        ev.miss=true;aS.fury=0;if(ctx.evade?.[tSide]&&r<=acc+ctx.evade[tSide])ev.dodged=true;
         if(A.abil.keepOnMiss&&aS.abilStages.length){aS.stages=aS.stages.filter(x=>!aS.abilStages.includes(x));aS.abilStages=[];events.push({k:"info",text:`${A.name} errou e perdeu o embalo da ${A.abil.name}.`});}
         return;
       }
@@ -478,10 +597,12 @@
       events.push(hit);
       afterHit(b,s,move,events,hit,amount,ctx);
     }
-    function accuracyFor(b,s,move){
+    function accuracyFor(b,s,move,ctx){
       const base=Math.max(1,Math.min(100,Number(move.accuracy)||100));
       const net=Math.max(-6,Math.min(6,stageTotal(activeState(b,s),"acc")-stageTotal(activeState(b,other(s)),"eva")));
-      return Math.max(1,Math.min(90,Math.floor(base*stageMult("acc",net))));
+      const acc=Math.max(1,Math.min(90,Math.floor(base*stageMult("acc",net))));
+      const ev=ctx?.evade?.[other(s)]||0;
+      return ev?Math.max(1,acc-ev):acc;
     }
     function afterHit(b,s,move,events,hit,amount,ctx){
       const tSide=other(s),A=activeMon(b,s),aS=activeState(b,s),T=activeMon(b,tSide),tS=activeState(b,tSide);
@@ -628,11 +749,27 @@
       }
       const ties={p1:rand(),p2:rand()};
       for(const s of ["p1","p2"])if(P[s]?.kind==="switch")applySwitch(b,s,P[s].idx,events);
+      for(const s of ["p1","p2"])if(P[s]?.kind==="item")useItem(b,s,P[s],events);
+      const ctx={protected:new Set(),acted:new Set(),evade:{},z:new Set()};
+      // gimmicks antes dos golpes (mais rápido primeiro)
+      for(const s of ["p1","p2"].sort((x,y)=>effSpeed(b,y)-effSpeed(b,x)||ties[y]-ties[x])){
+        const a=P[s];if(a?.kind!=="move"||!a.gimmick||activeState(b,s).fainted)continue;
+        const g=gimmickOptions(b,s);
+        if(a.gimmick==="mega"&&g.mega.length)megaEvolve(b,s,a.form,events);
+        else if(a.gimmick==="tera"&&g.tera)terastallize(b,s,events);
+        else if(a.gimmick==="z"&&g.z)ctx.z.add(s);
+      }
+      // evasão declarada (Ativa gasta a ação; Reativa vem junto do golpe)
+      for(const s of ["p1","p2"]){
+        const a=P[s];activeState(b,s).evadedThisTurn=false;
+        if(a?.kind==="evade")declareEvade(b,s,"active",events,ctx);
+        else if(a?.kind==="move"&&a.react)declareEvade(b,s,"react",events,ctx);
+      }
+      for(const s of ["p1","p2"]){const ms=activeState(b,s);if(!ms.evadedThisTurn)ms.evadeStreak=0;}
       const order=["p1","p2"].filter(s=>P[s]?.kind==="move").map(s=>{
         const mon=activeMon(b,s),mv=mon.moves[P[s].idx]||{};
         return {s,prio:movePriority(mv),spe:effSpeed(b,s),tie:ties[s]};
       }).sort((x,y)=>y.prio-x.prio||y.spe-x.spe||y.tie-x.tie);
-      const ctx={protected:new Set(),acted:new Set()};
       for(const o of order){
         if(b.phase==="end")break;
         useMove(b,o.s,P[o.s].idx,events,ctx);
@@ -663,10 +800,10 @@
     function view(b,s){
       const side=b.sides[s],ms=activeState(b,s);
       const stg={};STAT_KEYS.forEach(k=>{const v=stageTotal(ms,k);if(v)stg[k]=v;});
-      return {stg,cnf:ms.cnf>0,crit:ms.crit||0,swagger:ms.swagger>0,field:{...side.field},hazards:{...side.hazards}};
+      return {stg,cnf:ms.cnf>0,crit:ms.crit||0,swagger:ms.swagger>0,field:{...side.field},hazards:{...side.hazards},gim:{...side.gim},items:side.items,evadeStreak:ms.evadeStreak||0};
     }
 
-    return {newBattle,submit,resolve,walkover,canAct,movePriority,activeMon,activeState,view,stageTotal,effStat};
+    return {newBattle,submit,resolve,walkover,canAct,movePriority,activeMon,activeState,view,stageTotal,effStat,gimmickOptions,zMoveOk,zPower};
   }
 
   const api={create,movePriority};

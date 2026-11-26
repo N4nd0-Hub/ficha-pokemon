@@ -21,7 +21,11 @@
     c:"#8fe3ff", // ciano
     G:"#4cbf6a", // verde
     o:"#f08030", // laranja
-    n:"#8a5a34"  // madeira
+    n:"#8a5a34", // madeira
+    m:"#b08a5a", // rocha clara
+    M:"#7a5a36", // rocha escura
+    K:"#140e0a", // fundo do abismo
+    a:"#f0b040"  // âmbar
   };
   const ICONS={
     // Desafio Sem Fim: torre infinita com bandeira, janelas acesas e degraus
@@ -147,6 +151,27 @@
       ".kwwwkbbkwwwk.",
       "..kkwwwwwwkk..",
       "....kkkkkk....",
+    ],
+    // Abismo Rochoso (Altamuralha): boca da caverna, estalactites, cristal e âmbar
+    abyss:[
+      "....kkkkkkkkkkkk....",
+      "..kkmmmMmmmmMmmmkk..",
+      ".kmmMmmmmmmmmmmMmmk.",
+      "kmMmmkkkkkkkkkkmmMmk",
+      "kmmkKKMKKKKKKMKKkmmk",
+      "kmMkKKMKKKMKKMKKkMmk",
+      "kmmkKKKKKKMKKKKKkmmk",
+      "kMmkKKKKKKKKKKKKkmMk",
+      "kmmkKKKKKccKKKKKkmmk",
+      "kmMkKKKKcwccKKKKkMmk",
+      "kmmkKKKKccwcBKKKkmmk",
+      "kMmkKKKKKccBKKKKkmMk",
+      "kmmkKKKaKKcKKaKKkmmk",
+      "kmMkKKaYaKKKaYaKkMmk",
+      "kmmkKKKaKKKKKaKKkmmk",
+      "kMmmkkkkkkkkkkkkmmMk",
+      "kmMMmmmMmmmmMmmmMMmk",
+      ".kkkkkkkkkkkkkkkkkk.",
     ],
     crown:[
       "k....k....k...",

@@ -9,6 +9,11 @@
    Golpes vêm da PokéAPI e ganham uma descrição em português montada a
    partir dos dados oficiais (estágios, status, Flinch, dreno, recuo…),
    que o leitor de regras da arena entende.
+
+   Desafios das cidades: cada cidade tem uma área com um tipo só.
+   Altamuralha (Pedra) → Abismo Rochoso, do Lv 15 ao 30: cada andar é
+   mais fundo, mais forte e com mais Elites; no andar 16 está o Guardião
+   (com Terastalização Pedra). Depois dele o abismo continua sem fundo.
    ============================================================ */
 (function(root){
   "use strict";
@@ -45,6 +50,37 @@
     const bstCap=boss?999:Math.min(720,300+n*22+(elite?60:0));
     const bonus=Math.round((n-1)*3*(boss?1.5:elite?1.25:1));
     return {n,level,bstCap,bonus,boss,elite,count:boss?2:1};
+  }
+
+  /* ---------- Desafios das cidades ---------- */
+  const REGIONS={
+    altamuralha:{id:"altamuralha",city:"Altamuralha",area:"Abismo Rochoso",type:"Rock",typePt:"Pedra",minLv:15,maxLv:30,floors:16,scene:"cave",
+      icon:"abyss",boss:"Guardião do Abismo",trainer:"Montanhista",
+      zones:[[1,"Fenda da Muralha"],[5,"Galerias de Quartzo"],[9,"Veios de Âmbar"],[13,"Câmaras Profundas"],[16,"Coração do Abismo"],[17,"Abismo sem Fundo"]]}
+  };
+  function zoneOf(region,n){let z=region.zones[0][1];for(const [f,name] of region.zones)if(n>=f)z=name;return z;}
+  /* Andar n: Lv sobe 1 por andar (15 → 30); Elite a cada 4; Guardião no 16;
+     depois do 16, Lv 30 e um Guardião a cada 5 andares. */
+  function regionInfo(regionId,n){
+    const R0=REGIONS[regionId]||REGIONS.altamuralha;
+    const past=n>R0.floors;
+    const boss=n===R0.floors||(past&&(n-R0.floors)%5===0);
+    const elite=!boss&&(n%4===0||(past&&n%2===0));
+    const level=Math.min(R0.maxLv,R0.minLv+n-1);
+    const bstCap=boss?999:Math.min(600,330+n*15+(elite?40:0)+(past?(n-R0.floors)*10:0));
+    const bonus=Math.round((n-1)*2.5*(boss?1.6:elite?1.3:1))+(past?(n-R0.floors)*4:0);
+    const count=boss?2:(elite&&n>=8)||(past&&n%3===0)?2:1;
+    return {n,level,bstCap,bonus,boss,elite,count,region:R0.id,depth:n*40,zone:zoneOf(R0,n),ppg:boss?3:elite?2:1,
+      label:boss?R0.boss:elite?R0.trainer:"Selvagem"};
+  }
+  const typePools=new Map();
+  async function typePool(type){
+    const k=type.toLowerCase();
+    if(typePools.has(k))return typePools.get(k);
+    const t=await get("type/"+k);
+    const list=(t.pokemon||[]).map(x=>{const id=Number(String(x.pokemon.url).match(/\/(\d+)\/?$/)?.[1]||0);return {id,name:x.pokemon.name};})
+      .filter(x=>x.id&&x.id<=MAX_ID&&!/-(mega|gmax|totem|primal|eternamax|starter)/.test(x.name));
+    typePools.set(k,list);return list;
   }
 
   /* Distribui os pontos pelo estilo, até +3 por nível no mesmo atributo (regra 18) */
@@ -124,10 +160,10 @@
     return out.slice(0,4);
   }
 
-  async function randomSpecies(info,avoid){
+  async function randomSpecies(info,avoid,pool){
     let best=null;
-    for(let t=0;t<8;t++){
-      const id=R(1,MAX_ID);if(avoid.has(id))continue;
+    for(let t=0;t<(pool?12:8);t++){
+      const id=pool?pick(pool).id:R(1,MAX_ID);if(avoid.has(id))continue;
       let p;try{p=await get("pokemon/"+id);}catch(e){continue;}
       const bst=p.stats.reduce((a,s)=>a+s.base_stat,0);
       if(bst<=info.bstCap&&(!info.boss||bst>=480)){return p;}
@@ -137,8 +173,8 @@
     throw new Error("Não consegui falar com a PokéAPI.");
   }
 
-  async function makeFoe(info,avoid){
-    const p=await randomSpecies(info,avoid);avoid.add(p.id);
+  async function makeFoe(info,avoid,pool){
+    const p=await randomSpecies(info,avoid,pool);avoid.add(p.id);
     const base={};p.stats.forEach(s=>{base[STAT_KEY[s.stat.name]]=s.base_stat;});
     const build=pick(Object.keys(BUILDS));
     const {stats}=distribute(base,info.level,info.bonus,build);
@@ -148,7 +184,21 @@
     const img=sp.other?.["official-artwork"]?.front_default||sp.other?.home?.front_default||sp.front_default||"";
     const moves=await buildMoves(p,info.level);
     const name=cap(p.species?.name||p.name);
-    return {name,level:info.level,types:p.types.map(t=>cap(t.type.name)),stats,maxHp:stats.hp,ability,abilityText:"",img,moves,build:BUILDS[build].label,dex:p.id,bst:Object.values(base).reduce((a,b)=>a+b,0)};
+    const foe={name,level:info.level,types:p.types.map(t=>cap(t.type.name)),stats,maxHp:stats.hp,ability,abilityText:"",img,moves,build:BUILDS[build].label,dex:p.id,bst:Object.values(base).reduce((a,b)=>a+b,0)};
+    // Guardiões das cidades Terastalizam no tipo da área
+    if(info.region&&info.boss)foe.gimmick={teraType:(REGIONS[info.region]||{}).type||""};
+    return foe;
+  }
+  async function makeRegionWave(regionId,n){
+    const info=regionInfo(regionId,n);
+    const pool=await typePool(REGIONS[info.region].type);
+    const avoid=new Set(),team=[];
+    for(let i=0;i<info.count;i++){
+      const f=await makeFoe(info,avoid,pool);
+      if(info.boss&&i>0)delete f.gimmick;
+      team.push(f);
+    }
+    return {...info,team};
   }
 
   async function makeWave(n,refLevel){
@@ -171,6 +221,15 @@
     }
     const me=engine.activeMon(b,side),foe=side==="p1"?"p2":"p1",F=engine.activeMon(b,foe);
     const ms=engine.activeState(b,side);
+    const g=engine.gimmickOptions?engine.gimmickOptions(b,side):null;
+    const extra=a=>{
+      if(a.kind!=="move")return a;
+      if(g?.tera)a.gimmick="tera";
+      else if(g?.mega?.length)a.gimmick="mega";
+      // de vez em quando esquiva junto do golpe (sem passar do cansaço)
+      if(!a.gimmick&&(ms.evadeStreak||0)<2&&Math.random()<.12)a.react=true;
+      return a;
+    };
     const scored=me.moves.map((m,i)=>{
       const cat=String(m.category||"").toLowerCase();
       if(cat==="status"){
@@ -194,9 +253,9 @@
     });
     const total=scored.reduce((a,x)=>a+Math.max(.5,x.sc)**2,0);
     let r=Math.random()*total;
-    for(const x of scored){r-=Math.max(.5,x.sc)**2;if(r<=0)return {kind:"move",idx:x.i};}
-    return {kind:"move",idx:0};
+    for(const x of scored){r-=Math.max(.5,x.sc)**2;if(r<=0)return extra({kind:"move",idx:x.i});}
+    return extra({kind:"move",idx:0});
   }
 
-  root.hhArenaSurvival={makeWave,waveInfo,distribute,describe,choose,BUILDS};
+  root.hhArenaSurvival={makeWave,waveInfo,distribute,describe,choose,BUILDS,REGIONS,regionInfo,makeRegionWave,typePool};
 })(window);
