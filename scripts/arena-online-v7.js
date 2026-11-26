@@ -297,7 +297,7 @@
   function applyState(s,initial){
     if(!B)return;
     const events=s.events||[];
-    if(initial||!B.view){if(!B.view){B.intro=true;setTimeout(()=>{if(B)B.intro=false;},1200);}B.view=JSON.parse(JSON.stringify(s));B.view.events=[];if(events.length)pushLog(events);render();return;}
+    if(initial||!B.view){if(!B.view){B.intro=true;setTimeout(()=>{if(B){B.intro=false;if(!B.playing)render(true);}},2200);}B.view=JSON.parse(JSON.stringify(s));B.view.events=[];if(events.length)pushLog(events);render();return;}
     if(!events.length){
       // só mudou quem já escolheu
       for(const k of ["p1","p2"])B.view.sides[k].ready=s.sides[k].ready;
@@ -316,15 +316,22 @@
         if(ev.k==="hit"||ev.k==="heal"){B.view.sides[ev.side].team[B.view.sides[ev.side].active].hp=ev.hp;}
         if(ev.k==="switch"){B.view.sides[ev.side].active=s.sides[ev.side].active;}
         if(ev.k==="faint"){B.view.sides[ev.side].team[B.view.sides[ev.side].active].fainted=true;}
-        render();
-        animate(ev);
-        await new Promise(r=>setTimeout(r,ev.k==="move"?650:ev.k==="hit"?900:ev.k==="faint"?1000:500));
+        if(ev.k==="switch")render(true);else patch();
+        const wait=animate(ev);
+        await new Promise(r=>setTimeout(r,Math.max(wait||0,ev.k==="move"?450:ev.k==="hit"?850:ev.k==="faint"?1000:500)));
       }
       if(!B)return;
       B.view=JSON.parse(JSON.stringify(s));B.view.events=[];B.chosen=false;
       if(B.view.phase==="end"){sfx(B.view.winner===B.role?"page":"select");buzz([30,40,30]);}
       if(!B.queue.length)B.playing=false;
-      render();
+      const prevTurn=B.shownTurn||1;
+      render(true);
+      if(B.view.phase==="choose"&&B.view.turn!==prevTurn){
+        B.shownTurn=B.view.turn;
+        const f=root.querySelector(".ar7-field");
+        if(f){const t=document.createElement("b");t.className="ar7-turnban";t.textContent="Turno "+B.view.turn;f.appendChild(t);setTimeout(()=>t.remove(),1500);}
+      }
+      if(B.view.phase==="end"){const f=root.querySelector(".ar7-field");if(f){const t=document.createElement("b");t.className="ar7-turnban end";t.textContent=B.view.winner?`${sideName(B.view.winner)} venceu!`:"Fim";f.appendChild(t);}}
     }
     if(B)B.playing=false;
   }
@@ -361,17 +368,38 @@
   }
   function animate(ev){
     const pos=s=>(s===mySide()?"me":"foe");
-    const field=root.querySelector(".ar7-field");if(!field)return;
-    if(ev.k==="move"){const el=field.querySelector(`.ar7-mon.${pos(ev.side)}`);el?.classList.remove("lunge");void el?.offsetWidth;el?.classList.add("lunge");}
+    const field=root.querySelector(".ar7-field");if(!field)return 0;
+    let wait=0;
+    try{wait=window.hhArenaFx?.play(field,ev,{pos})||0;}catch(e){}
+    if(ev.k==="move"&&!window.hhArenaFx){const el=field.querySelector(`.ar7-mon.${pos(ev.side)}`);el?.classList.remove("lunge");void el?.offsetWidth;el?.classList.add("lunge");}
     if(ev.k==="switch"){const el=field.querySelector(`.ar7-mon.${pos(ev.side)}`);el?.classList.remove("enter");void el?.offsetWidth;el?.classList.add("enter");sfx("page");}
     if(ev.k==="hit"&&!ev.immune){
       const el=field.querySelector(`.ar7-mon.${pos(ev.side)}`);
       el?.classList.remove("hurt");void el?.offsetWidth;el?.classList.add("hurt");
-      const n=document.createElement("b");n.className="ar7-dmg"+(ev.crit?" crit":"");n.textContent="-"+ev.amount;
-      field.querySelector(`.ar7-spot.${pos(ev.side)}`)?.appendChild(n);setTimeout(()=>n.remove(),1200);
-      if(ev.crit){field.classList.remove("shake");void field.offsetWidth;field.classList.add("shake");}
-      sfx(ev.crit?"page":"type");
+      const n=document.createElement("b");n.className="ar7-dmg"+(ev.crit?" crit":ev.mult>=2?" super":"");n.textContent="-"+ev.amount;
+      field.querySelector(`.ar7-spot.${pos(ev.side)}`)?.appendChild(n);setTimeout(()=>n.remove(),1300);
+      sfx(ev.crit?"page":"type");buzz(ev.crit?[20,30,40]:15);
     }
+    return wait;
+  }
+  /* Atualiza só HP, Pokébolas, desmaio e textos, sem redesenhar o campo
+     (assim os efeitos dos golpes não são cortados no meio). */
+  function patch(){
+    const field=root.querySelector(".ar7-field");
+    if(!B?.view||!field){render(true);return;}
+    const mine=mySide(),foe=mine==="p1"?"p2":"p1";
+    for(const [side,pos] of [[foe,"foe"],[mine,"me"]]){
+      const sp=field.querySelector(`.ar7-spot.${pos}`);if(!sp)continue;
+      const s=B.view.sides[side],st=s.team[s.active],pct=hpPct(st);
+      const hp=sp.querySelector(".ar7-hp");if(hp)hp.className="ar7-hp "+hpClass(pct);
+      const bar=sp.querySelector(".ar7-hp i");if(bar){bar.dataset.to=pct;bar.style.setProperty("--w",pct+"%");}
+      lastHp[pos]=pct;
+      const num=sp.querySelector(".ar7-hp-num");if(num)num.textContent=`${st.hp} / ${st.maxHp}`;
+      sp.querySelectorAll(".ar7-balls i").forEach((b,i)=>b.classList.toggle("out",!!s.team[i]?.fainted));
+      sp.querySelector(".ar7-mon")?.classList.toggle("fainted",!!st.fainted);
+    }
+    const msg=root.querySelector(".ar7-msg p");if(msg&&B.log.length)msg.innerHTML=B.log[B.log.length-1].line;
+    const log=root.querySelector(".ar7-log");if(log){log.innerHTML=B.log.map(l=>`<p class="${l.cls}">${l.line}</p>`).join("");log.scrollTop=log.scrollHeight;}
   }
   function mySide(){return B?.role==="p2"?"p2":"p1";}
 
@@ -390,8 +418,9 @@
   function hpPct(m){return Math.max(0,Math.min(100,Math.round(100*m.hp/Math.max(1,m.maxHp))));}
   function hpClass(p){return p>50?"":p>20?"mid":"low";}
 
-  function render(){
+  function render(force){
     if(root.hidden)return;
+    if(!force&&(B?.playing||B?.intro)&&root.querySelector(".ar7-field")){patch();return;}
     const focus=document.activeElement?.id;
     const keptScroll=root.querySelector(".ar7-scenes")?.scrollLeft;
     const kept={};["ar7Chat","ar7Room","ar7Name"].forEach(id=>{const el=document.getElementById(id);if(el)kept[id]=el.value;});
@@ -518,6 +547,7 @@
       <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
+        ${B.intro?`<div class="ar7-vsintro" aria-hidden="true"><b class="l">${esc(sideName(foe))}</b><span>VS</span><b class="r">${esc(sideName(mine))}</b></div>`:""}
         <span class="ar7-scene-tag">${esc(sceneLabel(B.arena))}</span>
       </div>
       <div class="ar7-msg" aria-hidden="true"><p>${B.log.length?B.log[B.log.length-1].line:`${esc(sideName(foe))} quer batalhar!`}</p></div>
