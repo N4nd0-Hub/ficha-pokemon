@@ -343,3 +343,73 @@ body.ar7-open{overflow:hidden}
 .ar7-hp.low>div>i::before{background:linear-gradient(180deg,#ff8b78 0 35%,#e0432f 35%)}
 .ar7-dots::after{content:"";display:inline-block;width:1.4em;text-align:left;animation:ar7-dots 1.2s steps(4) infinite}
 @keyframes ar7-dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+
+/* ---------- Efeitos dos golpes ---------- */
+.ar7-fxl{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.ar7-p{position:absolute;left:0;top:0;display:block;pointer-events:none;will-change:transform,opacity}
+.ar7-p.s-orb{border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff 0 18%,var(--c) 45%,transparent 72%);box-shadow:0 0 14px 4px var(--g,var(--c))}
+.ar7-p.s-ball{border-radius:50%}
+.ar7-p.s-flame{border-radius:50% 50% 50% 0;transform-origin:center;background:radial-gradient(circle at 60% 40%,#fff6c8 0 15%,var(--c) 50%,transparent 75%);filter:drop-shadow(0 0 6px var(--c))}
+.ar7-p.s-bubble{border-radius:50%;border:2px solid var(--c);background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.9) 0 14%,rgba(255,255,255,.15) 30%,color-mix(in srgb,var(--c) 30%,transparent) 70%)}
+.ar7-p.s-spark{background:var(--c);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);filter:drop-shadow(0 0 5px #fff27a)}
+.ar7-p.s-star{background:var(--c);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);filter:drop-shadow(0 0 4px var(--c))}
+.ar7-p.s-leaf{border-radius:0 80% 0 80%;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 60%,#000));box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.ar7-p.s-shard{background:linear-gradient(135deg,#fff,var(--c));clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);filter:drop-shadow(0 0 4px #fff)}
+.ar7-p.s-rock{background:linear-gradient(135deg,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 55%,color-mix(in srgb,var(--c) 60%,#000));clip-path:polygon(20% 0,80% 8%,100% 45%,82% 92%,30% 100%,0 60%);}
+.ar7-p.s-dot{border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.ar7-p.s-wisp{border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:radial-gradient(circle at 50% 40%,#fff 0 12%,var(--c) 40%,transparent 72%);filter:blur(.5px) drop-shadow(0 0 8px var(--c))}
+.ar7-p.s-wind{border-radius:50%;border:4px solid transparent;border-top-color:var(--c);border-left-color:color-mix(in srgb,var(--c) 50%,transparent);filter:drop-shadow(0 0 4px #fff)}
+.ar7-p.s-slash{width:4px!important;border-radius:4px;background:var(--c)}
+.ar7-p.s-ring,.ar7-p.s-ringwave{border-radius:50%;border:4px solid var(--c);box-shadow:0 0 12px var(--c),inset 0 0 12px var(--c)}
+.ar7-p.s-impact{border-radius:50%;background:radial-gradient(circle,transparent 40%,var(--c) 52%,transparent 70%)}
+.ar7-p.s-hitstar{background:radial-gradient(circle,#fff 0 22%,var(--c) 40%,transparent 62%);clip-path:polygon(50% 0,58% 36%,92% 14%,66% 46%,100% 54%,64% 62%,80% 96%,50% 70%,20% 96%,36% 62%,0 54%,34% 46%,8% 14%,42% 36%)}
+.ar7-p.s-beam{transform-origin:0 50%;border-radius:99px;background:linear-gradient(180deg,transparent,var(--c) 22%,var(--c2) 45%,#fff 50%,var(--c2) 55%,var(--c) 78%,transparent);box-shadow:0 0 18px 4px var(--g)}
+.ar7-p.s-bolt{overflow:visible;filter:drop-shadow(0 0 8px var(--g)) drop-shadow(0 0 3px #fff)}
+.ar7-p.s-slashline{height:6px;border-radius:6px;background:linear-gradient(90deg,transparent,var(--c) 20%,#fff 50%,var(--c) 80%,transparent);box-shadow:0 0 10px var(--g)}
+.ar7-p.s-charge,.ar7-p.s-aura{border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 70%,transparent) 0 30%,transparent 70%)}
+.ar7-p.s-shield{border-radius:50%;border:3px solid #bfeaff;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.7) 0 10%,rgba(127,211,255,.25) 40%,rgba(127,211,255,.45) 70%);box-shadow:0 0 20px #7fd3ff,inset 0 0 16px #bfeaff}
+.ar7-p.s-frost{border-radius:50%;background:radial-gradient(circle,rgba(220,246,255,.85),rgba(155,231,255,.3) 55%,transparent 72%)}
+.ar7-p.s-tint{inset:0;width:auto;height:auto;mix-blend-mode:multiply}
+.ar7-p.s-tint[style*="#fff"],.ar7-p.s-tint[style*="rgb(255, 255, 255)"]{mix-blend-mode:normal}
+.ar7-p.s-label{white-space:nowrap;font:900 15px var(--cl-pixel,system-ui);text-transform:uppercase;letter-spacing:.04em;color:#fff;-webkit-text-stroke:1px #222;text-shadow:0 3px 0 #222,0 0 12px rgba(0,0,0,.4);z-index:2}
+.ar7-p.s-label.crit{color:#ffd23f;font-size:20px}
+.ar7-p.s-label.super{color:#ff9a3c}
+.ar7-p.s-label.weak{color:#cfd6e6}
+.ar7-p.s-label.miss{color:#e6ecff}
+.ar7-p.s-label.heal{color:#7ef08f;font-size:20px}
+.ar7-dmg.super{color:#ffb347}
+
+/* Abertura da batalha e aviso de turno */
+.ar7-vsintro{position:absolute;inset:0;z-index:7;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;pointer-events:none;animation:ar7-vsout .35s 1.6s forwards}
+.ar7-vsintro::before,.ar7-vsintro::after{content:"";position:absolute;left:0;right:0;height:50%;background:linear-gradient(90deg,var(--cl-banner,#e3262f),color-mix(in srgb,var(--cl-banner,#e3262f) 60%,#000));z-index:-1}
+.ar7-vsintro::before{top:0;clip-path:polygon(0 0,100% 0,100% 72%,0 100%);animation:ar7-slide-l .45s cubic-bezier(.2,.8,.3,1) both}
+.ar7-vsintro::after{bottom:0;background:linear-gradient(90deg,#20243a,#3a4070);clip-path:polygon(0 28%,100% 0,100% 100%,0 100%);animation:ar7-slide-r .45s cubic-bezier(.2,.8,.3,1) both}
+.ar7-vsintro b{font:900 clamp(14px,3.2vw,26px) var(--cl-pixel,system-ui);color:#fff;text-transform:uppercase;text-shadow:0 3px 0 rgba(0,0,0,.4);padding:0 4%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ar7-vsintro b.l{text-align:right;align-self:start;margin-top:12%;animation:ar7-slide-l .5s .1s both}
+.ar7-vsintro b.r{text-align:left;align-self:end;margin-bottom:12%;animation:ar7-slide-r .5s .1s both}
+.ar7-vsintro span{font:900 clamp(30px,7vw,60px) var(--cl-pixel,system-ui);color:#ffd23f;-webkit-text-stroke:2px #5a1410;text-shadow:0 5px 0 #5a1410;animation:ar7-vspop .5s .3s cubic-bezier(.2,.9,.3,1.5) both}
+.ar7-turnban{position:absolute;left:0;right:0;top:44%;z-index:7;text-align:center;padding:8px 0;font:900 clamp(14px,3vw,22px) var(--cl-pixel,system-ui);color:#fff;text-transform:uppercase;letter-spacing:.12em;
+  background:linear-gradient(90deg,transparent,rgba(15,18,30,.75) 20%,rgba(15,18,30,.75) 80%,transparent);text-shadow:0 2px 0 #000;animation:ar7-ban 1.5s forwards;pointer-events:none}
+.ar7-turnban.end{color:#ffd23f;animation:ar7-ban-end .6s forwards}
+@keyframes ar7-slide-l{from{transform:translateX(-110%)}}
+@keyframes ar7-slide-r{from{transform:translateX(110%)}}
+@keyframes ar7-vspop{from{transform:scale(3);opacity:0}}
+@keyframes ar7-vsout{to{opacity:0;visibility:hidden}}
+@keyframes ar7-ban{0%{transform:scaleY(0);opacity:0}15%,80%{transform:scaleY(1);opacity:1}100%{opacity:0}}
+@keyframes ar7-ban-end{from{transform:scale(.4);opacity:0}}
+
+/* Sombra no chão e botões de golpe com brilho */
+.ar7-mon::before{content:"";position:absolute;left:18%;right:18%;bottom:-2%;height:9%;border-radius:50%;background:rgba(0,0,0,.28);filter:blur(2px);z-index:-1}
+.ar7-mon.fainted::before{opacity:0}
+.ar7-move{position:relative;overflow:hidden}
+.ar7-move::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);transition:left .45s}
+.ar7-move:hover::after,.ar7-move:focus-visible::after{left:120%}
+.ar7-move:hover{filter:brightness(1.06)}
+.ar7-hud{animation:ar7-hudin .45s cubic-bezier(.2,.8,.3,1) both}
+.ar7-spot.foe .ar7-hud{--hx:-120%}
+.ar7-spot.me .ar7-hud{--hx:120%}
+.ar7-field:not(:has(.ar7-vsintro)) .ar7-hud{animation:none}
+@keyframes ar7-hudin{from{transform:translateX(var(--hx));opacity:0}}
+.ar7-field:has(.ar7-vsintro) .ar7-hud{animation-delay:1.75s}
+.ar7-mon.intro.foe,.ar7-mon.intro.me{animation-delay:1.3s}
+.ar7-p.s-tint.under{z-index:2;mix-blend-mode:multiply}
