@@ -53,10 +53,23 @@
   }
   window.hhThemeMotif=motifUrl;
 
+  /* ---------- Peles por geração ---------- */
+  const SKIN_BY_GEN={1:"kanto",2:"johto",3:"hoenn",4:"sinnoh",5:"unova",6:"kalos",7:"alola",8:"galar",9:"paldea"};
+  function skinOf(key,theme){
+    if(theme.special||!["game","hero"].includes(theme.group))return "";
+    if(theme.skin)return theme.skin;
+    if(theme.gen===10)return key==="za"?"lumiose":"hisui";
+    return SKIN_BY_GEN[theme.gen]||"";
+  }
+  window.hhThemeSkin=skinOf;
+
   /* ---------- Aplicação ---------- */
   function decorate(){
     const key=state.theme,theme=THEMES[key]||{};
     root.dataset.themeGroup=theme.group||"classic";
+    // Pele da geração: molduras, faixas, retrato e cenário inspirados na interface dos jogos.
+    const skin=skinOf(key,theme);
+    if(skin)root.dataset.themeSkin=skin;else delete root.dataset.themeSkin;
     // os temas especiais têm fundo próprio em special-themes-v6.css
     if(theme.motif&&theme.motif!=="ball"&&!theme.special)root.style.setProperty("--cl-ball",motifUrl(theme.motif));
     else root.style.removeProperty("--cl-ball");
