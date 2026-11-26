@@ -494,3 +494,43 @@ body.ar7-open{overflow:hidden}
 .ar7-dmg-pick span{display:flex;gap:6px;flex-wrap:wrap}
 .ar7-dmg-pick span .ar7-btn{flex:1 1 140px}
 .ar7-dmg-pick em{font-style:normal;font-size:12px;color:var(--cl-muted,#666)}
+
+/* ---------- Desafio Sem Fim ---------- */
+.ar7-surv{grid-column:1/-1;background:linear-gradient(135deg,color-mix(in srgb,var(--cl-banner,#e3262f) 10%,var(--cl-card,#fff)),var(--cl-card,#fff) 55%)}
+.ar7-surv-head{display:flex;gap:12px;align-items:flex-start}
+.ar7-surv-head h3{margin:0 0 4px}
+.ar7-surv-head p{margin:0;font-size:13px;color:var(--cl-muted,#555)}
+.ar7-surv-ico{font-size:34px;line-height:1;filter:drop-shadow(0 2px 0 rgba(0,0,0,.2))}
+.ar7-surv-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}
+.ar7-surv-actions small{color:var(--cl-muted,#666)}
+.ar7-rank{border-top:2px dashed var(--cl-line,#ccc);padding-top:10px}
+.ar7-rank-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ar7-rank-list{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.ar7-rank-list li{display:grid;grid-template-columns:34px 1fr auto auto;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;background:var(--cl-paper2,#f3f3f3)}
+.ar7-rank-list li.me{outline:2px solid var(--cl-banner,#e3262f)}
+.ar7-rank-pos{font-size:18px;text-align:center;font-weight:900}
+.ar7-rank-name{display:flex;flex-direction:column;min-width:0}
+.ar7-rank-name small{font-size:11px;color:var(--cl-muted,#666);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ar7-rank-minis .ar7-mini{width:26px;height:26px}
+.ar7-rank-minis .ar7-mini img{width:22px;height:22px}
+.ar7-rank-score{font-size:20px;text-align:right;line-height:1}
+.ar7-rank-score small{display:block;font-size:9px;color:var(--cl-muted,#666)}
+@media (max-width:560px){.ar7-rank-minis{display:none}.ar7-rank-list li{grid-template-columns:30px 1fr auto}}
+.ar7-surv-load .ar7-surv-ico{display:block;font-size:46px;animation:ar7-pulse 1.2s infinite;margin-bottom:6px}
+.ar7-surv-load .ar7-btn{margin:4px}
+.ar7-build{display:block;font:700 8px var(--cl-pixel,monospace);text-transform:uppercase;color:#7a5a00;margin-top:2px}
+.ar7-surv-win small{max-width:560px}
+.ar7-rewards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+@media (max-width:560px){.ar7-rewards{grid-template-columns:1fr}}
+.ar7-reward{display:grid;justify-items:center;gap:3px;padding:10px 8px;border-radius:12px;cursor:pointer;background:var(--cl-paper2,#f3f3f3);border:2px solid var(--cl-line,#ccc);color:var(--cl-text,#222);box-shadow:0 3px 0 var(--cl-line,#ccc);transition:transform .12s}
+.ar7-reward:hover:not(:disabled){transform:translateY(-2px);border-color:var(--cl-banner,#e3262f)}
+.ar7-reward:disabled{opacity:.45;cursor:default}
+.ar7-reward span{font-size:24px}
+.ar7-reward b{font-size:14px}
+.ar7-reward small{font-size:11px;color:var(--cl-muted,#666);text-align:center}
+.ar7-surv-hp{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.ar7-surv-hp span{display:grid;justify-items:center;gap:2px;width:40px}
+.ar7-surv-hp span.out{opacity:.35;filter:grayscale(1)}
+.ar7-surv-hp img{object-fit:contain}
+.ar7-surv-hp i{display:block;width:100%;height:5px;border-radius:3px;background:linear-gradient(90deg,#3fc957 var(--p),#555 var(--p))}
+.ar7-mon img{position:absolute;inset:0}

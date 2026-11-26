@@ -45,6 +45,16 @@
   let people={},chat=[],outgoing=null,incoming=null,myTeamCache=null;
   // batalha atual: {id,role:'p1'|'p2'|'spec',host:bool,state,teams,format,opp,names,playing}
   let B=null;
+  /* Desafio Sem Fim: corrida atual (time, HP que sobra entre ondas, onda) */
+  let RUN=null,RANK={list:null,loading:false,error:""};
+  const SURV=()=>window.hhArenaSurvival;
+  const aiRules={typeMultiplier:(t,d)=>defensiveMultiplier(t,d),normalizeType:t=>normalizeTypeName(t)};
+  function playerKey(){
+    let k=state.arenaPlayerKey||ls.get("hh_arena_pkey");
+    if(!k){k="k"+Math.random().toString(36).slice(2)+Date.now().toString(36);}
+    if(state.arenaPlayerKey!==k){state.arenaPlayerKey=k;try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}}
+    ls.set("hh_arena_pkey",k);return k;
+  }
 
   /* ---------- Carregamento do Supabase ---------- */
   function loadSb(){
@@ -168,7 +178,7 @@
       lobby.on("broadcast",{event:"challenge-cancel"},({payload})=>{if(incoming&&incoming.id===payload.id){incoming=null;render();}});
       lobby.on("broadcast",{event:"challenge-reply"},({payload})=>onReply(payload));
       await new Promise((ok,ko)=>lobby.subscribe(st=>{if(st==="SUBSCRIBED")ok();else if(st==="CHANNEL_ERROR"||st==="TIMED_OUT")ko(new Error(st));}));
-      status="on";await track();
+      status="on";await track();loadRank();
     }catch(e){status="error";lobby=null;}
     connecting=false;render();
   }
@@ -182,6 +192,7 @@
     room=next;ls.set("hh_arena_room",room);disconnect();chat=[];await connect();
   }
   function myStatus(){
+    if(RUN)return {status:"survival",wave:RUN.wave};
     if(!B)return {status:"idle"};
     if(B.role==="spec")return {status:"watch",battle:B.id};
     return {status:"battle",battle:B.id,vs:B.names?.[B.role==="p1"?"p2":"p1"]||""};
@@ -272,6 +283,10 @@
   }
   function leaveBattle(silent){
     if(!B)return;
+    if(B.solo){
+      if(RUN&&B.state&&B.state.phase!=="end")endRun("desistiu");
+      B=null;RUN=null;track();if(!silent)render();return;
+    }
     if(B.role!=="spec"&&B.state&&B.state.phase!=="end"){
       if(B.host){engine.walkover(B.state,"p1");broadcastState();}
       else send(battleCh,"action",{side:B.role,action:{kind:"forfeit"},turn:B.state.turn});
@@ -301,9 +316,23 @@
   function hostAction(side,action,turn){
     if(!B?.host||!B.state)return;
     if(turn!=null&&turn!==B.state.turn&&action.kind!=="forfeit")return;
-    const ready=engine.submit(B.state,side,action);
-    if(ready){engine.resolve(B.state);broadcastState();}
+    let ready=engine.submit(B.state,side,action);
+    if(B.solo&&side==="p1"&&!ready)ready=aiAct();
+    if(ready){engine.resolve(B.state);broadcastState();if(B.solo)soloFollowUp();}
     else{broadcastState(true);}
+  }
+  function aiAct(){
+    if(!B?.solo||!B.state||B.state.phase==="end")return false;
+    if(!engine.canAct(B.state,"p2"))return false;
+    const a=SURV()?.choose(B.state,engine,"p2",aiRules);
+    return a?engine.submit(B.state,"p2",a):false;
+  }
+  function soloFollowUp(){
+    // o oponente troca sozinho quando o Pokémon dele desmaia
+    for(let k=0;k<4&&B?.state?.phase==="switch"&&B.state.sides.p2.needSwitch&&!B.state.sides.p2.pending;k++){
+      const ready=aiAct();
+      if(ready){engine.resolve(B.state);broadcastState();}else break;
+    }
   }
   function pub(s){
     // estado sem os times (que já foram enviados no início)
@@ -366,6 +395,7 @@
         const f=root.querySelector(".ar7-field");
         if(f){const t=document.createElement("b");t.className="ar7-turnban";t.textContent="Turno "+B.view.turn;f.appendChild(t);setTimeout(()=>t.remove(),1500);}
       }
+      if(B.view.phase==="end"&&B.solo&&RUN&&!RUN.done)onWaveEnd();
       if(B.view.phase==="end"){const f=root.querySelector(".ar7-field");if(f){const t=document.createElement("b");t.className="ar7-turnban end";t.textContent=B.view.winner?`${sideName(B.view.winner)} venceu!`:"Fim";f.appendChild(t);}}
     }
     if(B)B.playing=false;
@@ -540,6 +570,7 @@
     const watchers={};list.filter(p=>p.status==="watch").forEach(p=>{watchers[p.battle]=(watchers[p.battle]||0)+1;});
     const myTeam=teamPreview();
     return `
+    ${survivalCard(myTeam)}
     <section class="ar7-card ar7-me">
       <div class="ar7-me-row">
         <label class="ar7-field-label">Seu nome na arena<input id="ar7Name" maxlength="20" value="${esc(me.name)}" autocomplete="off"></label>
@@ -561,7 +592,7 @@
     <section class="ar7-card">
       <h3>Treinadores na sala <small>${others.length}</small></h3>
       ${others.length?`<ul class="ar7-people">${others.map(p=>`<li class="ar7-person">
-        <div class="ar7-person-head"><b>${esc(p.name)}</b><span class="ar7-badge ${esc(p.status)}">${p.status==="battle"?`em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"assistindo":"disponível"}</span></div>
+        <div class="ar7-person-head"><b>${esc(p.name)}</b><span class="ar7-badge ${esc(p.status)}">${p.status==="battle"?`em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"assistindo":p.status==="survival"?`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`:"disponível"}</span></div>
         <span class="ar7-minis">${teamMinis(p.team)}</span>
         ${p.status==="idle"&&!outgoing&&myTeam.length?`<div class="ar7-formats" role="group" aria-label="Desafiar ${esc(p.name)}">
           <button type="button" class="ar7-btn primary ar7-ch-main" data-ar="challenge" data-to="${esc(p.id)}" data-format="6">⚔ Desafiar <small>time todo</small></button>
@@ -600,6 +631,124 @@
       ${pickOpen?`<div class="ar7-pick-pool">${rest.map(p=>`<button type="button" data-ar="pick-add" data-id="${esc(String(p.id))}" ${team.length>=6?"disabled":""} title="Adicionar ${esc(p.name)}">${face(p)}<span>${esc(p.name)}</span><small>${p.storageGroup==="team"?"Equipe":"Caixa"}</small></button>`).join("")}</div>`:""}`:""}
     </div>`;
   }
+  /* ---------- Desafio Sem Fim ---------- */
+  function survivalCard(myTeam){
+    const best=Number(state.arenaSurvivalBest||0);
+    const list=RANK.list;
+    return `<section class="ar7-card ar7-surv">
+      <div class="ar7-surv-head"><span class="ar7-surv-ico">🗼</span><div><h3>Desafio Sem Fim</h3>
+        <p>Enfrente Pokémon aleatórios da PokéAPI, um atrás do outro. A cada onda eles ficam mais fortes, com atributos distribuídos para aguentar mais ou bater mais. A cada 5 ondas vem uma Elite e a cada 10 um Chefe. O HP do seu time continua de uma onda para a outra.</p></div></div>
+      <div class="ar7-surv-actions"><button type="button" class="ar7-btn primary" data-ar="surv-start" ${myTeam.length?"":"disabled"}>▶ Começar com o meu time</button>
+        <small>Seu recorde: <b>${best}</b> onda${best===1?"":"s"} · ${DMG_LABEL[dmgMode]}</small></div>
+      <div class="ar7-rank"><div class="ar7-rank-head"><b>🏆 Ranking</b><button type="button" class="ar7-link" data-ar="rank-reload">atualizar</button></div>
+        ${RANK.loading&&!list?`<p class="ar7-empty-text">Carregando…</p>`:RANK.error&&!list?`<p class="ar7-empty-text">${esc(RANK.error)}</p>`:!list||!list.length?`<p class="ar7-empty-text">Ninguém no ranking ainda. Seja o primeiro!</p>`:
+        `<ol class="ar7-rank-list">${list.map((r,i)=>`<li class="${r.player_key===playerKey()?"me":""}"><span class="ar7-rank-pos">${i<3?["🥇","🥈","🥉"][i]:i+1}</span>
+          <span class="ar7-rank-name"><b>${esc(r.player)}</b><small>${(r.team||[]).map(t=>esc(t.n)).join(", ")}${r.damage_mode==="matrix"?" · 🧪":""}${r.last_foe?` · caiu para ${esc(r.last_foe)}`:""}</small></span>
+          <span class="ar7-rank-minis">${teamMinis((r.team||[]).map(t=>({n:t.n,lv:t.lv,t:[],img:t.img||""})),24)}</span>
+          <b class="ar7-rank-score">${r.waves}<small>onda${r.waves===1?"":"s"}</small></b></li>`).join("")}</ol>`}
+      </div>
+    </section>`;
+  }
+  async function loadRank(force){
+    if(RANK.loading||(!force&&RANK.list&&Date.now()-(RANK.at||0)<60000))return;
+    RANK.loading=true;RANK.error="";render();
+    try{
+      await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+      const {data,error}=await sb.from("arena_survival_ranking").select("player,player_key,waves,team,damage_mode,last_foe,created_at").order("waves",{ascending:false}).order("created_at",{ascending:true}).limit(300);
+      if(error)throw error;
+      const seen=new Set(),out=[];
+      for(const r of data||[]){if(seen.has(r.player_key))continue;seen.add(r.player_key);out.push(r);if(out.length>=20)break;}
+      RANK.list=out;RANK.at=Date.now();
+    }catch(e){RANK.error="Não consegui carregar o ranking agora.";}
+    RANK.loading=false;render();
+  }
+  async function startRun(){
+    if(B||!SURV())return;
+    const team=await buildTeam(6);
+    if(!team.length){toast("Monte um time primeiro.");return;}
+    RUN={wave:0,team,hp:team.map(m=>({hp:Math.max(1,Number(m.maxHp||1)),maxHp:Math.max(1,Number(m.maxHp||1)),fainted:false})),train:0,dmg:dmgMode,cleared:0,done:false};
+    nextWave();
+  }
+  async function nextWave(){
+    RUN.wave++;RUN.done=false;RUN.error="";
+    B={id:"solo-"+uidShort(),role:"p1",host:true,solo:true,arena:pickScene(scene),dmg:RUN.dmg,format:6,names:{p1:me.name,p2:"Onda "+RUN.wave},state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
+    for(const k in lastHp)delete lastHp[k];
+    sfx("page");render();track();
+    const ref=Math.round(RUN.team.reduce((x,m)=>x+Number(m.level||1),0)/RUN.team.length);
+    let wave;
+    try{wave=await SURV().makeWave(RUN.wave,ref);}
+    catch(e){if(RUN){RUN.error="A PokéAPI não respondeu.";render();}return;}
+    if(!B?.solo||!RUN)return;
+    RUN.waveInfo=wave;
+    const alive=RUN.team.map((m,i)=>i).filter(i=>!RUN.hp[i].fainted);
+    RUN.alive=alive;
+    B.state=engine.newBattle({id:B.id,format:6,damage:RUN.dmg,
+      p1:{id:me.id,name:me.name,team:alive.map(i=>RUN.team[i])},
+      p2:{id:"cpu",name:`${wave.boss?"Chefe da onda":wave.elite?"Elite da onda":"Onda"} ${RUN.wave}`,team:wave.team}});
+    // HP que sobrou das ondas anteriores e o treino acumulado
+    alive.forEach((ri,j)=>{const st=B.state.sides.p1.team[j];st.hp=Math.min(st.maxHp,RUN.hp[ri].hp);if(RUN.train){st.persist.atk=(st.persist.atk||0)+RUN.train;st.persist.spa=(st.persist.spa||0)+RUN.train;}});
+    B.teams=B.state.teams;B.names={p1:me.name,p2:B.state.sides.p2.name};B.started=true;
+    applyState(pub(B.state),true);B.state.events=[];track();
+  }
+  function onWaveEnd(){
+    RUN.done=true;
+    const st=B.state||null;
+    if(B.view.winner==="p1"){
+      RUN.cleared=RUN.wave;
+      // guarda o HP que sobrou
+      if(st)RUN.alive.forEach((ri,j)=>{const t=st.sides.p1.team[j];RUN.hp[ri]={hp:t.hp,maxHp:t.maxHp,fainted:t.fainted};});
+      // recupera 10% de todos de pé
+      RUN.hp.forEach(h=>{if(!h.fainted)h.hp=Math.min(h.maxHp,h.hp+Math.ceil(h.maxHp*.1));});
+      if(RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}}
+      if(RUN.hp.every(h=>h.fainted))endRun();
+    }else endRun();
+  }
+  function endRun(reason){
+    if(!RUN||RUN.recorded)return;
+    RUN.recorded=true;RUN.over=true;
+    const foe=B?.teams?.p2?.[B?.state?.sides?.p2?.active||0]?.name||"";
+    if(RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;}
+    try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
+    if(RUN.cleared>=1)saveRank({waves:RUN.cleared,foe:reason?"":foe});
+  }
+  async function saveRank({waves,foe}){
+    const run=RUN;if(!run)return;
+    const team=run.team.slice(0,6).map(m=>({n:String(m.name).slice(0,30),lv:Number(m.level||1),img:/^https?:/.test(m.img||"")&&String(m.img).length<300?m.img:""}));
+    const mode=run.dmg==="matrix"?"matrix":"classic";
+    try{
+      await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+      const {error}=await sb.from("arena_survival_ranking").insert({player:String(me.name||"Treinador").slice(0,24),player_key:playerKey().slice(0,64),waves,team,damage_mode:mode,last_foe:String(foe||"").slice(0,40)||null});
+      if(error)throw error;
+      toast("Corrida registrada no ranking!");RANK.at=0;loadRank(true);
+    }catch(e){toast("Não consegui salvar no ranking.");}
+  }
+  function applyReward(kind){
+    if(!RUN||RUN.over)return;
+    if(kind==="heal")RUN.hp.forEach(h=>{if(!h.fainted)h.hp=Math.min(h.maxHp,h.hp+Math.ceil(h.maxHp*.35));});
+    if(kind==="revive"){const h=RUN.hp.find(x=>x.fainted);if(h){h.fainted=false;h.hp=Math.ceil(h.maxHp*.5);}}
+    if(kind==="train")RUN.train=Math.min(3,RUN.train+1);
+    B=null;nextWave();
+  }
+  function survivalPanel(v){
+    const won=v.winner==="p1"&&RUN&&!RUN.over;
+    if(won){
+      const anyFainted=RUN.hp.some(h=>h.fainted);
+      const next=SURV()?.waveInfo(RUN.wave+1,Math.round(RUN.team.reduce((x,m)=>x+Number(m.level||1),0)/RUN.team.length));
+      return `<div class="ar7-result win ar7-surv-win"><b>🏆 Onda ${RUN.wave} vencida!</b>
+        <small>Seu time recuperou 10% do HP. Escolha um prêmio antes da onda ${RUN.wave+1}${next?` (Lv. ${next.level}${next.boss?" · CHEFE":next.elite?" · Elite":""})`:""}:</small>
+        <div class="ar7-rewards">
+          <button type="button" class="ar7-reward" data-ar="surv-reward" data-v="heal"><span>💚</span><b>Curar</b><small>+35% de HP para todos de pé</small></button>
+          <button type="button" class="ar7-reward" data-ar="surv-reward" data-v="revive" ${anyFainted?"":"disabled"}><span>✨</span><b>Reviver</b><small>${anyFainted?"Um desmaiado volta com 50%":"Ninguém desmaiou"}</small></button>
+          <button type="button" class="ar7-reward" data-ar="surv-reward" data-v="train" ${RUN.train>=3?"disabled":""}><span>💪</span><b>Treinar</b><small>+1 Attack e Sp.Atk para o time (${RUN.train}/3)</small></button>
+        </div>
+        <div class="ar7-surv-hp">${RUN.team.map((m,i)=>{const h=RUN.hp[i];const pc=Math.round(100*h.hp/h.maxHp);return `<span class="${h.fainted?"out":""}" title="${esc(m.name)}">${m.img?`<img src="${esc(m.img)}" alt="" width="28" height="28">`:""}<i style="--p:${h.fainted?0:pc}%"></i></span>`;}).join("")}</div>
+      </div>`;
+    }
+    const best=Number(state.arenaSurvivalBest||0);
+    return `<div class="ar7-result lose"><b>Fim da corrida!</b>
+      <small>Você venceu <b>${RUN?.cleared||0}</b> onda${(RUN?.cleared||0)===1?"":"s"}. Seu recorde: <b>${best}</b>.${(RUN?.cleared||0)>=1?" A corrida foi para o ranking.":""}</small>
+      <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button><button type="button" class="ar7-btn primary" data-ar="surv-again">Jogar de novo</button></div></div>`;
+  }
   function challengeDialog(){
     const p=incoming;
     return `<div class="ar7-modal" role="alertdialog" aria-modal="true" aria-labelledby="ar7ChTitle">
@@ -630,6 +779,7 @@
     const pct=hpPct(st);
     return `<div class="ar7-spot ${pos}">
       <div class="ar7-hud"><div class="ar7-hud-name"><b>${esc(m.name)}</b><small>Lv. ${m.level}</small></div>
+        ${m.build&&pos==="foe"?`<small class="ar7-build">${esc(m.build)}${m.ability?` · ${esc(m.ability)}`:""}</small>`:""}
         <div class="ar7-hud-types">${(m.types||[]).map(x=>`<i style="--t:${typeColor(x)};--td:${typeDark(x)}">${esc(x)}</i>`).join("")}</div>
         <div class="ar7-hp ${hpClass(pct)}"><span>HP</span><div><i data-to="${pct}" style="--w:${lastHp[pos]??pct}%"></i></div>${pos==="me"?`<small class="ar7-hp-num">${st.hp} / ${st.maxHp}</small>`:""}</div>
         <div class="ar7-balls">${s.team.map(x=>`<i class="${x.fainted?"out":""}"></i>`).join("")}</div>
@@ -640,12 +790,14 @@
   }
   const lastHp={};
   function battleView(){
+    if(B.solo&&(!B.view||!B.teams))return `<div class="ar7-card ar7-empty ar7-surv-load"><span class="ar7-surv-ico">🗼</span><b>${RUN?.error?esc(RUN.error):`Onda ${RUN?.wave||1}: chamando um Pokémon selvagem…`}</b><p>${RUN?.error?"Confira a internet e tente de novo.":"Buscando na PokéAPI e distribuindo os atributos."}</p>${RUN?.error?`<button type="button" class="ar7-btn primary" data-ar="surv-retry">Tentar de novo</button>`:""}<button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button></div>`;
     if(!B.view||!B.teams)return `<div class="ar7-card ar7-empty"><b>${B.role==="spec"?"Entrando para assistir…":"Preparando a batalha…"}</b><p>${B.role==="spec"?"Buscando o estado da batalha.":"Esperando os dois times chegarem."}</p><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button></div>`;
     const v=B.view,mine=mySide(),foe=mine==="p1"?"p2":"p1";
     const specs=Object.values(B.specs||{});
     const ended=v.phase==="end";
     let panel="";
-    if(ended){
+    if(ended&&B.solo)panel=survivalPanel(v);
+    else if(ended){
       const win=v.winner;
       panel=`<div class="ar7-result ${win===B.role?"win":win?"lose":""}"><b>${win?(B.role===win?"🏆 Você venceu!":B.role==="spec"?`🏆 ${esc(sideName(win))} venceu!`:"Você perdeu…"):"Batalha encerrada"}</b>
         <button type="button" class="ar7-btn primary" data-ar="leave">Voltar ao lobby</button></div>`;
@@ -670,7 +822,7 @@
       }
     }
     return `<section class="ar7-battle">
-      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
+      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
       <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
@@ -709,6 +861,11 @@
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
+    else if(a==="surv-start")startRun();
+    else if(a==="surv-retry"){if(RUN){RUN.error="";RUN.wave--;nextWave();}}
+    else if(a==="surv-reward")applyReward(b.dataset.v);
+    else if(a==="surv-again"){B=null;RUN=null;startRun();}
+    else if(a==="rank-reload")loadRank(true);
     else if(a==="dmg"){dmgMode=b.dataset.v==="matrix"?"matrix":"classic";ls.set("hh_arena_dmg",dmgMode);sfx("select");render();}
     else if(a==="pick-add")editPick(ids=>ids.length<6&&!ids.includes(b.dataset.id)?[...ids,b.dataset.id]:ids);
     else if(a==="pick-del")editPick(ids=>ids.filter(x=>x!==b.dataset.id));
