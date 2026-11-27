@@ -2639,7 +2639,9 @@ function shinyPokemonImage(p){
 }
 /* V6 — arte salva na ficha ou, na falta dela, a arte oficial (sem gravar nada no save).
    V7: Pokémon marcado como Shiny (p.shiny) aparece shiny em toda a ficha. */
-function displayPokemonImage(p,{shiny}={}){
+function displayPokemonImage(p,{shiny,form}={}){
+  // forma por gatilho ligada na ficha (ex.: Brute Chaos Despertado)
+  if(form!==false&&p?.formActive){const f=(p.triggerForms||[]).find(x=>String(x.id)===String(p.formActive));if(f?.image)return f.image;}
   const want=shiny===undefined?!!p?.shiny:!!shiny;
   if(want){const s=shinyPokemonImage(p);if(s)return s;}
   if(p?.imageUrl)return p.imageUrl;

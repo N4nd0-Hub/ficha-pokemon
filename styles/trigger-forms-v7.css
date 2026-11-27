@@ -1,0 +1,7 @@
+/* V7 — Formas por gatilho */
+#sumScreen .sum-left-actions .tf7-btn{background:linear-gradient(180deg,#ffb36b,#e0602a);color:#2a0f00}
+#sumScreen .sum-left-actions .tf7-btn.on{background:linear-gradient(180deg,#9fd0ff,#4f8de8);color:#06203f}
+#sumStage.tf7-on{box-shadow:inset 0 0 0 3px #ff8a3d,inset 0 0 40px rgba(255,120,40,.35)}
+#sumStage.tf7-flash{animation:tf7-flash .7s ease-out}
+@keyframes tf7-flash{0%{filter:brightness(2.2) saturate(1.6)}100%{filter:none}}
+#sumScreen .sum-left-actions .tf7-btn{grid-column:1 / -1}

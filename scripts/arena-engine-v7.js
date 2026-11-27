@@ -135,6 +135,8 @@
       let v=Math.floor(Math.max(0,Number(m.stats?.[stat]||0))*stageMult(stat,stageTotal(ms,stat)));
       const it=m.item&&!m.item.inactive&&!ms.itemGone?m.item:null;
       if(it?.statMult?.[stat])v=Math.floor(v*it.statMult[stat]);
+      // Protosynthesis / Quark Drive
+      if(ms.protoOn&&m.abil?.proto){if(stat===ms.protoStat)v=Math.floor(v*(stat==="spe"?m.abil.proto.speMult:m.abil.proto.mult));if(stat==="spe"&&m.abil.proto.speedFlat)v+=m.abil.proto.speedFlat;}
       // auras do rival (Sword of Ruin e abilities iguais): reduzem o atributo de quem está do outro lado
       {const o=other(s),om=activeMon(b,o);if(om&&!activeState(b,o).fainted)for(const r of om.abil?.ruin||[])if(r.stat===stat&&!(m.abil?.ruin||[]).some(x=>x.stat===stat))v=Math.floor(v*(1-r.pct/100));}
       // Areia: Rock ganha SP.DEF ×1,5 · Neve: Ice ganha DEF ×1,5
@@ -211,6 +213,7 @@
       if(b.weather&&b.weather.kind===kind){b.weather.turns=Math.max(b.weather.turns,turns);}
       else b.weather={kind,turns};
       events.push({k:"weather",kind,turns,src});
+      for(const x of ["p1","p2"])if(b.sides[x].active!=null)paradoxCheck(b,x,events);
     }
     function onEnter(b,s,events,start){
       const side=b.sides[s],ms=activeState(b,s),mon=activeMon(b,s),A=mon.abil,foe=other(s);
@@ -253,15 +256,50 @@
           events.push({k:"info",text:`${mon.name} inspirou o time: +${st.n} de ${RULES.STAT_LABEL[st.stat]} para todos (máx. +${st.cap??3}).`});
         }
       }
-      if(itemOf(b,s)?.booster&&/^(protosynthesis|quark drive)$/.test(key(A.name))){
-        const best=["atk","def","spa","spd","spe"].reduce((x,y)=>Number(mon.stats?.[y]||0)>Number(mon.stats?.[x]||0)?y:x,"atk");
-        useUpItem(b,s,events,`ativou ${A.name}`);addStage(b,s,best,1,events,{src:"Booster Energy",rounds:null});
+      if(itemOf(b,s)?.booster&&A.proto&&!(A.proto.weather&&b.weather?.kind===A.proto.weather)){
+        useUpItem(b,s,events,`ativou ${A.name}`);ms.boosterOn=true;
       }
+      paradoxCheck(b,s,events);
       if(A.ruin?.length){const L={atk:"Attack",def:"Defense",spa:"Sp.Atk",spd:"Sp.Def",spe:"Speed"};events.push({k:"ability",side:s,mon:mon.name,name:A.name});events.push({k:"info",text:`${A.name}: ${A.ruin.map(r=>`${L[r.stat]} −${r.pct}%`).join(", ")} em todos os outros Pokémon.`});}
       if(A.onEnter.foeAccFirstTurn&&!activeState(b,foe).fainted){say();addStage(b,foe,"acc",A.onEnter.foeAccFirstTurn,events,{src:A.name,fromFoe:true,rounds:1});}
     }
+    /* ---------- Protosynthesis e formas por gatilho ---------- */
+    const PSTAT={atk:"Attack",def:"Defense",spa:"Sp.Atk",spd:"Sp.Def",spe:"Speed"};
+    function bestStat(mon){return ["atk","def","spa","spd","spe"].reduce((x,y)=>Number(mon.stats?.[y]||0)>Number(mon.stats?.[x]||0)?y:x,"atk");}
+    function paradoxCheck(b,s,events){
+      const ms=activeState(b,s);if(!ms||ms.fainted)return;
+      const mon=activeMon(b,s),P=mon.abil?.proto;
+      if(P){
+        const on=!!((P.weather&&b.weather?.kind===P.weather)||ms.boosterOn);
+        if(on&&!ms.protoOn){
+          ms.protoOn=true;ms.protoStat=bestStat(mon);
+          events.push({k:"ability",side:s,mon:mon.name,name:mon.abil.name});
+          const extra=[P.boost?`+${P.boost.dice} QD em golpes ${P.boost.cat==="physical"?"físicos ":P.boost.cat==="special"?"especiais ":""}${(P.boost.types||[]).join("/")}`:"",P.speedFlat?`+${P.speedFlat} de Speed`:""].filter(Boolean);
+          events.push({k:"info",text:`${mon.abil.name} despertou: ${PSTAT[ms.protoStat]} ×${ms.protoStat==="spe"?P.speMult:P.mult}${extra.length?" · "+extra.join(" · "):""}.`});
+          if(P.firstGuard&&!ms.protoGuardUsed){ms.protoGuardUsed=true;ms.protoGuardTurn=b.turn;events.push({k:"info",text:`${mon.name} se protege: −${P.firstGuard.dice} QD no dano ${P.firstGuard.cat==="special"?"especial":"físico"} recebido neste turno.`});}
+        }else if(!on&&ms.protoOn){ms.protoOn=false;events.push({k:"info",text:`${mon.abil.name} de ${mon.name} se apagou.`});}
+      }
+      formCheck(b,s,events);
+    }
+    /* Formas que mudam sozinhas (arte/tipos) por gatilho: clima, Booster Energy, HP baixo ou a própria Protosynthesis */
+    function formCheck(b,s,events){
+      const side=b.sides[s],idx=side.active,ms=activeState(b,s);if(!ms||ms.fainted)return;
+      const base=ms.formOn?ms.formBase:activeMon(b,s),tf=base?.trigForm;if(!tf)return;
+      const T=tf.trigger||{};
+      const on=!!(((T.weather||[]).includes(b.weather?.kind))||(ms.boosterOn&&(T.items||[]).some(i=>/booster/i.test(i)))||(T.ability&&ms.protoOn)||(T.hpBelow&&ms.hp/ms.maxHp<=T.hpBelow));
+      if(on&&!ms.formOn){
+        const types=(tf.types||[]).map(normT).filter(Boolean);
+        const next={...base,name:tf.name||base.name,img:tf.img||base.img,types:types.length?types:base.types,origTypes:types.length?types:base.origTypes,stats:tf.stats?{...base.stats,...tf.stats}:base.stats,baseName:base.name};
+        ms.formBase=base;ms.formOn=true;b.teams[s][idx]=next;
+        events.push({k:"gimmick",kind:"form",side:s,idx,mon:base.name,to:next.name,img:next.img,types:next.types,ability:next.ability,hp:ms.hp,maxHp:ms.maxHp});
+      }else if(!on&&ms.formOn){
+        const back=ms.formBase;ms.formOn=false;ms.formBase=null;b.teams[s][idx]=back;
+        events.push({k:"gimmick",kind:"unform",side:s,idx,mon:tf.name||back.name,to:back.name,img:back.img,types:back.types,ability:back.ability,hp:ms.hp,maxHp:ms.maxHp});
+      }
+    }
     function resetVolatile(ms){
       ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.eject=false;ms.nextAcc=0;ms.nextFirst=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;ms.evadeStreak=0;ms.lock=null;ms.metro={k:"",n:0};
+      ms.boosterOn=false;ms.protoOn=false;ms.protoGuardTurn=0;
       ms.semi=null;ms.charge=null;ms.recharge=false;ms.sub=0;ms.destiny=false;ms.perish=0;ms.cursed=false;ms.seeded=null;ms.taunt=0;ms.encore=null;ms.disable=null;ms.yawn=0;ms.lastIdx=-1;ms.baton=false;
       if(ms.status==="tox")ms.tox=1;
     }
@@ -460,6 +498,8 @@
       if(physical&&(aS.status==="brn")&&!A.abil.guts){pen+=1;notes.push("Burn −1d6");}
       if(physical&&A.abil.guts&&aS.status)q(1,"Guts +1 QD");
       // abilities do defensor
+      {const P=A.abil?.proto;if(aS.protoOn&&P?.boost&&(!P.boost.cat||(P.boost.cat==="physical")===physical)&&(!P.boost.types?.length||P.boost.types.includes(mtype)))q(P.boost.dice,`${A.abil.name} +${P.boost.dice} QD`);}
+      {const P=D.abil?.proto;if(P?.firstGuard&&dS.protoGuardTurn===b.turn&&(!P.firstGuard.cat||(P.firstGuard.cat==="physical")===physical))q(-P.firstGuard.dice,`${D.abil.name} −${P.firstGuard.dice} QD`);}
       for(const t of D.abil.dmgTaken)if((!t.type||t.type===mtype)&&(!t.fullHp||dS.hp>=dS.maxHp))q(t.dice,`${D.abil.name} ${t.dice} QD`);
       // item segurado do atacante
       let flat=0;const it=itemOf(b,atkSide);
@@ -1038,6 +1078,7 @@
       const fromMs=activeState(b,s);
       const from=activeMon(b,s).name;
       const pass=fromMs.baton?{stages:fromMs.stages.map(x=>({...x})),persist:{...fromMs.persist},sub:fromMs.sub,crit:fromMs.crit}:null;
+      if(fromMs.formOn&&fromMs.formBase){b.teams[s][side.active]=fromMs.formBase;fromMs.formOn=false;fromMs.formBase=null;}
       resetVolatile(fromMs);
       side.active=idx;side.needSwitch=false;
       events.push({k:"switch",side:s,from,to:activeMon(b,s).name,hp:activeState(b,s).hp});
@@ -1119,7 +1160,7 @@
         if(side.field.royal>0){side.field.royal--;if(side.field.royal===0)events.push({k:"field",side:s,kind:"royal",turns:0,end:true});}
         side.faintedLastTurn=!!side.faintedThisTurn;side.faintedThisTurn=false;
       }
-      if(b.weather){b.weather.turns--;if(b.weather.turns<=0){events.push({k:"weather",kind:b.weather.kind,turns:0,end:true});b.weather=null;}}
+      if(b.weather){b.weather.turns--;if(b.weather.turns<=0){events.push({k:"weather",kind:b.weather.kind,turns:0,end:true});b.weather=null;for(const x of ["p1","p2"])paradoxCheck(b,x,events);}}
     }
 
     /* Resolve o turno (ou a troca obrigatória) com as ações pendentes. */
