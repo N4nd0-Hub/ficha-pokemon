@@ -169,12 +169,19 @@
   const lifeAttr=()=>{try{return typeof trainerAttributeValue==="function"?trainerAttributeValue("life"):Number(trainer().attributes?.life||50);}catch(e){return 50;}};
   const maxHp=()=>Math.max(10,lifeAttr()||50);
   const REGEN_MS=60*60*1000; // Vida toda em 1 hora real
+  /* Modo Mestre (botão escondido no canto inferior direito, com senha):
+     fica só neste navegador, não vai para o save da ficha. */
+  const GM_HASH="c7ae5fbf96304197001a1ab280a85cdc9ea527612093035d3b7c4e5c371157f9";
+  const gm=(()=>{try{return Object.assign({on:false,life:true,cool:true},JSON.parse(localStorage.getItem("hh_explore_gm")||"{}"));}catch(e){return {on:false,life:true,cool:true};}})();
+  const gmSave=()=>{try{localStorage.setItem("hh_explore_gm",JSON.stringify(gm));}catch(e){}};
+  const gmLife=()=>gm.on&&gm.life,gmCool=()=>gm.on&&gm.cool;
   function hpNow(){
+    if(gmLife())return maxHp();
     const x=X(),mx=maxHp();
     const h=Number(x.hp||0)+(Date.now()-Number(x.at||Date.now()))/REGEN_MS*mx;
     return clamp(h,0,mx);
   }
-  function setHp(v){const x=X();x.hp=clamp(v,0,maxHp());x.at=Date.now();save();}
+  function setHp(v){const x=X();x.hp=gmLife()?maxHp():clamp(v,0,maxHp());x.at=Date.now();save();}
   function fullIn(){const mx=maxHp(),h=hpNow();return h>=mx?0:Math.ceil((mx-h)/mx*REGEN_MS);}
   const fmtTime=ms=>{const s=Math.ceil(ms/1000),m=Math.floor(s/60);return m>=60?`${Math.floor(m/60)}h${String(m%60).padStart(2,"0")}`:`${m}:${String(s%60).padStart(2,"0")}`;};
   const region=()=>REGIONS[X().region];
@@ -208,7 +215,7 @@
     return out.sort((a,b)=>b.pct-a.pct);
   }
   const hasKit=()=>invItems().some(i=>Number(i.qty||0)>0&&/kit de acampamento/i.test(i.name||""));
-  const coolLeft=k=>{const at=Number(X()[k]||0);return at?Math.max(0,at+COOL-Date.now()):0;};
+  const coolLeft=k=>{if(gmCool())return 0;const at=Number(X()[k]||0);return at?Math.max(0,at+COOL-Date.now()):0;};
   function eat(id){
     if(coolLeft("eatAt")){toast(`Você já comeu nesta hora. Próxima refeição em ${fmtTime(coolLeft("eatAt"))}.`);return;}
     const f=foods().find(x=>x.i.id===id);if(!f)return;
@@ -611,7 +618,7 @@
   }
 
   /* ---------- tela ---------- */
-  const ui={view:"map",ev:null,busy:false,cap:null,pwd:false,camp:null};
+  const ui={view:"map",ev:null,busy:false,cap:null,pwd:false,camp:null,gm:false};
   const root=document.createElement("section");
   root.id="hhExplore";root.className="ex7";root.hidden=true;root.setAttribute("aria-label","Exploração");
   document.body.appendChild(root);
@@ -646,7 +653,7 @@
   function mapView(){
     const x=X(),r=region();
     const pins=ORDER.map(id=>{const g=REGIONS[id];const k=known(id),here=id===x.region;
-      return `<div class="ex7-pin${here?" here":""}${k?"":" unknown"}" style="left:${(g.pos[0]/MAP_W*100).toFixed(2)}%;top:${(g.pos[1]/MAP_H*100).toFixed(2)}%;--c:${g.color}" title="${k?esc(g.name+" · "+g.biome):"Região desconhecida"}">
+      return `<div class="ex7-pin${here?" here":""}${k?"":" unknown"}${gm.on?" gm":""}" ${gm.on&&!here?`data-ex="gmgo" data-v="${id}" role="button" tabindex="0"`:""} style="left:${(g.pos[0]/MAP_W*100).toFixed(2)}%;top:${(g.pos[1]/MAP_H*100).toFixed(2)}%;--c:${g.color}" title="${k?esc(g.name+" · "+g.biome):"Região desconhecida"}">
         <span class="ex7-pin-name"><span class="ex7-pin-ico">${k?px(g.icon,14):"<b>?</b>"}</span>${k?esc(g.name):"???"}</span>${here?`<span class="ex7-here">${px("pin",16)} você está aqui</span>`:""}</div>`;}).join("");
     return `<div class="ex7-body ex7-mapbody">
       <section class="ex7-map" aria-label="Mapa de Helikon">
@@ -681,6 +688,26 @@
       </section>
       ${ui.pwd?pwdModal():""}
     </div>`;
+  }
+  function gmModal(){
+    if(!gm.on)return `<div class="ex7-modal" role="dialog" aria-label="Modo Mestre"><div class="ex7-card ex7-pwd">
+      <span class="ex7-big">${px("key",44)}</span><b>Modo Mestre</b>
+      <form data-ex-form="gm"><input id="ex7Gm" type="password" autocomplete="off" placeholder="Senha do Mestre" maxlength="60"><button type="submit" class="ex7-btn primary">Entrar</button></form>
+      <small id="ex7GmMsg" class="ex7-pwdmsg"></small><button type="button" class="ex7-btn ghost" data-ex="gm-close">Cancelar</button></div></div>`;
+    const e=exp();
+    const tg=(k,label,sub)=>`<label class="ex7-gmopt"><input type="checkbox" data-gm="${k}" ${gm[k]?"checked":""}><span><b>${label}</b><small>${sub}</small></span></label>`;
+    return `<div class="ex7-modal" role="dialog" aria-label="Modo Mestre"><div class="ex7-card ex7-gm">
+      <b>♛ Modo Mestre</b><p class="ex7-hint">Vale só neste navegador e não vai para o save da ficha.</p>
+      ${tg("life","Vida infinita","andar, perigos e derrotas não gastam Vida")}
+      ${tg("cool","Resets infinitos","comer e descansar sem esperar 1 hora")}
+      <div class="ex7-gmacts">
+        <button type="button" class="ex7-btn" data-ex="gm-full">❤ Encher a Vida</button>
+        <button type="button" class="ex7-btn" data-ex="gm-reset">⟲ Zerar tempos</button>
+        ${e?`<button type="button" class="ex7-btn" data-ex="gm-reveal">👁 Revelar a área</button><button type="button" class="ex7-btn" data-ex="gm-heal">✚ Curar o time</button><button type="button" class="ex7-btn" data-ex="gm-new">↻ Nova área</button>`:""}
+        <button type="button" class="ex7-btn" data-ex="gm-unlock">🗺 Revelar todas as regiões</button>
+      </div>
+      <p class="ex7-hint">No mapa, clique numa região para viajar sem senha.</p>
+      <div class="ex7-acts"><button type="button" class="ex7-btn ghost" data-ex="gm-off">Sair do Modo Mestre</button><button type="button" class="ex7-btn primary" data-ex="gm-close">Fechar</button></div></div></div>`;
   }
   function pwdModal(){
     return `<div class="ex7-modal" role="dialog" aria-label="Mudar de região"><div class="ex7-card ex7-pwd">
@@ -778,7 +805,8 @@
   function render(){
     if(root.hidden&&!ui.cap)return;
     if(ui.view==="area"&&!exp())ui.view="map";
-    root.innerHTML=`<div class="ex7-win">${head()}${ui.view==="area"?areaView():mapView()}${ui.camp?campModal():""}</div>`;
+    root.innerHTML=`<div class="ex7-win${gm.on?" gm-on":""}">${head()}${ui.view==="area"?areaView():mapView()}${ui.camp?campModal():""}${ui.gm?gmModal():""}
+      <button type="button" class="ex7-gmbtn" data-ex="gm" aria-label="Modo Mestre" title="${gm.on?"Modo Mestre":""}">${gm.on?"♛":"·"}</button></div>`;
     if(ui.cap?.phase==="aim")startRing();
     if(ui.pwd)setTimeout(()=>root.querySelector("#ex7Pwd")?.focus(),30);
   }
@@ -788,6 +816,16 @@
     const b=e.target.closest("[data-ex]");if(!b||b.disabled)return;
     const a=b.dataset.ex,v=b.dataset.v;
     if(a==="close")close();
+    else if(a==="gm"){ui.gm=true;render();setTimeout(()=>root.querySelector("#ex7Gm")?.focus(),30);}
+    else if(a==="gm-close"){ui.gm=false;render();}
+    else if(a==="gm-off"){gm.on=false;gmSave();ui.gm=false;X().at=Date.now();save();render();toast("Modo Mestre desligado.");}
+    else if(a==="gm-full"){const x=X();x.hp=maxHp();x.at=Date.now();save();render();}
+    else if(a==="gm-reset"){const x=X();x.eatAt=0;x.restAt=0;save();render();toast("Tempos de comer e descansar zerados.");}
+    else if(a==="gm-reveal"){const e2=exp();if(e2){e2.tiles.forEach(t=>t.seen=true);save();ui.gm=false;render();}}
+    else if(a==="gm-heal"){const e2=exp();if(e2){e2.teamHp={};save();ui.gm=false;render();toast("Time curado.");}}
+    else if(a==="gm-new"){const e2=exp();if(e2){newExpedition(e2.area);ui.gm=false;ui.ev=null;render();}}
+    else if(a==="gm-unlock"){const x=X();ORDER.forEach(id=>{if(!x.known.includes(id))x.known.push(id);});save();render();}
+    else if(a==="gmgo"&&gm.on){const x=X();x.region=v;if(!x.known.includes(v))x.known.push(v);x.exp=null;save();ui.view="map";render();toast(`♛ Viagem do Mestre: ${REGIONS[v].name}.`);}
     else if(a==="pwd"){ui.pwd=true;render();}
     else if(a==="camp"){if(ui.ev&&ui.ev.kind!=="item"&&ui.ev.kind!=="money"&&ui.ev.kind!=="hazard"&&ui.ev.kind!=="spring"){toast("Resolva o encontro antes de acampar.");return;}ui.ev=null;ui.camp=v;render();}
     else if(a==="camp-close"){ui.camp=null;render();}
@@ -811,8 +849,15 @@
     else if(a==="again"){if(ui.cap){ui.cap.phase="aim";ui.cap.msg="";ui.cap.C.turn=(ui.cap.C.turn||1)+1;if(!ballById(ui.cap.ball))ui.cap.ball=balls()[0]?.id||"";render();}}
     else if(a==="capback")captureBack();
   });
+  root.addEventListener("change",e=>{const c=e.target.closest("[data-gm]");if(!c)return;gm[c.dataset.gm]=c.checked;gmSave();if(c.dataset.gm==="life"&&!c.checked){X().at=Date.now();}render();});
   root.addEventListener("submit",async e=>{
     const f=e.target.closest("[data-ex-form]");if(!f)return;e.preventDefault();
+    if(f.dataset.exForm==="gm"){
+      const val=root.querySelector("#ex7Gm")?.value||"",m=root.querySelector("#ex7GmMsg");
+      let h="";try{h=await sha("hh-gm:"+val);}catch(err){}
+      if(h!==GM_HASH){if(m){m.textContent="Senha errada.";m.classList.add("bad");}sfx("error");return;}
+      gm.on=true;gmSave();sfx("level");render();toast("♛ Modo Mestre ligado.");return;
+    }
     const inp=root.querySelector("#ex7Pwd"),msg=root.querySelector("#ex7PwdMsg");
     const txt=inp?.value||"";if(!txt.trim())return;
     let r=null;try{r=await tryPassword(txt);}catch(err){if(msg)msg.textContent="Este navegador não conseguiu conferir a senha.";return;}
@@ -826,7 +871,7 @@
   });
   document.addEventListener("keydown",e=>{
     if(root.hidden)return;
-    if(e.key==="Escape"){if(ui.camp){ui.camp=null;render();}else if(ui.pwd){ui.pwd=false;render();}else if(!ui.ev)close();return;}
+    if(e.key==="Escape"){if(ui.gm){ui.gm=false;render();}else if(ui.camp){ui.camp=null;render();}else if(ui.pwd){ui.pwd=false;render();}else if(!ui.ev)close();return;}
     if((e.key===" "||e.key==="Enter")&&ui.cap?.phase==="aim"&&!/^(INPUT|BUTTON)$/.test(document.activeElement?.tagName||"")){e.preventDefault();doThrow("ring");}
     // setas andam no mapa da área
     const e2=exp();
