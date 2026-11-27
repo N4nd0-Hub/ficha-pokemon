@@ -291,6 +291,13 @@
     connect();render(true);ensureThumbs();
   }
   function close(){
+    if(RUN?.wild){
+      if(RUN.over){wildFinish("back");return;}
+      root.hidden=true;document.body.classList.remove("ar7-open");
+      document.getElementById("hhArenaBtn")?.classList.add("ar9-running");
+      if(typeof showToast==="function")showToast("A batalha selvagem continua pausada: volte pelo botão ⚔ Arena.");
+      return;
+    }
     // Desafio Sem Fim / Abismo: voltar para a ficha só pausa a corrida
     // (dá para comprar itens, mudar a ordem etc. e voltar)
     if(B?.solo&&RUN&&!RUN.over){
@@ -320,7 +327,7 @@
   };
   document.addEventListener("hh:render",onFichaChange);
   document.addEventListener("hh:pokemonchange",onFichaChange);
-  window.hhArena={open,close,get battle(){return B;},get rank(){return RANK;}};
+  window.hhArena={open,close,wild:o=>startWild(o),get busy(){return !!B;},get battle(){return B;},get rank(){return RANK;}};
 
   /* Botão ⚔ Arena no topo (computador e celular) */
   const brand=document.querySelector(".topbar .brand");
@@ -369,6 +376,7 @@
     room=next;ls.set("hh_arena_room",room);disconnect();chat=[];await connect();
   }
   function myStatus(){
+    if(RUN?.wild)return {status:"explore"};
     if(RUN)return {status:"survival",wave:RUN.wave,region:RUN.region?.id||"",battle:RUN.ch?RUN.id:""};
     if(!B)return {status:"idle"};
     if(B.role==="spec")return {status:"watch",battle:B.id};
@@ -659,6 +667,8 @@
         cls="evade";
       }else if(ev.k==="held"){
         line=`🎒 <b>${esc(ev.mon)}</b>: <b class="ar9-held">${esc(ev.item)}</b> ${esc(ev.text||"")}.`;cls="heal";
+      }else if(ev.k==="item"&&ev.ball){
+        line=`◓ ${esc(sideName(ev.side))} lançou a <b>${esc(ev.item)}</b>, mas o Pokémon selvagem escapou!`;cls="weak";
       }else if(ev.k==="item"){
         line=ev.fail?`${esc(sideName(ev.side))} usou ${esc(ev.item)}, mas não teve efeito.`:`🎒 ${esc(sideName(ev.side))} usou <b>${esc(ev.item)}</b> em ${esc(ev.mon)}${ev.revived?": voltou à luta!":ev.healed?`: +${ev.healed} HP`:""}${ev.cured?" (status curado)":""}.`;cls="heal";
       }else if(ev.k==="heal")line=`${esc(monName(ev.side))} recuperou <b>${ev.amount}</b> HP${ev.src?` <small class="ar7-src">${esc(ev.src)}</small>`:""}.`;
@@ -901,7 +911,7 @@
   }
   function roomTab(others,battles,myTeam,oldRuns=[]){
     const watchers={};Object.values(people).filter(p=>p.status==="watch").forEach(p=>{watchers[p.battle]=(watchers[p.battle]||0)+1;});
-    const badge=p=>p.status==="battle"?`⚔ em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"👁 assistindo":p.status==="survival"?(p.region&&REG(p.region)?`⛰ ${esc(REG(p.region).area)} · andar ${Number(p.wave)||1}`:`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`):"● disponível";
+    const badge=p=>p.status==="battle"?`⚔ em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"👁 assistindo":p.status==="explore"?"🧭 explorando":p.status==="survival"?(p.region&&REG(p.region)?`⛰ ${esc(REG(p.region).area)} · andar ${Number(p.wave)||1}`:`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`):"● disponível";
     return `<div class="ar8-sec">
       <h3>${PX("people",24)} Treinadores na sala <small>${others.length}</small></h3>
       ${others.length?`<ul class="ar8-people">${others.map(p=>{const l=(p.team||[])[0];return `<li class="ar8-person ${esc(p.status)}">
@@ -1109,6 +1119,7 @@
     try{if(typeof renderAll==="function")setTimeout(()=>{try{renderAll();}catch(e){}},50);}catch(e){}
   }
   function onWaveEnd(){
+    if(RUN.wild){wildEnd();return;}
     RUN.done=true;
     const st=B.state||null;
     if(B.view.winner==="p1"){
@@ -1158,6 +1169,82 @@
       if(error)throw error;
       if(!quiet)toast("Corrida registrada no ranking!");RANK.at=0;if(RANK.mode===(run.mode||"endless"))loadRank(true);
     }catch(e){if(!quiet)toast("Não consegui salvar no ranking.");}
+  }
+  /* ---------- Modo Exploração: batalha contra um Pokémon selvagem ----------
+     O Modo Exploração chama hhArena.wild({foe,scene,area,teamHp,onBall,onEnd}).
+     O time é a Equipe da ficha com o HP que sobrou da expedição. Vencer dá
+     1 PPg (regra 17, com Exp. Share); a Poké Ball gasta a ação e abre a
+     captura da exploração com o HP e o status atuais do selvagem. */
+  async function startWild(opt){
+    if(B){toast("Termine a batalha da Arena antes de explorar.");return false;}
+    if(!engine){toast("A Arena ainda está carregando.");return false;}
+    const team=await buildTeam(6);
+    if(!team.length){toast("Coloque Pokémon na Equipe primeiro.");return false;}
+    const th=opt.teamHp||{};
+    RUN={wild:opt,wave:1,team,hp:team.map(m=>{const mx=Math.max(1,Number(m.maxHp||1));const h=th[m.fid];return h?{hp:Math.max(0,Math.min(mx,Math.round(mx*h.pct))),maxHp:mx,fainted:!!h.fainted||h.pct<=0}:{hp:mx,maxHp:mx,fainted:false};}),
+      train:0,dmg:dmgMode,cleared:0,done:false,region:null,mode:"wild",ppg:{},lastGains:[],attempt:0};
+    const alive=RUN.team.map((m,i)=>i).filter(i=>!RUN.hp[i].fainted);
+    if(!alive.length){RUN=null;toast("Todo o time está desmaiado.");return false;}
+    RUN.alive=alive;RUN.waveInfo={level:Number(opt.foe.level||1),ppg:1};
+    root.hidden=false;document.body.classList.add("ar7-open");
+    B={id:"wild-"+uidShort(),role:"p1",host:true,solo:true,arena:sceneOk(opt.scene)?opt.scene:"standard",dmg:RUN.dmg,format:6,names:{p1:me.name,p2:`${opt.foe.name} selvagem`},state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false,sel:{}};
+    for(const k in lastHp)delete lastHp[k];
+    B.state=engine.newBattle({id:B.id,format:6,damage:RUN.dmg,
+      p1:{id:me.id,name:me.name,team:alive.map(i=>RUN.team[i]),items:true},
+      p2:{id:"cpu",name:`${opt.foe.name} selvagem`,team:[opt.foe]}});
+    alive.forEach((ri,j)=>{const st=B.state.sides.p1.team[j];st.hp=Math.min(st.maxHp,RUN.hp[ri].hp);});
+    B.teams=B.state.teams;B.names={p1:me.name,p2:B.state.sides.p2.name};B.started=true;
+    applyState(pub(B.state),true);B.state.events=[];
+    sfx("page");track();render(true);
+    return true;
+  }
+  function wildSnapshot(){
+    const st=B?.state;const out={};
+    if(!st||!RUN)return out;
+    RUN.alive.forEach((ri,j)=>{const t=st.sides.p1.team[j];const m=RUN.team[ri];out[m.fid]={pct:t.fainted?0:t.hp/Math.max(1,t.maxHp),fainted:!!t.fainted};});
+    return out;
+  }
+  function wildFoe(){
+    const st=B?.state;if(!st)return null;
+    const t=st.sides.p2.team[0];const my=st.sides.p1.team[st.sides.p1.active];const myMon=st.teams.p1[st.sides.p1.active];
+    return {hp:t.hp,maxHp:t.maxHp,pct:t.fainted?0:t.hp/Math.max(1,t.maxHp),fainted:!!t.fainted,status:t.status||"",cnf:t.cnf>0,turn:Number(st.turn||1),
+      myLevel:Number(myMon?.level||1),myName:myMon?.name||"",myAlive:!!(my&&!my.fainted)};
+  }
+  function wildEnd(){
+    RUN.done=true;
+    if(B.view.winner==="p1"){try{awardPpg();}catch(e){console.error(e);}}
+    RUN.result=B.view.winner==="p1"?"won":"lost";
+    RUN.snap=wildSnapshot();RUN.foeEnd=wildFoe();
+    RUN.over=true;
+  }
+  function wildPanel(v){
+    const foe=RUN.wild.foe,won=RUN.result==="won";
+    const gains=(RUN.lastGains||[]).filter(g=>g.n>0);
+    return `<div class="ar7-result ${won?"win":"lose"} ar9-wild-end"><b>${won?`🏆 ${esc(foe.name)} selvagem desmaiou!`:"Seu time foi derrotado…"}</b>
+      <small>${won?`Um Pokémon desmaiado pode ser capturado. ${gains.length?`PPg: ${gains.map(g=>`${esc(g.m.name)} +${g.n}`).join(" · ")}.`:""}`:`Você volta para a exploração e perde Vida carregando o time.`}</small>
+      <div class="ar7-modal-actions">${won?`<button type="button" class="ar7-btn" data-ar="wild-back" data-v="leave">Deixar ir</button><button type="button" class="ar7-btn primary" data-ar="wild-back" data-v="catch">◓ Capturar ${esc(foe.name)}</button>`:`<button type="button" class="ar7-btn primary" data-ar="wild-back" data-v="lost">Voltar à exploração</button>`}</div></div>`;
+  }
+  function wildFinish(kind){
+    if(!RUN?.wild)return;
+    const W=RUN.wild;
+    if(kind==="caught"&&!RUN.done){try{awardPpg();}catch(e){console.error(e);}}
+    const res={outcome:kind==="back"?(RUN.result||"lost"):kind,teamHp:RUN.snap||wildSnapshot(),foe:RUN.foeEnd||wildFoe(),gains:(RUN.lastGains||[]).filter(g=>g.n>0)};
+    B=null;RUN=null;track();
+    root.hidden=true;document.body.classList.remove("ar7-open");
+    document.getElementById("hhArenaBtn")?.classList.remove("ar9-running");
+    try{W.onEnd?.(res);}catch(e){console.error(e);}
+  }
+  function wildBall(){
+    if(!RUN?.wild||!B?.state)return;
+    const info=wildFoe();
+    root.hidden=true;document.body.classList.remove("ar7-open");
+    RUN.wild.onBall?.(info,result=>{
+      if(!RUN?.wild)return;
+      if(result==="caught"){RUN.snap=wildSnapshot();RUN.foeEnd=wildFoe();wildFinish("caught");return;}
+      root.hidden=false;document.body.classList.add("ar7-open");
+      if(result&&result.ball)act({kind:"item",target:B.view.sides.p1.active,name:result.ball,slug:"",effect:{kind:"ball"}});
+      else render(true);
+    });
   }
   function applyReward(kind){
     if(!RUN||RUN.over)return;
@@ -1315,6 +1402,7 @@
     </section>`;
   }
   function survivalPanel(v){
+    if(RUN?.wild)return wildPanel(v);
     if(RUN?.region)return regionPanel(v);
     const won=v.winner==="p1"&&RUN&&!RUN.over;
     if(won){
@@ -1473,13 +1561,14 @@
               <button type="button" class="ar9-react${sel.react?" on":""}" data-ar="react" aria-pressed="${!!sel.react}" title="Evasão Reativa: junto do golpe, a Precisão do rival cai 25"><i>↯</i>Esquiva reativa <small>−25 Precisão</small></button>
               <button type="button" class="ar9-active" data-ar="evade" title="Evasão Ativa: gasta a ação, a Precisão do rival cai 50"><i>🛡</i>Evasão ativa <small>gasta a ação · −50</small></button>
               ${s.items?`<button type="button" class="ar9-bagbtn" data-ar="bag-open"><i>🎒</i>Mochila <small>gasta a ação</small></button>`:""}
+              ${RUN?.wild?`<button type="button" class="ar9-bagbtn ar9-wildball" data-ar="wild-ball"><i>◓</i>Poké Ball <small>gasta a ação</small></button>`:""}
             </div>
             ${streak>=2?`<p class="ar9-tired">${streak>=3?"⚠ Cansado: a próxima evasão custa 1/16 do HP.":"Mais uma evasão seguida e o cansaço começa."}</p>`:""}
           </div>`}
           <p class="ar7-party-title">${mustSwitch?"Escolha quem entra:":`Trocar Pokémon <small>(gasta o turno)</small>`}</p>
           <div class="ar7-party">${team.map((m,i)=>{const st=s.team[i];const dis=st.fainted||i===s.active;return `<button type="button" class="ar7-switch" data-ar="switch" data-idx="${i}" ${dis?"disabled":""} title="Trocar para ${esc(m.name)}">
             ${m.img?`<img src="${esc(m.img)}" alt="" width="34" height="34">`:`<i>${esc(m.name.slice(0,1))}</i>`}<span><b>${esc(m.name)}</b><small class="${hpClass(hpPct(st))}">${st.fainted?"desmaiado":`${st.hp}/${st.maxHp}`}</small></span></button>`;}).join("")}</div>
-          ${mustSwitch?"":`<button type="button" class="ar7-btn ar7-forfeit" data-ar="forfeit">🏳 Desistir</button>`}`;
+          ${mustSwitch?"":RUN?.wild?`<button type="button" class="ar7-btn ar7-forfeit" data-ar="wild-flee">🏃 Fugir</button>`:`<button type="button" class="ar7-btn ar7-forfeit" data-ar="forfeit">🏳 Desistir</button>`}`;
       }
     }
     return `<section class="ar7-battle">
@@ -1545,6 +1634,9 @@
     else if(a==="rank-mode-open"){tab="ranking";ls.set("hh_arena_tab",tab);RANK.mode=b.dataset.v;RANK.list=null;RANK.at=0;render();loadRank(true);root.querySelector(".ar8-tabs")?.scrollIntoView({block:"nearest",behavior:"smooth"});}
     else if(a==="rank-mode"){RANK.mode=b.dataset.v;RANK.list=null;RANK.at=0;render();loadRank(true);}
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
+    else if(a==="wild-ball"){wildBall();}
+    else if(a==="wild-flee"){if(confirm("Fugir da batalha? O Pokémon selvagem vai embora."))wildFinish("fled");}
+    else if(a==="wild-back"){wildFinish(b.dataset.v||"back");}
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
     else if(a==="tab"){tab=b.dataset.v;ls.set("hh_arena_tab",tab);if(tab==="ranking")loadRank();sfx("select");render();root.querySelector(".ar8-tabs")?.scrollIntoView({block:"nearest",behavior:"smooth"});}

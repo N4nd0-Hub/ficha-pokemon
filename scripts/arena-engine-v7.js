@@ -409,6 +409,7 @@
       else if(e.kind==="fullRestore"){healTo(ms.maxHp);cure(null);}
       else if(e.kind==="cureCondition")cure(COND_CODE[e.condition]||null);
       else if(e.kind==="cureAll")cure(null);
+      else if(e.kind==="ball"){ev.ball=true;events.push(ev);return;}
       else if(e.kind==="stage"&&isActive){const st=e.stat==="accuracy"?"acc":e.stat==="evasion"?"eva":e.stat;events.push(ev);addStage(b,s,st,Number(e.amount||1),events,{src:a.name});return;}
       else{ev.fail=true;}
       ev.hp=ms.hp;ev.maxHp=ms.maxHp;ev.status=ms.status||null;ev.cnf=ms.cnf>0;

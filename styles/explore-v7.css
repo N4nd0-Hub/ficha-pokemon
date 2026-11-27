@@ -1,0 +1,229 @@
+/* ============================================================
+   V7 — 🧭 Modo Exploração (mapa de Helikon, áreas com névoa e captura)
+   ============================================================ */
+.ar7-open-btn.ex7-top{background:linear-gradient(180deg,#5cc483,#2f8a4a);color:#fff;border-color:#174a28;box-shadow:0 2px 0 #174a28,inset 0 1px 0 rgba(255,255,255,.4)}
+.ar7-open-btn.ex7-top:active{box-shadow:0 1px 0 #174a28}
+.ex7-topico{display:inline-grid;place-items:center;width:20px;height:20px}
+.ex7-px{image-rendering:pixelated;flex:none}
+
+.ex7{position:fixed;inset:0;z-index:10001;display:grid;place-items:center;padding:14px;background:rgba(8,14,12,.7);backdrop-filter:blur(2px)}
+.ex7[hidden]{display:none}
+body.ex7-open{overflow:hidden}
+.ex7-win{position:relative;width:min(1240px,100%);height:min(820px,calc(100vh - 28px));display:grid;grid-template-rows:auto 1fr;overflow:hidden;
+  background:#f6f1df;color:#222;border:3px solid #181a24;border-radius:16px;box-shadow:0 8px 0 #181a24,0 20px 50px rgba(0,0,0,.4);animation:ex7-in .18s ease-out}
+@keyframes ex7-in{from{transform:translateY(10px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+
+/* topo: capa de caderno de viagem */
+.ex7-head{position:relative;display:flex;align-items:center;gap:12px;padding:10px 14px;color:#fff;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 6px),linear-gradient(180deg,#3b9a5a,#1f5e36);border-bottom:3px solid #181a24}
+.ex7-head::after{content:"";position:absolute;left:10px;right:10px;bottom:5px;border-bottom:2px dashed rgba(220,255,200,.5)}
+.ex7-logo{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:#fff3c4;border:3px solid #181a24;box-shadow:0 3px 0 #181a24}
+.ex7-title{display:grid;flex:1;min-width:0}
+.ex7-title b{font:400 20px var(--cl-title,inherit);letter-spacing:.03em;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.ex7-title small{font:700 10px var(--cl-pixel,monospace);letter-spacing:.04em}
+.ex7-title small b{font:inherit;color:#ffe58a;text-shadow:none}
+.ex7-life{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 8px;border-radius:12px;background:#fff7d9;color:#3a2a00;border:3px solid #181a24;box-shadow:0 3px 0 #181a24}
+.ex7-lifebar{position:relative;width:150px;height:16px;border:2px solid #181a24;border-radius:6px;background:#3b2525;overflow:hidden}
+.ex7-lifebar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(180deg,#5fe08a,#2ea85a);transition:width .4s}
+.ex7-lifebar i.mid{background:linear-gradient(180deg,#ffd45a,#e3a012)}
+.ex7-lifebar i.low{background:linear-gradient(180deg,#ff7a6e,#d0362c)}
+.ex7-lifebar b{position:relative;display:block;text-align:center;font:700 10px/12px var(--cl-pixel,monospace);color:#fff;text-shadow:0 1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000}
+.ex7-life small{font:700 9px var(--cl-pixel,monospace);white-space:nowrap;color:#5a4410}
+.ex7-x{width:38px;height:38px;border-radius:10px;border:3px solid #181a24;background:#fff;color:#181a24;font:900 16px inherit;cursor:pointer;box-shadow:0 3px 0 #181a24}
+.ex7-x:active{transform:translateY(2px);box-shadow:0 1px 0 #181a24}
+
+.ex7-body{position:relative;min-height:0;display:grid;gap:14px;padding:14px;overflow:auto}
+.ex7-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:10px;border:3px solid #181a24;background:#fff;color:#181a24;
+  font:800 13px/1.1 inherit;cursor:pointer;box-shadow:0 3px 0 #181a24;white-space:nowrap}
+.ex7-btn small{font-weight:700;opacity:.7}
+.ex7-btn:hover:not(:disabled){filter:brightness(1.05)}
+.ex7-btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #181a24}
+.ex7-btn.primary{background:linear-gradient(180deg,#5cc483,#2f8a4a);color:#fff}
+.ex7-btn.ghost{background:#efe7cf}
+.ex7-btn:disabled{opacity:.45;cursor:not-allowed}
+.ex7-type{display:inline-block;margin:0 3px 0 0;padding:2px 6px;border-radius:6px;background:var(--t);color:#fff;font:800 10px/1.2 inherit;text-shadow:0 1px 0 rgba(0,0,0,.35);border:1px solid rgba(0,0,0,.25)}
+
+/* ---------- mapa ---------- */
+.ex7-mapbody{grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);align-items:start}
+.ex7-map{display:grid;gap:8px}
+.ex7-mapimg{position:relative;border:3px solid #181a24;border-radius:12px;overflow:hidden;box-shadow:0 4px 0 #181a24;background:#24509c;aspect-ratio:240/150}
+.ex7-mapimg img{display:block;width:100%;height:100%;object-fit:cover;user-select:none;image-rendering:pixelated}
+.ex7-mapimg::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 40px rgba(0,10,40,.35)}
+.ex7-fog{position:absolute;border-radius:40%;background:radial-gradient(ellipse at center,rgba(60,66,90,.92) 35%,rgba(60,66,90,.7) 58%,transparent 72%);pointer-events:none;z-index:1;animation:ex7-drift 6s ease-in-out infinite alternate}
+@keyframes ex7-drift{to{transform:translateX(6px) scale(1.02)}}
+.ex7-maplabel{position:absolute;transform:translate(-50%,-50%);font:700 9px var(--cl-pixel,monospace);letter-spacing:.06em;color:#fff;text-shadow:1px 1px 0 #181a24,-1px -1px 0 #181a24,1px -1px 0 #181a24,-1px 1px 0 #181a24;pointer-events:none;z-index:2;white-space:nowrap}
+.ex7-maplabel.big{font-size:13px;letter-spacing:.2em;opacity:.85}
+.ex7-maplabel.peak{color:#f3d2ff}
+.ex7-pin{position:absolute;transform:translate(-50%,-100%);display:grid;justify-items:center;z-index:3;pointer-events:auto}
+.ex7-pin-ico{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#fff;border:3px solid #181a24;box-shadow:0 3px 0 #181a24,0 0 0 3px var(--c) inset}
+.ex7-pin-ico b{font:900 18px var(--cl-pixel,monospace);color:#555}
+.ex7-pin-name{margin-top:3px;padding:2px 7px;border-radius:6px;background:#181a24;color:#fff;font:700 10px var(--cl-pixel,monospace);white-space:nowrap}
+.ex7-pin.unknown{opacity:.85}
+.ex7-pin.unknown .ex7-pin-ico{background:#d9dde6;box-shadow:0 3px 0 #181a24}
+.ex7-pin.here .ex7-pin-ico{animation:ex7-bob 1.2s ease-in-out infinite;box-shadow:0 3px 0 #181a24,0 0 0 3px var(--c) inset,0 0 0 6px rgba(255,210,63,.75)}
+.ex7-pin.here .ex7-pin-name{background:var(--c);border:2px solid #181a24}
+.ex7-here{display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:2px 6px;border-radius:6px;background:#ffd23f;border:2px solid #181a24;font:700 9px var(--cl-pixel,monospace);color:#3a2a00;white-space:nowrap}
+@keyframes ex7-bob{50%{transform:translateY(-4px)}}
+.ex7-mapnote{display:flex;align-items:center;gap:6px;margin:0;font:700 12px inherit;color:#5a4a20}
+
+.ex7-region{display:grid;gap:10px;padding:12px;border:3px solid #181a24;border-radius:12px;background:#fffdf3;box-shadow:0 4px 0 #181a24;border-top:8px solid var(--c)}
+.ex7-rhead{display:flex;align-items:center;gap:10px}
+.ex7-rhead>div{flex:1;display:grid}
+.ex7-rhead b{font:400 22px var(--cl-title,inherit)}
+.ex7-rhead small{font:700 11px inherit;color:#6a5a30}
+.ex7-rico{display:grid;place-items:center;width:52px;height:52px;border-radius:12px;background:var(--c);border:3px solid #181a24;box-shadow:0 3px 0 #181a24}
+.ex7-rico.sm{width:38px;height:38px}
+.ex7-rdesc{margin:0;font-size:13px;line-height:1.45;color:#3a3324}
+.ex7-region h3{margin:4px 0 0;font:700 11px var(--cl-pixel,monospace);letter-spacing:.06em;text-transform:uppercase;color:#6a5a30}
+.ex7-areas{display:grid;gap:8px}
+.ex7-area{display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;border:3px solid #181a24;border-radius:12px;background:#fff;cursor:pointer;box-shadow:0 3px 0 #181a24;color:#222}
+.ex7-area:hover{background:#f3ffe9}
+.ex7-area:active{transform:translateY(2px);box-shadow:0 1px 0 #181a24}
+.ex7-area-ico{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;border:2px solid #181a24;flex:none}
+.ex7-area-txt{display:grid;gap:3px;flex:1;min-width:0}
+.ex7-area-txt b{font-size:14px}
+.ex7-area-txt small{font-size:11px;color:#6a5a30}
+.ex7-go{font:700 11px var(--cl-pixel,monospace);color:#2f8a4a;white-space:nowrap}
+.ex7-rules{font-size:12px;line-height:1.45;color:#3a3324}
+.ex7-rules summary{cursor:pointer;font-weight:800}
+.ex7-rules ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
+
+/* cores dos terrenos (também nos ícones das áreas) */
+.t-path{background:linear-gradient(135deg,#e8d3a3,#cfb57c)}
+.t-grass{background:linear-gradient(135deg,#8ed16a,#5aa845)}
+.t-flower{background:linear-gradient(135deg,#bfe58e,#88c86a)}
+.t-sand{background:linear-gradient(135deg,#f5e3a8,#e2c473)}
+.t-tree{background:linear-gradient(135deg,#4f9e55,#2f6e3a)}
+.t-rock{background:linear-gradient(135deg,#c7b08a,#9b8260)}
+.t-water{background:linear-gradient(135deg,#6fb5ec,#3b7fcc)}
+.t-cave{background:linear-gradient(135deg,#7b6a5c,#4a3d33)}
+.t-cloud{background:linear-gradient(135deg,#d8e6f4,#a9bfd8)}
+.t-snow{background:linear-gradient(135deg,#f4fbff,#cfe3f0)}
+
+/* ---------- área ---------- */
+.ex7-areabody{grid-template-columns:minmax(0,1fr) 300px;align-items:start}
+.ex7-board{display:grid;gap:10px}
+.ex7-areahead{display:flex;align-items:center;gap:10px;padding:8px 10px;border:3px solid #181a24;border-radius:12px;background:#fffdf3;box-shadow:0 3px 0 #181a24;border-left:8px solid var(--c)}
+.ex7-areahead>div{flex:1;display:grid;min-width:0}
+.ex7-areahead b{font:400 19px var(--cl-title,inherit)}
+.ex7-areahead small{font:700 11px inherit;color:#6a5a30}
+.ex7-grid{width:100%;max-width:min(100%,calc((100vh - 290px)*1.4));justify-self:center;display:grid;grid-template-columns:repeat(var(--w),1fr);gap:4px;padding:8px;border:3px solid #181a24;border-radius:12px;background:#2c3a2c;box-shadow:0 4px 0 #181a24}
+.ex7-tile{position:relative;aspect-ratio:1;display:grid;place-items:center;border:2px solid rgba(0,0,0,.45);border-radius:8px;cursor:default;padding:0;overflow:hidden;
+  box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.25)}
+.ex7-tile.fog{background:repeating-linear-gradient(45deg,#4a5a4a 0 6px,#435243 6px 12px)}
+.ex7-tile.fog .ex7-fogq{font:900 18px var(--cl-pixel,monospace);color:rgba(255,255,255,.35)}
+.ex7-tile.seen:not(.done)::after{content:"";position:absolute;inset:0;background:rgba(20,30,20,.28)}
+.ex7-tile.done{filter:saturate(.82)}
+.ex7-tile.near{cursor:pointer;outline:3px dashed #ffd23f;outline-offset:-5px}
+.ex7-tile.near:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.ex7-tile.here{outline:3px solid #fff;outline-offset:-5px;filter:none}
+.ex7-tico{position:absolute;inset:0;display:grid;place-items:center;opacity:.95}
+.ex7-tico .ex7-px{width:52%;height:auto;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+.ex7-tile.here .ex7-tico{opacity:.3}
+.ex7-mark{position:absolute;right:4px;top:4px}
+.ex7-me{position:absolute;inset:0;display:grid;place-items:center;z-index:2;animation:ex7-bob 1s ease-in-out infinite}
+.ex7-me .ex7-px{width:46%;height:auto;filter:drop-shadow(0 2px 0 rgba(0,0,0,.45))}
+.ex7-cost{position:absolute;left:4px;bottom:3px;z-index:2;min-width:16px;padding:1px 4px;border-radius:5px;background:#181a24;color:#ffd23f;font:700 10px var(--cl-pixel,monospace)}
+.ex7-hint{margin:0;font-size:12px;color:#6a5a30}
+.ex7-side{display:grid;gap:10px}
+.ex7-panel{padding:8px 10px;border:3px solid #181a24;border-radius:12px;background:#fffdf3;box-shadow:0 3px 0 #181a24}
+.ex7-panel h4{margin:0 0 6px;font:700 10px var(--cl-pixel,monospace);letter-spacing:.06em;text-transform:uppercase;color:#6a5a30}
+.ex7-team,.ex7-found,.ex7-log{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.ex7-team li{display:flex;align-items:center;gap:6px}
+.ex7-team li.out{opacity:.45;filter:grayscale(1)}
+.ex7-team img{object-fit:contain;image-rendering:auto;background:#efe7cf;border-radius:8px;border:2px solid #181a24}
+.ex7-team span{flex:1;display:grid;grid-template-columns:1fr auto;gap:1px 6px;min-width:0}
+.ex7-team b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ex7-team small{font-size:10px;color:#6a5a30}
+.ex7-hp{grid-column:1/-1;position:relative;height:6px;border:1px solid #181a24;border-radius:4px;background:#4a3030;overflow:hidden}
+.ex7-hp i{position:absolute;inset:0 auto 0 0;background:#3fcf6a}
+.ex7-hp i.mid{background:#f0b030}.ex7-hp i.low{background:#e04a3a}
+.ex7-found li{display:flex;align-items:center;gap:6px;font-size:12px}
+.ex7-found li i{font-style:normal;font-weight:900;width:24px;text-align:center}
+.ex7-found li b{flex:1}
+.ex7-found li.poke{color:#1f6e3a}
+.ex7-found small{color:#6a5a30}
+.ex7-logp{max-height:230px;overflow:auto}
+.ex7-log li{font-size:12px;line-height:1.35;padding-left:8px;border-left:3px solid #c9bd96}
+.ex7-log li.good{border-color:#3fbf6a}.ex7-log li.bad{border-color:#e04a3a}.ex7-log li.poke{border-color:#ffd23f;font-weight:700}.ex7-log li.none{color:#7a6a40}
+.ex7-empty{margin:0;font-size:12px;color:#7a6a40}
+
+/* ---------- janelas de evento ---------- */
+.ex7-modal{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(10,16,12,.55);animation:ex7-fade .15s}
+@keyframes ex7-fade{from{opacity:0}}
+.ex7-card{width:min(440px,100%);max-height:100%;overflow:auto;display:grid;justify-items:center;gap:8px;padding:16px;text-align:center;border:3px solid #181a24;border-radius:16px;background:#fffdf3;box-shadow:0 6px 0 #181a24;animation:ex7-in .18s ease-out}
+.ex7-card>b{font:400 20px var(--cl-title,inherit)}
+.ex7-card p{margin:0;font-size:13px;line-height:1.45}
+.ex7-big{display:grid;place-items:center;min-height:64px}
+.ex7-pop{animation:ex7-pop .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes ex7-pop{from{transform:scale(.3);opacity:0}}
+.ex7-shake{animation:ex7-shk .4s}
+@keyframes ex7-shk{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.ex7-bounce{animation:ex7-bob .5s ease-in-out infinite}
+.ex7-dmg{font:700 14px var(--cl-pixel,monospace);color:#d0362c}
+.ex7-evtitle{font:700 11px var(--cl-pixel,monospace)!important;letter-spacing:.05em;text-transform:uppercase;color:#6a5a30}
+.ex7-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.ex7-warn{color:#b0362c;font-size:11px;font-weight:700}
+.ex7-pwd input{width:100%;padding:10px 12px;border:3px solid #181a24;border-radius:10px;font:700 15px var(--cl-pixel,monospace);letter-spacing:.08em;text-align:center;text-transform:uppercase;background:#fff;color:#181a24}
+.ex7-pwd form{display:grid;gap:8px;width:100%}
+.ex7-pwdmsg{min-height:14px;font-size:12px;font-weight:700;color:#2f8a4a}
+.ex7-pwdmsg.bad{color:#d0362c}
+
+.ex7-foe{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
+.ex7-foeimg{position:relative;flex:none;width:112px;height:112px;display:grid;place-items:center;border:3px solid #181a24;border-radius:14px;box-shadow:inset 0 -14px 0 rgba(0,0,0,.12)}
+.ex7-foeimg img{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 3px 0 rgba(0,0,0,.3));animation:ex7-pop .4s}
+.ex7-shiny{position:absolute;bottom:-8px;padding:1px 6px;border-radius:6px;background:#ffd23f;border:2px solid #181a24;font:700 10px inherit}
+.ex7-foeinfo{display:grid;gap:4px}
+.ex7-foeinfo b{font:400 22px var(--cl-title,inherit)}
+.ex7-foeinfo small{font-size:12px;color:#6a5a30}
+.ex7-rar{justify-self:start;padding:2px 8px;border-radius:8px;border:2px solid #181a24;font:700 11px inherit;background:#e8e8e8}
+.ex7-rar.r-uncommon{background:#d6f0ff}.ex7-rar.r-rare{background:#ffe9a8}.ex7-rar.r-veryrare{background:#f3d2ff}
+
+/* captura */
+.ex7-cap{width:min(560px,100%)}
+.ex7-capstage{position:relative;width:100%;height:170px;display:grid;place-items:center;border:3px solid #181a24;border-radius:14px;overflow:hidden;
+  background:radial-gradient(ellipse at 50% 85%,#8bcf6a 0 30%,transparent 31%),linear-gradient(180deg,#bfe6ff,#e9f7ff 60%,#9ed27e 61%)}
+.ex7-capfoe{position:absolute;right:10%;top:10px}
+.ex7-capfoe img{width:96px;height:96px;object-fit:contain}
+.ex7-capfoe img.ko{filter:grayscale(.6) brightness(.85);transform:rotate(80deg) translateY(10px)}
+.ex7-ringwrap{position:relative;width:120px;height:120px;display:grid;place-items:center;cursor:crosshair;margin-right:28%}
+.ex7-zone{position:absolute;border-radius:50%;width:calc(var(--z)*1%);height:calc(var(--z)*1%);min-width:10px;min-height:10px}
+.ex7-zone.ok{background:rgba(63,191,106,.35);border:2px solid #2f8a4a}
+.ex7-zone.crit{background:rgba(255,210,63,.55);border:2px solid #c08a10}
+.ex7-ring{position:absolute;inset:0;border-radius:50%;border:4px solid #e3262f;box-shadow:0 0 0 2px #fff;will-change:transform}
+.ex7-ball{position:relative;width:40px;height:40px;image-rendering:pixelated;z-index:1}
+.ex7-ballfx{display:grid;place-items:center}
+.ex7-ballfx.fly .ex7-ball{animation:ex7-fly .6s ease-out forwards}
+@keyframes ex7-fly{from{transform:translate(-120px,40px) rotate(-200deg) scale(.6)}to{transform:none}}
+.ex7-ballfx.shake .ex7-ball{animation:ex7-wob .5s ease-in-out infinite}
+@keyframes ex7-wob{25%{transform:rotate(-22deg)}75%{transform:rotate(22deg)}}
+.ex7-ballfx.caught .ex7-ball{filter:brightness(.8)}
+.ex7-stars{position:absolute;margin-top:-56px;font:900 18px inherit;color:#ffd23f;text-shadow:0 2px 0 #181a24;animation:ex7-pop .4s}
+.ex7-capmsg{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);padding:3px 10px;border-radius:8px;background:#181a24;color:#fff;font:700 12px inherit;white-space:nowrap}
+.ex7-capmsg.caught{background:#2f8a4a}.ex7-capmsg.fail{background:#b0362c}
+.ex7-capballs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.ex7-capball{display:grid;justify-items:center;gap:1px;padding:5px 8px;border:2px solid #181a24;border-radius:10px;background:#fff;cursor:pointer;color:#222}
+.ex7-capball.on{background:#fff3c4;box-shadow:0 0 0 3px #ffd23f}
+.ex7-capball b{font-size:11px}.ex7-capball small{font-size:10px;color:#6a5a30}
+.ex7-capnums{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.ex7-capnums span{display:grid;gap:2px;padding:6px 8px;border:2px solid #181a24;border-radius:10px;background:#fff}
+.ex7-capnums small{font:700 9px var(--cl-pixel,monospace);color:#6a5a30}
+.ex7-capnums b{font:700 22px var(--cl-pixel,monospace)}
+.ex7-capnums em{font-style:normal;font-size:10px;line-height:1.35;color:#5a4a20}
+
+.ar9-bagbtn.ar9-wildball i{color:#e3262f}
+
+@media (max-width:900px){
+  .ex7{padding:0}
+  .ex7-win{height:100vh;border-radius:0;border-width:0}
+  .ex7-mapbody,.ex7-areabody{grid-template-columns:1fr}
+  .ex7-head{flex-wrap:wrap;gap:8px}
+  .ex7-life{order:3;width:100%}
+  .ex7-lifebar{flex:1;width:auto}
+  .ex7-grid{gap:3px;padding:5px}
+  .ex7-areahead{flex-wrap:wrap}.ex7-areahead b{font-size:16px}.ex7-areahead .ex7-btn{width:100%}
+  .ex7-rhead{flex-wrap:wrap}.ex7-rhead .ex7-btn{width:100%}
+  .ex7-maplabel{font-size:7px}.ex7-maplabel.big{font-size:9px}.ex7-pin-ico{width:28px;height:28px}.ex7-pin-name{font-size:8px}.ex7-here{display:none}
+  .ex7-foeimg{width:88px;height:88px}.ex7-foeimg img{width:76px;height:76px}
+}
+@media (prefers-reduced-motion:reduce){.ex7-pin.here .ex7-pin-ico,.ex7-me,.ex7-bounce{animation:none}}
