@@ -198,6 +198,15 @@
     }
     return {megaForms:forms,teraType:normalizeTypeName(tera.type)||normalizeTypeName(cur.type1)||"",zType:z.prepared?normalizeTypeName(z.type)||"":""};
   }
+  /* Item segurado da ficha → nome, texto (sistema de QD) e automação */
+  function heldItemOf(p){
+    const name=String(p.heldItem||"").trim();if(!name)return null;
+    let rec=null;
+    try{const key=normalizeItemSearch(name);rec=(p.itemMemory||[]).find(r=>normalizeItemSearch(r.name)===key||normalizeItemSearch(r.apiName)===key)||null;}catch(e){}
+    let off=null;try{off=officialItemByQuery(name);}catch(e){}
+    const full=off?.apiName&&typeof POKEAPI_ITEM_BY_SLUG!=="undefined"?POKEAPI_ITEM_BY_SLUG.get(off.apiName):null;
+    return {name:rec?.name||full?.name||name,apiName:rec?.apiName||full?.apiName||"",description:String(full?.description||rec?.description||"").slice(0,600),automation:full?.automation||rec?.automation||null};
+  }
   async function buildTeam(limit){
     const list=teamSource().slice(0,limit);
     const out=[];
@@ -220,7 +229,7 @@
       out.push({name:p.name||"Pokémon",level:Number(p.level||1),types:[normalizeTypeName(p.type1),normalizeTypeName(p.type2)].filter(Boolean),
         stats:{hp:Number(p.stats?.hp||0),atk:Number(p.stats?.atk||0),def:Number(p.stats?.def||0),spa:Number(p.stats?.spa||0),spd:Number(p.stats?.spd||0),spe:Number(p.stats?.spe||0)},
         maxHp:Math.max(1,Number(p.maxHp||p.stats?.hp||1)),ability:p.abilityName||"",abilityText:String(p.abilityText||"").slice(0,900),img:await compactImage(p===p0?displayPokemonImage(p):(p.imageUrl||displayPokemonImage(p0))),
-        fid:String(p0.id),gimmick,
+        fid:String(p0.id),gimmick,item:heldItemOf(p0),species:String(p0.apiData?.speciesName||p0.apiData?.pokemonName||""),
         moves:moves.length?moves:[{name:"Struggle",type:"Normal",category:"Physical",power:50,accuracy:null,desc:"Sem golpes ativos na ficha."}]});
     }
     return out;
@@ -560,6 +569,8 @@
       const st=sd.team[ev.idx];if(st&&ev.maxHp){st.maxHp=ev.maxHp;st.hp=ev.hp;}
     }
     if(ev.k==="move"&&ev.z&&sd){sd.gim=sd.gim||{};sd.gim.z=true;}
+    if(ev.k==="held"&&sd&&/consumid|comid|estourou|ativou|aguentou com 1 HP|diminuiu|zerou|curou|deu Power|machucou o atacante/.test(ev.text||""))sd.itemGone=true;
+    if(ev.k==="switch"&&sd)sd.itemGone=false;
     if(ev.k==="item"&&sd&&ev.hp!=null){const st=sd.team[ev.idx];if(st){st.hp=ev.hp;if(ev.revived)st.fainted=false;st.status=ev.status||null;}if(ev.idx===sd.active)sd.cnf=!!ev.cnf;}
   }
   const ST_LABEL={psn:"Envenenado",tox:"gravemente envenenado (Toxic)",brn:"Queimado",dbrn:"com Deep Burn",par:"Paralisado",slp:"Dormindo",frz:"Congelado",cnf:"Confuso"};
@@ -599,6 +610,8 @@
         if(ev.fail)line=`${esc(ev.mon)} não consegue esquivar (${ev.why==="frz"?"congelado":"dormindo"}).`;
         else line=`↯ <b>${esc(ev.mon)}</b> ${ev.kind==="active"?"se concentra em esquivar":"fica pronto para esquivar"} <span class="ar7-dice">Precisão do rival −${ev.pen} · ${ev.streak}ª seguida${ev.tired?" · cansado!":""}</span>`;
         cls="evade";
+      }else if(ev.k==="held"){
+        line=`🎒 <b>${esc(ev.mon)}</b>: <b class="ar9-held">${esc(ev.item)}</b> ${esc(ev.text||"")}.`;cls="heal";
       }else if(ev.k==="item"){
         line=ev.fail?`${esc(sideName(ev.side))} usou ${esc(ev.item)}, mas não teve efeito.`:`🎒 ${esc(sideName(ev.side))} usou <b>${esc(ev.item)}</b> em ${esc(ev.mon)}${ev.revived?": voltou à luta!":ev.healed?`: +${ev.healed} HP`:""}${ev.cured?" (status curado)":""}.`;cls="heal";
       }else if(ev.k==="heal")line=`${esc(monName(ev.side))} recuperou <b>${ev.amount}</b> HP${ev.src?` <small class="ar7-src">${esc(ev.src)}</small>`:""}.`;
@@ -1285,6 +1298,7 @@
     return `<div class="ar7-spot ${pos}">
       <div class="ar7-hud"><div class="ar7-hud-name"><b>${esc(m.name)}</b><small>Lv. ${m.level}</small></div>
         ${m.build&&pos==="foe"?`<small class="ar7-build">${esc(m.build)}${m.ability?` · ${esc(m.ability)}`:""}</small>`:""}
+        ${m.item?.name&&!s.itemGone?`<small class="ar9-hud-item" title="Item segurado">🎒 ${esc(m.item.name)}</small>`:""}
         <div class="ar7-hud-types">${(m.types||[]).map(x=>`<i style="--t:${typeColor(x)};--td:${typeDark(x)}">${esc(x)}</i>`).join("")}</div>
         <div class="ar7-hp ${hpClass(pct)}"><span>HP</span><div><i data-to="${pct}" style="--w:${lastHp[pos]??pct}%"></i></div>${pos==="me"?`<small class="ar7-hp-num">${st.hp} / ${st.maxHp}</small>`:""}</div>
         <div class="ar7-balls">${s.team.map(x=>`<i class="${x.fainted?"out":""}"></i>`).join("")}</div>
@@ -1323,7 +1337,7 @@
         const zOn=sel.gimmick==="z";
         const streak=s.evadeStreak||0;
         panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} desmaiou! Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
-          ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${zOn&&!zOk?"disabled":""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
+          ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const locked=s.lock!=null&&s.lock!==i;const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${(zOn&&!zOk)||locked?"disabled":""} ${locked?`title="Preso no golpe escolhido pelo item Choice"`:""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
             <b>${zOk?"Z-":""}${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${zOk?` · ${powerToDice(zp)} · não erra`:`${m.power?` · ${powerToDice(m.power)}`:""}${m.accuracy!=null?` · ${m.accuracy}%`:""}`}</small></button>`;}).join("")}</div>
           <div class="ar9-tactics">
             ${g.mega.length||g.tera||g.z?`<div class="ar9-gims" role="group" aria-label="Gimmicks (uma de cada por batalha)">

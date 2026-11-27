@@ -114,13 +114,13 @@
     {key:"sy-repel",name:"Repel",icon:"🌫️",category:"exploration",price:350,usable:true,desc:"Evita encontros por 1 Viagem Longa."},
     {key:"sy-superrepel",name:"Super Repel",icon:"🌫️",category:"exploration",price:500,usable:true,desc:"Evita encontros por 2 Viagens Longas."},
     {key:"sy-maxrepel",name:"Max Repel",icon:"🌫️",category:"exploration",price:700,usable:true,desc:"Evita encontros por 3 Viagens Longas."},
-    {key:"sy-focussash",name:"Focus Sash",icon:"🎗️",category:"held",price:4000,desc:"Sobrevive a um golpe fatal com 5 HP."},
-    {key:"sy-leftovers",name:"Leftovers",icon:"🍎",category:"held",price:4500,desc:"Recupera 1d6 HP por turno."},
-    {key:"sy-choiceband",name:"Choice Band",icon:"🎀",category:"held",price:5000,desc:"+2d6 Attack, mas preso a 1 golpe."},
-    {key:"sy-choicespecs",name:"Choice Specs",icon:"👓",category:"held",price:5000,desc:"+2d6 Sp.Atk, mas preso a 1 golpe."},
-    {key:"sy-choicescarf",name:"Choice Scarf",icon:"🧣",category:"held",price:5000,desc:"+25 Speed, mas preso a 1 golpe."},
-    {key:"sy-rockyhelmet",name:"Rocky Helmet",icon:"⛑️",category:"held",price:3800,desc:"Atacante físico sofre 1d6 de dano."},
-    {key:"sy-sitrusberry",name:"Sitrus Berry",icon:"🍊",category:"held",price:2000,desc:"Recupera 25% do HP ao cair abaixo da metade."}
+    {key:"sy-focussash",name:"Focus Sash",icon:"🎗️",category:"held",price:4000,desc:"Segurado: com HP cheio, aguenta um golpe fatal com 1 HP. Depois é consumido."},
+    {key:"sy-leftovers",name:"Leftovers",icon:"🍎",category:"held",price:4500,desc:"Segurado: ao fim de cada rodada, recupera 1/16 (6,25%) do HP Máximo."},
+    {key:"sy-choiceband",name:"Choice Band",icon:"🎀",category:"held",price:5000,desc:"Segurado: Attack ×1,5 (sobe a Qualidade e a QD), mas fica preso ao primeiro golpe escolhido."},
+    {key:"sy-choicespecs",name:"Choice Specs",icon:"👓",category:"held",price:5000,desc:"Segurado: Sp.Atk ×1,5 (sobe a Qualidade e a QD), mas fica preso ao primeiro golpe escolhido."},
+    {key:"sy-choicescarf",name:"Choice Scarf",icon:"🧣",category:"held",price:5000,desc:"Segurado: Speed ×1,5, mas fica preso ao primeiro golpe escolhido."},
+    {key:"sy-rockyhelmet",name:"Rocky Helmet",icon:"⛑️",category:"held",price:3800,desc:"Segurado: quem acerta o usuário com golpe de contato perde 1/6 do próprio HP Máximo."},
+    {key:"sy-sitrusberry",name:"Sitrus Berry",icon:"🍊",category:"held",price:2000,desc:"Segurado: ao chegar a 1/2 do HP Máximo ou menos, é consumida e recupera 1/4 (25%) do HP Máximo."}
   ];
   const SHOPS=[
     {id:"elysius",name:"Loja Inicial de Elysius",icon:"px:coin",items:ELYSIUS,note:"Cada treinador começa com <b>12.000₽</b> para gastar livremente.",starter:true},
@@ -160,6 +160,12 @@
     if(!SHOP[inv.shopId]&&!inv.shop.some(x=>x.shopId===inv.shopId))inv.shopId="elysius";
     inv.premierProgress=int(inv.premierProgress,0,9);
     inv.items=inv.items.filter(i=>i&&typeof i==="object").map(clean);
+    // V7 — sistema de QD: itens segurados já comprados ganham o texto novo da loja
+    if(!inv.qdTextV1){
+      const all=SHOPS.flatMap(x=>x.items);
+      inv.items.forEach(i=>{const s=all.find(x=>x.name.toLowerCase()===String(i.name).toLowerCase()&&x.category===i.category);if(s&&/\dd6/.test(i.desc||""))i.desc=s.desc;});
+      inv.qdTextV1=true;
+    }
     inv.shop=inv.shop.filter(i=>i&&typeof i==="object").map(clean);
     return {t,inv};
   }
