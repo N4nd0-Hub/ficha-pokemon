@@ -266,8 +266,8 @@ body.ex7-open{overflow:hidden}
 @media (max-width:900px){.ex7-campbtns{order:4;width:100%}.ex7-campbtn{flex:1;justify-content:center}}
 
 /* Modo Mestre: botão escondido no canto inferior direito */
-.ex7-gmbtn{position:absolute;right:4px;bottom:4px;z-index:30;width:22px;height:22px;padding:0;border:0;border-radius:6px;background:transparent;color:rgba(0,0,0,.12);font-size:14px;line-height:22px;cursor:default}
-.ex7-gmbtn:hover{color:rgba(0,0,0,.3)}
+.ex7-gmbtn{position:absolute;right:6px;bottom:6px;z-index:30;width:28px;height:28px;padding:0;border:2px dashed rgba(90,42,138,.35);border-radius:8px;background:rgba(255,255,255,.55);color:rgba(90,42,138,.45);font-size:15px;line-height:24px;cursor:pointer;transition:.15s}
+.ex7-gmbtn:hover,.ex7-gmbtn:focus-visible{color:#5a2a8a;border-color:#5a2a8a;background:#fff;transform:scale(1.1)}
 .gm-on .ex7-gmbtn{width:30px;height:30px;background:#5a2a8a;color:#ffd23f;border:2px solid #181a24;cursor:pointer;font-size:16px;line-height:26px}
 .gm-on .ex7-head{background:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 6px),linear-gradient(180deg,#7a3aa8,#3a1a5a)}
 .ex7-pin.gm{cursor:pointer}
