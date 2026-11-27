@@ -899,3 +899,4 @@ html[data-theme-skin] .ar7{background:var(--sk-body,var(--bg,#121316))}
 .ar9-floor .ar9-bag{width:100%;text-align:left}
 .ar9-abyss-load .ar7-surv-ico{animation:ar8-bob 2.4s ease-in-out infinite}
 .ar7-result.ar9-floor small b{font-size:inherit;color:inherit}
+.ar9-tries{display:block;font-style:normal;font-size:10px;font-weight:800;opacity:.8;margin-top:2px}
