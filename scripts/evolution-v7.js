@@ -194,7 +194,7 @@
     const img=(()=>{try{return displayPokemonImage(p)||"";}catch(e){return "";}})();
     c.innerHTML=`<header><b>🧬 EVOLUÇÃO</b><small>${anyReady?"PRONTO PARA EVOLUIR!":list.length>1?`${list.length} caminhos`:"próxima forma"}</small></header>
       <ul>${list.map((o,i)=>{const st=statusOf(p,o);return `<li class="${st.ready?"ok":""}">
-        <span class="evo7-pair"><span class="evo7-face">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:"◓"}</span><i>➜</i><span class="evo7-face next">${o.img?`<img src="${esc(o.img)}" alt="${esc(o.name)}" loading="lazy">`:"?"}</span></span>
+        <span class="evo7-pair"><span class="evo7-face">${img?`<img src="${esc(img)}" alt="" loading="lazy">`:"◓"}</span><i>➜</i><span class="evo7-face next">${o.img?`<img src="${esc(p.shiny&&o.speciesId?o.img.replace("/official-artwork/","/official-artwork/shiny/"):o.img)}" alt="${esc(o.name)}" loading="lazy">`:"?"}</span></span>
         <span class="evo7-info"><b>${esc(o.name)}</b><small>${esc(o.detail||"")}</small>
           ${st.kind==="level"&&!st.ready||st.kind==="happy"?`<span class="evo7-bar" title="${esc(st.label)}"><i style="width:${st.pct||0}%"></i></span>`:""}
           <em class="${st.ready?"go":st.soft?"soft":""}">${esc(st.label)}</em></span>

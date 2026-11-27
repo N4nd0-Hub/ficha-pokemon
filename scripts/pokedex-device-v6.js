@@ -403,7 +403,7 @@
     const officialId=typeof officialPokedexId==="function"?officialPokedexId(p):0;
     const canShiny=!!officialId;
     const src=typeof displayPokemonImage==="function"
-      ?displayPokemonImage(p,{shiny:d.shiny&&canShiny})
+      ?displayPokemonImage(p,{shiny:(d.shiny&&canShiny)||!!p.shiny})
       :(p.imageUrl||"");
     $("#dexShinyBtn")?.toggleAttribute("disabled",!canShiny);
     if(!src){img.hidden=true;empty.hidden=false;return;}
