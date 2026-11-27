@@ -3670,10 +3670,12 @@ function moveLearnLevelLabel(move){
   return level<=0?"Inicial / Evolução":`Aprende Lv. ${level}`;
 }
 
-function isMoveLevelLocked(move){
+// o nível que conta é o do próprio Pokémon dono do golpe (não o da ficha aberta)
+function isMoveLevelLocked(move,owner){
   if(!move.autoLearnset)return false;
   const level=Number(move.learnLevel||0);
-  return level>0 && Number(current.level||1)<level;
+  const p=owner||current;
+  return level>0 && Number(p?.level||1)<level;
 }
 
 function renderOfficialMoveSuggestions(){

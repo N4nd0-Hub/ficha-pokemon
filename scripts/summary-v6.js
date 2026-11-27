@@ -145,7 +145,7 @@
   }
 
   function activeMoves(p){
-    const locked=m=>typeof isMoveLevelLocked==="function"?isMoveLevelLocked(m):false;
+    const locked=m=>typeof isMoveLevelLocked==="function"?isMoveLevelLocked(m,p):false;
     return (p.moves||[]).filter(m=>m.active&&!locked(m)).slice(0,5);
   }
   const CAT={physical:"FÍSICO",special:"ESPECIAL",status:"STATUS"};

@@ -1051,3 +1051,4 @@ html[data-theme-skin] .ar7{background:var(--sk-body,var(--bg,#121316))}
 .ar9-forced{display:grid;justify-items:center;gap:8px;padding:10px;border-radius:12px;border:2px dashed var(--cl-ink,#181a24);background:color-mix(in srgb,#ffd23f 16%,var(--cl-paper2,#f3f3f3));text-align:center}
 .ar9-forced p{margin:0;font-size:13px}
 .ar7-chip.w-snow{background:rgba(150,200,235,.9);color:#10304a}
+.ar9-hitno{font-style:normal;font-weight:900;padding:0 5px;border-radius:6px;background:#e0393e;color:#fff;margin-right:3px}

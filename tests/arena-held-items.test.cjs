@@ -65,8 +65,8 @@ test("Loaded Dice garante o máximo de acertos", () => {
   const dice = I("Loaded Dice", "Segurado: golpes de vários acertos acertam o número máximo de vezes.");
   const seed = { name: "Bullet Seed", type: "Grass", category: "Physical", power: 25, accuracy: 100, desc: "Acerta 2 a 5 vezes." };
   const { e, bt } = battle([mon("A", ["Normal"], { spe: 200 }, [seed], { item: dice })], [mon("B", ["Normal"], { hp: 900 }, [tackle])], { rand: () => 0 });
-  const hit = turn(e, bt).find(x => x.k === "hit" && x.side === "p2");
-  assert.equal(hit.hits, 5);
+  const hits = turn(e, bt).filter(x => x.k === "hit" && x.side === "p2");
+  assert.equal(hits.length, 5);
 });
 
 test("Memory muda o tipo do Silvally e do Multi-Attack", () => {
