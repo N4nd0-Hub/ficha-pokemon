@@ -553,6 +553,35 @@
     if(K.fled||C.info.fainted){ui.ev=null;if(C.info.fainted&&!K.fled)log(`Você deixou ${C.foe.name} ir.`,"none");render();return;}
     ui.ev={kind:"poke",foe:C.foe,round:(C.turn||1)+1,tile:C.foe.terrain};render();
   }
+  /* Pokémon capturado: natureza sorteada e os 6 pontos de cada nível (a partir do
+     Lv. 6) distribuídos ao acaso, seguindo as regras da ficha: até +3 no mesmo
+     atributo por nível, até +20 por atributo em cada bloco de 10 níveis, e a
+     natureza dá +1 / −1 no ganho do atributo dela. */
+  function randomizeGrowth(p,level){
+    if(typeof POKEMON_NATURES==="undefined"||typeof advanceOneLevelWithPreset!=="function"){p.level=level;return "";}
+    const nat=pick(POKEMON_NATURES);
+    p.natureName=nat.name;p.naturePlus=nat.plus;p.natureMinus=nat.minus;
+    try{ensureProgression(p);}catch(e){}
+    const keys=["hp","atk","def","spa","spd","spe"];
+    p.level=Math.max(1,Number(p.level||1));
+    p.progression.lastAppliedLevel=p.level;
+    while(p.level<level){
+      const lv=p.level+1;
+      let alloc=null;
+      if(lv>5){
+        const key=blockKeyForLevel(lv),spent=p.progression.blockSpent?.[key]||{};
+        alloc={hp:0,atk:0,def:0,spa:0,spd:0,spe:0};
+        for(let n=0;n<6;n++){
+          const ok=keys.filter(k=>alloc[k]<3&&Number(spent[k]||0)+alloc[k]<20);
+          if(!ok.length)break;
+          alloc[pick(ok)]++;
+        }
+      }
+      advanceOneLevelWithPreset(lv,alloc);
+    }
+    p.currentHp=Number(p.maxHp||p.stats?.hp||1);
+    return nat.name;
+  }
   async function register(foe,ballSlug,info,ballName){
     if(typeof createBlankPokemon!=="function")return;
     const back=typeof current!=="undefined"?current?.id:null;
@@ -566,7 +595,8 @@
         if(real)await searchPokemonFromApi(foe.apiName);
       }
       if(!real)p.name=foe.name;
-      p.storageGroup="box";p.level=foe.level;
+      p.storageGroup="box";
+      const nat=randomizeGrowth(p,foe.level);
       if(foe.shiny)p.shiny=true;
       p.notes=[p.notes,`Capturado com ${ballName||itemName(ballSlug)} em ${area()?.name||"exploração"}, ${region().name} (nível ${foe.level}).`].filter(Boolean).join("\n");
       if(ballSlug==="luxury-ball")p.happiness=Math.max(Number(p.happiness||0),120);
@@ -575,7 +605,8 @@
       if(prev){state.currentId=prev.id;current=prev;}
       if(!wasOpen)app?.classList.remove("drawer-open");
       renderAll();saveState();
-      toast(`📦 ${foe.name} foi para o PC`);
+      toast(`📦 ${foe.name} (${nat||"—"}) foi para o PC`);
+      if(nat)log(`${foe.name} tem a natureza ${nat}; os pontos de atributo dos níveis foram sorteados.`,"good");
     }catch(e){console.error(e);toast("Não consegui registrar sozinho: crie o Pokémon pelo PC.");}
   }
 
