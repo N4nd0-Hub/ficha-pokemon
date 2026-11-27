@@ -125,7 +125,7 @@
   const SHOPS=[
     {id:"elysius",name:"Loja Inicial de Elysius",icon:"px:coin",items:ELYSIUS,note:"Cada treinador começa com <b>12.000₽</b> para gastar livremente.",starter:true},
     {id:"sylphora",name:"PokéMart de Sylphora",icon:"px:mart",items:SYLPHORA,note:"Cura, captura, exploração e Held Items. A cada <b>10 Poké Balls</b> compradas aqui você ganha <b>1 Premier Ball</b>."},
-    {id:"altamuralha",name:"Loja de Altamuralha",icon:"px:rock",items:[],catalog:true,note:"A primeira cidade grande vende quase todos os itens oficiais — Held Items, Mega Stones, Cristais Z, TMs, bagas, Poké Balls — <b>25% mais caro</b>, nada abaixo de <b>1.000₽</b>. Só não vende Master Ball, itens-chave e doces de nível."}
+    {id:"altamuralha",name:"Loja de Altamuralha",icon:"px:rock",items:[],catalog:true,note:"A Grande Cidade na montanha, lar do Rochedo Eterno."}
   ];
   const SHOP=Object.fromEntries(SHOPS.map(x=>[x.id,x]));
   const NO_GEAR={pct:10,hp:2};
