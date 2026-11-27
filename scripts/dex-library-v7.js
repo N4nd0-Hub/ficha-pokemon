@@ -174,7 +174,7 @@
       await searchPokemonFromApi(p.gm?p.species.id:p.name);
       if(current!==fresh)throw new Error("A ficha mudou durante a importação.");
       fresh.storageGroup=teamCount<6?"team":"box";
-      if(useShiny)fresh.imageUrl=ART_SHINY(p.id);
+      if(useShiny)fresh.shiny=true;
       if(level>1){const lv=document.getElementById("level");if(lv){lv.value=String(level);lv.dispatchEvent(new Event("change",{bubbles:true}));}else fresh.level=level;}
       document.getElementById("app")?.classList.remove("drawer-open");
       try{renderAll();}catch(e){}

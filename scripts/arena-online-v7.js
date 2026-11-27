@@ -777,7 +777,7 @@
     const pod=list?.slice(0,3)||[];
     const card=(r,i)=>`<div class="ar8-pod p${i+1}${r.player_key===me_?" me":""}">
       ${i===0?`<span class="ar8-crown">${PX("crown",30)}</span>`:""}
-      <span class="ar8-avatar" style="--t:#ffd23f">${r.team?.[0]?.img?`<img src="${esc(r.team[0].img)}" alt="">`:PX("ball",34)}</span>
+      <span class="ar8-avatar" style="--t:#ffd23f">${(()=>{const im=(r.team||[]).find(t=>t.img)?.img;return im?`<img src="${esc(im)}" alt="">`:PX("ball",34);})()}</span>
       <b>${esc(r.player)}</b><strong>${r.waves}<small> ${unit(r.waves)}</small></strong><i class="ar8-step">${i+1}</i></div>`;
     const regions=Object.values(window.hhArenaSurvival?.REGIONS||{});
     return `<div class="ar8-sec ar8-rank">
@@ -937,7 +937,15 @@
   }
   async function saveRank({waves,foe}){
     const run=RUN;if(!run)return;
-    const team=run.team.slice(0,6).map(m=>({n:String(m.name).slice(0,30),lv:Number(m.level||1),img:/^https?:/.test(m.img||"")&&String(m.img).length<300?m.img:""}));
+    // artes enviadas na ficha (imagem embutida) viram uma miniatura de 56px
+    const team=[];
+    for(const m of run.team.slice(0,6)){
+      let img=String(m.img||"");
+      if(/^https?:/.test(img)&&img.length<300){}
+      else if(img.startsWith("data:")){img=await compactImage(img,56);if(img.length>12000)img="";}
+      else img="";
+      team.push({n:String(m.name).slice(0,30),lv:Number(m.level||1),img});
+    }
     const dmg=run.dmg==="matrix"?"matrix":"classic";
     try{
       await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});

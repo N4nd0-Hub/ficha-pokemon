@@ -2616,12 +2616,36 @@ function officialPokedexId(p){
   return Number.isInteger(dex)&&dex>0&&dex<=1025?dex:0;
 }
 
-/* V6 — arte salva na ficha ou, na falta dela, a arte oficial (sem gravar nada no save). */
-function displayPokemonImage(p,{shiny=false}={}){
-  if(p?.imageUrl&&!shiny)return p.imageUrl;
+/* V7 — arte shiny do Pokémon: a enviada na ficha, a oficial da PokéAPI ou a
+   forma Shiny cadastrada na Pokédex GM. "" quando não existe. */
+function shinyPokemonImage(p){
+  if(!p)return "";
+  if(p.shinyImageUrl)return p.shinyImageUrl;
+  const url=String(p.imageUrl||"");
+  // arte oficial da PokéAPI salva na ficha: troca pela versão shiny
+  const m=/^(https:\/\/raw\.githubusercontent\.com\/PokeAPI\/sprites\/master\/sprites\/pokemon\/(?:other\/(?:official-artwork|home)\/)?)(?:shiny\/)?(\d+\.png)$/.exec(url);
+  if(m)return m[1]+"shiny/"+m[2];
+  if(url&&!/PokeAPI\/sprites/.test(url)){
+    // arte própria: só a forma Shiny da Pokédex GM serve
+    try{
+      const sp=typeof findIntegratedCustomSpecies==="function"?findIntegratedCustomSpecies(p.apiData?.integratedSpeciesId||p.apiData?.speciesName||p.name):null;
+      const f=(sp?.forms||[]).find(x=>x.formType==="shiny"||x.kind==="shiny");
+      if(f?.image?.dataUrl)return resolveAssetUrl(f.image.dataUrl);
+    }catch(e){}
+    // espécie oficial com arte própria: usa a arte shiny oficial
+  }
   const id=officialPokedexId(p);
-  if(!id)return p?.imageUrl||"";
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${shiny?"shiny/":""}${id}.png`;
+  return id?`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/shiny/${id}.png`:"";
+}
+/* V6 — arte salva na ficha ou, na falta dela, a arte oficial (sem gravar nada no save).
+   V7: Pokémon marcado como Shiny (p.shiny) aparece shiny em toda a ficha. */
+function displayPokemonImage(p,{shiny}={}){
+  const want=shiny===undefined?!!p?.shiny:!!shiny;
+  if(want){const s=shinyPokemonImage(p);if(s)return s;}
+  if(p?.imageUrl)return p.imageUrl;
+  const id=officialPokedexId(p);
+  if(!id)return "";
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
 }
 
 const INTEGRATED_SPECIES_DATABASE_VERSION="1.0";
@@ -12221,7 +12245,7 @@ function portableReadImageFile(file){
 function portableImageFields(root){
   const entries=[];
   const seen=new WeakSet();
-  const isImageKey=/^(?:imageUrl|imageURI|spriteUrl|portraitUrl|artworkUrl|photo|dataUrl)$/i;
+  const isImageKey=/^(?:imageUrl|shinyImageUrl|imageURI|spriteUrl|portraitUrl|artworkUrl|photo|dataUrl)$/i;
   const walk=(node,path)=>{
     if(!node || typeof node!=="object" || seen.has(node))return;
     seen.add(node);
