@@ -245,3 +245,22 @@ body.ex7-open{overflow:hidden}
 .ar9-ex-life i{position:absolute;inset:0 auto 0 0;background:linear-gradient(180deg,#5fe08a,#2ea85a)}
 .ar9-ex-life b{position:relative;display:block;text-align:center;font:700 10px/12px var(--cl-pixel,monospace);text-shadow:0 1px 0 #000}
 @media (max-width:760px){.ar9-explore{grid-template-columns:1fr}.ar9-ex-map{height:110px}.ar9-ex-act .ar7-btn{width:100%}}
+
+/* acampamento: comer e descansar */
+.ex7-campbtns{display:flex;gap:6px}
+.ex7-campbtn{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:10px;border:3px solid #181a24;background:#fff3c4;color:#3a2a00;font-weight:800;font-size:11px;cursor:pointer;box-shadow:0 3px 0 #181a24;white-space:nowrap}
+.ex7-campbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #181a24}
+.ex7-campbtn.cd{background:#e4dfcf;color:#6a5a30}
+.ex7-camp{width:min(460px,100%)}
+.ex7-camptabs{display:flex;gap:6px;width:100%}
+.ex7-camptabs button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:3px solid #181a24;border-radius:10px;background:#efe7cf;font-weight:800;font-size:12px;cursor:pointer;color:#222}
+.ex7-camptabs button.on{background:linear-gradient(180deg,#5cc483,#2f8a4a);color:#fff}
+.ex7-camplist{display:grid;gap:6px;width:100%}
+.ex7-campopt{display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;border:3px solid #181a24;border-radius:12px;background:#fff;cursor:pointer;box-shadow:0 3px 0 #181a24;color:#222}
+.ex7-campopt:hover:not(:disabled){background:#f3ffe9}
+.ex7-campopt:disabled{opacity:.5;cursor:not-allowed}
+.ex7-campopt span:last-child{display:grid;gap:2px}
+.ex7-campopt b{font-size:13px}.ex7-campopt small{font-size:11px;color:#6a5a30}
+.ex7-campico{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;background:#fff3c4;border:2px solid #181a24;flex:none}
+.ex7-cool{margin:0;padding:6px 10px;border-radius:8px;background:#ffe9d6;border:2px solid #c0702c;font-size:12px}
+@media (max-width:900px){.ex7-campbtns{order:4;width:100%}.ex7-campbtn{flex:1;justify-content:center}}

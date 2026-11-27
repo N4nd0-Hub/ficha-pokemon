@@ -52,6 +52,8 @@
     drop:[".....k.....","....kck....","...kcbck...","..kcwbbck..",".kcwbbbBck.",".kcbbbbBck.",".kcbbbBBck.","..kcBBBck..","...kkkkk..."],
     boot:["...kkkk.....","...krrk.....","...krrk.....","...krrk.....","...krrkkkk..","..krrrrrrrk.","..kRRRRRRRk.","..kkkkkkkkk."],
     key:["..kkk.......",".kyyyk......","kyk.kyk.....","kyk.kykkkkkk","kyyyyyyyyyyk",".kyyyk.kYkYk","..kkk...k.k."],
+    meat:["......kk....",".....kwwk...","....kwkkk...","...koook....","..kooooRk...",".koooooRk...","koooooRRk...","kooooRRk....",".kRRRRk.....","..kkkk......"],
+    tent:[".....k......","....kyk.....","...kyyYk....","..kyyyYYk...",".kyyyKKYYk..","kyyyyKKYYYk.","kyyyKKKKYYk.","kkkkkkkkkkkk"],
     pin:["...kkkk...","..krrrrk..",".krrwwrrk.",".krwkkwrk.",".krrwwrrk.","..krrrrk..","...krrk...","....kk...."]
   };
   const PIX=()=>window.hhArenaPix;
@@ -187,6 +189,66 @@
   async function tryPassword(text){
     const h=await sha("helikon:"+norm(text));
     return Object.values(REGIONS).find(r=>r.hash===h)||null;
+  }
+
+  /* ---------- Acampamento: comer e dormir (cada um 1 vez por hora real) ---------- */
+  const COOL=REGEN_MS;
+  const invItems=()=>{const t=trainer();return Array.isArray(t.inventory?.items)?t.inventory.items:[];};
+  const FOOD_RX=/comida|ra[çc][ãa]o|lanche|sandu[íi]che|refei[çc][ãa]o|marmita|p[ãa]o\b|fruta|carne|peixe|bolo|biscoito|chocolate|ma[çc][ãa]|onigiri|curry|sopa|ensopado|mantimento|provis/i;
+  function foods(){
+    return invItems().filter(i=>Number(i.qty||0)>0&&(i.key==="food"||FOOD_RX.test(i.name||""))&&!/pok[eé]\s*mon|pokefood|pok[eé]food/i.test(`${i.name} ${i.key||""}`)).map(i=>{
+      const m=String(i.desc||"").match(/(\d+)\s*%\s*d[ae]\s*Vida/i);
+      return {i,pct:m?clamp(Number(m[1]),5,100):i.key==="food"?30:25};
+    });
+  }
+  const NO_GEAR={pct:10,hp:2};
+  function restOptions(){
+    const out=invItems().filter(i=>Number(i.qty||0)>0&&i.rest&&Number(i.rest.pct||0)>0).map(i=>({id:i.id,name:i.name,pct:Number(i.rest.pct||0),hp:i.rest.hp==null?0:Number(i.rest.hp||0),icon:"tent"}));
+    out.push({id:"none",name:"Sem equipamento",pct:NO_GEAR.pct,hp:NO_GEAR.hp,icon:"heart"});
+    return out.sort((a,b)=>b.pct-a.pct);
+  }
+  const hasKit=()=>invItems().some(i=>Number(i.qty||0)>0&&/kit de acampamento/i.test(i.name||""));
+  const coolLeft=k=>{const at=Number(X()[k]||0);return at?Math.max(0,at+COOL-Date.now()):0;};
+  function eat(id){
+    if(coolLeft("eatAt")){toast(`Você já comeu nesta hora. Próxima refeição em ${fmtTime(coolLeft("eatAt"))}.`);return;}
+    const f=foods().find(x=>x.i.id===id);if(!f)return;
+    const before=hpNow(),gain=Math.ceil(maxHp()*f.pct/100);
+    setHp(before+gain);X().eatAt=Date.now();
+    f.i.qty=Math.max(0,Number(f.i.qty||0)-1);
+    const got=Math.round(hpNow()-before);
+    log(`Você comeu ${f.i.name}: +${got} Vida.`,"good");sfx("heal");save();try{renderAll();}catch(e){}
+    ui.camp=null;toast(`🍖 ${f.i.name}: +${got} Vida.`);render();
+  }
+  function sleep(id){
+    if(coolLeft("restAt")){toast(`Você já descansou nesta hora. Próximo descanso em ${fmtTime(coolLeft("restAt"))}.`);return;}
+    const o=restOptions().find(x=>x.id===id);if(!o)return;
+    const before=hpNow();setHp(before+Math.ceil(maxHp()*o.pct/100));X().restAt=Date.now();
+    const got=Math.round(hpNow()-before);
+    const e=exp();let extra="";
+    if(e&&o.hp){team().forEach(p=>{const h=e.teamHp[p.id];if(h&&!h.fainted){const mx=Math.max(1,Number(p.maxHp||p.stats?.hp||50));h.pct=Math.min(1,h.pct+o.hp/mx);}});extra=` · Pokémon +${o.hp} HP`;}
+    if(hasKit()){team().forEach(p=>{p.happiness=Math.min(255,Number(p.happiness||0)+5);});extra+=" · +5 Felicidade (Kit de Acampamento)";}
+    log(`Você descansou (${o.name}): +${got} Vida${extra}.`,"good");sfx("heal");save();try{renderAll();}catch(e2){}
+    ui.camp=null;toast(`⛺ Descanso: +${got} Vida${extra}.`);render();
+  }
+  function campModal(){
+    const tab=ui.camp,eL=coolLeft("eatAt"),rL=coolLeft("restAt"),mx=maxHp(),h=hpNow();
+    const fl=foods(),ro=restOptions(),kit=hasKit();
+    const body=tab==="eat"
+      ?(eL?`<p class="ex7-cool">Você já comeu nesta hora. Próxima refeição em <b>${fmtTime(eL)}</b>.</p>`:"")+
+       (fl.length?`<div class="ex7-camplist">${fl.map(f=>{const g=Math.min(Math.ceil(mx*f.pct/100),Math.ceil(mx-h));return `<button type="button" class="ex7-campopt" data-ex="eat" data-v="${esc(f.i.id)}" ${eL?"disabled":""}><span class="ex7-campico">${px("meat",28)}</span><span><b>${esc(f.i.name)}</b><small>+${f.pct}% da Vida (+${g}) · você tem ×${Number(f.i.qty)}</small></span></button>`;}).join("")}</div>`
+        :`<p class="ex7-empty">Nenhuma comida no Inventário de Viagem. Compre <b>Comida Comum</b> na loja (Inventário → Loja).</p>`)
+      :(rL?`<p class="ex7-cool">Você já descansou nesta hora. Próximo descanso em <b>${fmtTime(rL)}</b>.</p>`:"")+
+       `<div class="ex7-camplist">${ro.map(o=>`<button type="button" class="ex7-campopt" data-ex="sleep" data-v="${esc(o.id)}" ${rL?"disabled":""}><span class="ex7-campico">${px(o.icon,28)}</span><span><b>${esc(o.name)}</b><small>+${o.pct}% da Vida${o.hp?` · Pokémon da expedição +${o.hp} HP`:""}${o.id==="none"?"":" · não é gasta"}</small></span></button>`).join("")}</div>
+       ${kit?`<p class="ex7-hint">🔥 Kit de Acampamento: o time ganha +5 de Felicidade ao descansar.</p>`:""}`;
+    return `<div class="ex7-modal" role="dialog" aria-label="Acampamento"><div class="ex7-card ex7-camp">
+      <div class="ex7-camptabs"><button type="button" class="${tab==="eat"?"on":""}" data-ex="camp" data-v="eat">${px("meat",18)} Comer</button><button type="button" class="${tab==="rest"?"on":""}" data-ex="camp" data-v="rest">${px("tent",18)} Descansar</button></div>
+      <p class="ex7-hint">Cada um pode ser feito <b>1 vez por hora</b>. Vida agora: <b>${Math.floor(h)}/${mx}</b>.</p>
+      ${body}
+      <button type="button" class="ex7-btn ghost" data-ex="camp-close">Fechar</button></div></div>`;
+  }
+  function campBtns(){
+    const e=coolLeft("eatAt"),r=coolLeft("restAt");
+    return `<div class="ex7-campbtns"><button type="button" class="ex7-campbtn${e?" cd":""}" data-ex="camp" data-v="eat" title="${e?`Próxima refeição em ${fmtTime(e)}`:"Comer: recupera Vida (1 vez por hora)"}">${px("meat",18)}<span>${e?fmtTime(e):"Comer"}</span></button><button type="button" class="ex7-campbtn${r?" cd":""}" data-ex="camp" data-v="rest" title="${r?`Próximo descanso em ${fmtTime(r)}`:"Descansar com barraca ou manta (1 vez por hora)"}">${px("tent",18)}<span>${r?fmtTime(r):"Descansar"}</span></button></div>`;
   }
 
   /* ---------- Equipe ---------- */
@@ -498,7 +560,7 @@
   }
 
   /* ---------- tela ---------- */
-  const ui={view:"map",ev:null,busy:false,cap:null,pwd:false};
+  const ui={view:"map",ev:null,busy:false,cap:null,pwd:false,camp:null};
   const root=document.createElement("section");
   root.id="hhExplore";root.className="ex7";root.hidden=true;root.setAttribute("aria-label","Exploração");
   document.body.appendChild(root);
@@ -520,13 +582,13 @@
       <div class="ex7-lifebar"><i style="width:${pc}%" class="${pc<=25?"low":pc<=50?"mid":""}"></i><b>${Math.floor(h)}/${mx}</b></div>
       <small>${ms?`cheia em ${fmtTime(ms)}`:"Vida cheia"}</small></div>`;
   }
-  function paintHp(){const el=root.querySelector(".ex7-life");if(el)el.outerHTML=hpBar();}
+  function paintHp(){const el=root.querySelector(".ex7-life");if(el)el.outerHTML=hpBar();const c=root.querySelector(".ex7-campbtns");if(c)c.outerHTML=campBtns();}
   function head(){
     const r=region();
     return `<header class="ex7-head">
       <span class="ex7-logo">${px("compass",34)}</span>
       <div class="ex7-title"><b>Exploração</b><small>Elysius · Helikon · <b>${esc(r.name)}</b></small></div>
-      ${hpBar()}
+      ${hpBar()}${campBtns()}
       <button type="button" class="ex7-back" data-ex="close" aria-label="Voltar para a Aventura">← Aventura</button>
     </header>`;
   }
@@ -562,6 +624,7 @@
           <li><b>Casas:</b> a primeira visita pode ter um Pokémon, um item, nada ou um perigo (perde Vida). Mato alto e água têm mais Pokémon; pedras e cavernas, mais itens. Cada área esconde um lugar especial: ninho, baú ou fonte.</li>
           <li><b>Pokémon selvagem:</b> batalhe na Arena com a sua Equipe (o HP fica guardado na expedição), lance uma Poké Ball direto ou fuja (−1 Vida). Vencer dá 1 PPg (com Exp. Share).</li>
           <li><b>Captura:</b> arremesso d100 ≤ Corpo (+20 se Sleep/Paralysis; −15 sem a perícia Arremesso de Pokébola) e captura d100 ≤ NAC (30 + Vida + Poké Ball + nível + raridade + status). Desmaiado: Comum/Incomum é automática, Raro NAC 50, Muito Raro NAC 20.</li>
+          <li><b>Acampar:</b> uma vez por hora você pode <b>comer</b> (Comida Comum recupera 30% da Vida) e uma vez por hora pode <b>descansar</b> (Barraca Avançada 100%, Barraca Simples 50%, Manta 25%, sem equipamento 10%; as barracas também curam um pouco os Pokémon). Barracas e mantas não são gastas; a comida é.</li>
           <li><b>Derrota:</b> carregar o time de volta custa 8 Vida. Com Vida 0 você desmaia e volta para a cidade; sair da área cura o time no Centro Pokémon.</li>
         </ul></details>
       </section>
@@ -664,7 +727,7 @@
   function render(){
     if(root.hidden&&!ui.cap)return;
     if(ui.view==="area"&&!exp())ui.view="map";
-    root.innerHTML=`<div class="ex7-win">${head()}${ui.view==="area"?areaView():mapView()}</div>`;
+    root.innerHTML=`<div class="ex7-win">${head()}${ui.view==="area"?areaView():mapView()}${ui.camp?campModal():""}</div>`;
     if(ui.cap?.phase==="aim")startRing();
     if(ui.pwd)setTimeout(()=>root.querySelector("#ex7Pwd")?.focus(),30);
   }
@@ -675,6 +738,10 @@
     const a=b.dataset.ex,v=b.dataset.v;
     if(a==="close")close();
     else if(a==="pwd"){ui.pwd=true;render();}
+    else if(a==="camp"){if(ui.ev&&ui.ev.kind!=="item"&&ui.ev.kind!=="money"&&ui.ev.kind!=="hazard"&&ui.ev.kind!=="spring"){toast("Resolva o encontro antes de acampar.");return;}ui.ev=null;ui.camp=v;render();}
+    else if(a==="camp-close"){ui.camp=null;render();}
+    else if(a==="eat")eat(v);
+    else if(a==="sleep")sleep(v);
     else if(a==="pwd-close"){ui.pwd=false;render();}
     else if(a==="go"){
       if(!team().length){toast("Ponha Pokémon na Equipe antes de explorar.");return;}
@@ -708,7 +775,7 @@
   });
   document.addEventListener("keydown",e=>{
     if(root.hidden)return;
-    if(e.key==="Escape"){if(ui.pwd){ui.pwd=false;render();}else if(!ui.ev)close();return;}
+    if(e.key==="Escape"){if(ui.camp){ui.camp=null;render();}else if(ui.pwd){ui.pwd=false;render();}else if(!ui.ev)close();return;}
     if((e.key===" "||e.key==="Enter")&&ui.cap?.phase==="aim"&&!/^(INPUT|BUTTON)$/.test(document.activeElement?.tagName||"")){e.preventDefault();doThrow("ring");}
     // setas andam no mapa da área
     const e2=exp();
