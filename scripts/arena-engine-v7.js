@@ -815,7 +815,16 @@
       // vários acertos
       let hits=1;
       if(fx.hits&&myItem?.loaded&&!A.abil.maxHits)heldSay(b,s,events,"garantiu o máximo de acertos");
-      if(fx.hits)hits=A.abil.maxHits||myItem?.loaded?fx.hits.max:fx.hits.min+Math.floor(rand()*(fx.hits.max-fx.hits.min+1));
+      if(fx.hits){
+        const H=fx.hits,maxed=A.abil.maxHits||myItem?.loaded;
+        if(maxed||H.min===H.max)hits=H.max;
+        // Heaven & Hell: 2–5 acertos = 3 fixos, 5 no Crítico Natural
+        else if(H.min===2&&H.max===5)hits=ev.critKind==="natural"?5:3;
+        else if(H.max===10)hits=ev.critKind==="natural"?10:Math.max(H.min,Math.ceil(H.max/2));
+        else hits=H.min+Math.floor(rand()*(H.max-H.min+1));
+        // Power que cresce a cada acerto (Triple Axel/Kick): usa a soma
+        if(H.perHit){const per=H.perHit.slice(0,hits);power=Math.round(per.reduce((x,y)=>x+y,0)/hits);}
+      }
       const hit={k:"hit",side:tSide,crit};
       let amount=0;
       if(b.damage==="matrix")amount=matrixDamage(b,s,move,hit,{crit,critKind:ev.critKind,power,hits});

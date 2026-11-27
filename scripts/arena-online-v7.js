@@ -62,12 +62,14 @@
       const oq=qualityOf(atk),dq=qualityOf(def),gap=oq-dq;
       const mult=defensiveMultiplier(normalizeTypeName(move.type),(D.types||[]).map(normalizeTypeName).filter(Boolean));
       if(mult===0)return {label:"imune",title:"O alvo é imune a esse tipo"};
-      let qi=gap<0?0:Math.min(7,gap+1),n=pdiceOf(power);
+      // vários acertos: 2–5 vira 3 fixos (5 no crítico natural), Power somado
+      let hits=1;try{const H=window.hhArenaRules?.parseMove?.(move)?.hits;if(H)hits=H.min===H.max?H.max:(H.min===2&&H.max===5)?3:H.max===10?5:Math.round((H.min+H.max)/2);if(H?.perHit)power=Math.round(H.perHit.slice(0,hits).reduce((x,y)=>x+y,0)/hits);}catch(e){}
+      let qi=gap<0?0:Math.min(7,gap+1),n=pdiceOf(power*hits);
       if(mult>1){n++;qi=Math.min(7,qi+1);}else if(mult<1){n=Math.max(1,n-1);qi=Math.max(0,qi-1);}
       const qd=QD_STEPS[qi];
       const stab=(A.types||[]).map(normalizeTypeName).includes(normalizeTypeName(move.type));
-      const label=qd.split("+").map(x=>`${n}${x}`).join("+")+(stab?"+1d6":"");
-      return {label,qd,mult,title:`QD ${qd}: Q${oq} do seu ${phys?"ATK":"SP.ATK"} contra Q${dq} da ${phys?"DEF":"SP.DEF"} do alvo · ${n} dado${n>1?"s":""} de Poder${mult>1?" (super efetivo)":mult<1?" (resistido)":""}${stab?" · STAB +1d6":""}`};
+      const label=qd.split("+").map(x=>`${n}${x}`).join("+")+(stab?"+1d6":"")+(hits>1?` · ${hits}×`:"");
+      return {label,qd,mult,title:`QD ${qd}: Q${oq} do seu ${phys?"ATK":"SP.ATK"} contra Q${dq} da ${phys?"DEF":"SP.DEF"} do alvo · ${n} dado${n>1?"s":""} de Poder${mult>1?" (super efetivo)":mult<1?" (resistido)":""}${stab?" · STAB +1d6":""}${hits>1?` · ${hits} acertos (2–5 = 3 fixos, 5 no Crítico Natural)`:""}`};
     }catch(e){return null;}
   }
   let people={},chat=[],outgoing=null,incoming=null,myTeamCache=null;
