@@ -1,0 +1,87 @@
+/* ============================================================
+   V7 — Card de Evolução (embaixo do HP) e prévia da evolução
+   ============================================================ */
+#sumScreen .evo7-card{
+  padding:8px 10px;
+  border:3px solid var(--cl-ink,#181a24);border-radius:8px;
+  background:var(--cl-paper,#fff);
+  box-shadow:0 3px 0 var(--cl-ink,#181a24);
+  display:grid;gap:6px;
+}
+.evo7-card header{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.evo7-card header b{font:700 10px var(--cl-pixel,monospace);letter-spacing:.06em}
+.evo7-card header small{font:700 9px var(--cl-pixel,monospace);color:var(--cl-muted,#666);text-transform:uppercase}
+.evo7-card.muted{opacity:.9}
+.evo7-card.muted header small{opacity:.8}
+.evo7-card ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.evo7-card li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:5px 6px;border-radius:7px;
+  background:var(--cl-paper2,#f1f1f1);border:2px solid var(--cl-line,#ccc)}
+.evo7-card li.ok{border-color:#2f9e5a;background:color-mix(in srgb,#43c17a 16%,var(--cl-paper2,#f1f1f1))}
+.evo7-pair{display:flex;align-items:center;gap:2px}
+.evo7-pair i{font-style:normal;font-weight:900;font-size:12px;color:var(--cl-muted,#666)}
+.evo7-face{display:grid;place-items:center;width:34px;height:34px;border-radius:6px;background:rgba(255,255,255,.6);border:2px solid var(--cl-ink,#181a24);overflow:hidden;font-weight:900}
+.evo7-face img{width:100%;height:100%;object-fit:contain}
+.evo7-face.next img{filter:brightness(0) opacity(.75)}
+.evo7-card li.ok .evo7-face.next img,.evo7-card li:hover .evo7-face.next img{filter:none}
+.evo7-info{display:grid;gap:2px;min-width:0}
+.evo7-info b{font:400 12px var(--cl-title,inherit);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evo7-info small{font-size:10px;font-weight:700;color:var(--cl-muted,#666);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evo7-info em{font:700 9px var(--cl-pixel,monospace);font-style:normal;color:#8a5a00}
+.evo7-info em.go{color:#1f7a44}
+.evo7-info em.soft{color:var(--cl-muted,#666)}
+.evo7-bar{display:block;height:8px;padding:1px;border:2px solid var(--cl-ink,#181a24);border-radius:99px;background:#3b3f4a}
+.evo7-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(180deg,#9fd8ff 0 40%,#3a8ee0 40%)}
+.evo7-btn{padding:6px 8px;border:3px solid var(--cl-ink,#181a24);border-radius:7px;background:var(--cl-card,#fff);color:var(--cl-text,#222);
+  font:700 9px var(--cl-pixel,monospace);letter-spacing:.04em;box-shadow:0 3px 0 var(--cl-ink,#181a24);cursor:pointer}
+.evo7-btn.go{background:linear-gradient(180deg,#5fe08e,#2f9e5a);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.35);animation:evo7Glow 1.4s ease-in-out infinite}
+.evo7-btn:active{transform:translateY(3px);box-shadow:none}
+.evo7-undo{justify-self:start;padding:2px 0;border:0;background:none;color:var(--cl-muted,#666);font:700 9px var(--cl-pixel,monospace);text-decoration:underline;cursor:pointer}
+.evo7-note{margin:0;font-size:12px;color:var(--cl-muted,#555)}
+#sumScreen .evo7-card.ready{border-color:#2f9e5a;box-shadow:0 3px 0 var(--cl-ink,#181a24),0 0 0 3px rgba(67,193,122,.45),0 0 18px rgba(67,193,122,.55)}
+#sumScreen .evo7-card.ready header b{color:#1f7a44}
+#sumScreen .evo7-card.ready header small{color:#1f7a44}
+#sumScreen .evo7-card.evo7-ping{animation:evo7Ping .6s ease-in-out 3}
+@keyframes evo7Glow{50%{filter:brightness(1.15);box-shadow:0 3px 0 var(--cl-ink,#181a24),0 0 12px rgba(95,224,142,.9)}}
+@keyframes evo7Ping{50%{transform:scale(1.03)}}
+
+/* Box: 🧬 em quem pode evoluir */
+.pokemon-card.evo7-can{box-shadow:inset 0 0 0 2px rgba(67,193,122,.8)}
+.evo7-tag{margin-left:4px;font-size:12px;animation:evo7Ping 1.6s ease-in-out infinite}
+
+/* Animação de evolução no palco */
+#sumScreen .sum-stage.evo7-evolve img{animation:evo7Morph 2s ease-out both}
+#sumScreen .sum-stage.evo7-evolve .sum-flash{animation:evo7Flash 2s ease-out both}
+@keyframes evo7Morph{0%{filter:brightness(0) invert(1);transform:scale(.6)}20%{transform:scale(1.15)}35%{transform:scale(.7)}50%{transform:scale(1.2)}70%{filter:brightness(0) invert(1);transform:scale(1)}100%{filter:none;transform:none}}
+@keyframes evo7Flash{0%,60%{opacity:0}70%{opacity:1}100%{opacity:0}}
+
+/* Prévia */
+.evo7-modal{position:fixed;inset:0;z-index:9000;display:none;place-items:center;padding:16px;background:rgba(10,12,22,.62)}
+.evo7-modal.open{display:grid}
+.evo7-box{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;display:grid;gap:10px;padding:14px;border-radius:12px;
+  background:var(--cl-paper,#fff);color:var(--cl-text,#222);border:3px solid var(--cl-ink,#181a24);box-shadow:0 6px 0 var(--cl-ink,#181a24)}
+.evo7-box header{display:flex;align-items:center;justify-content:space-between}
+.evo7-box header b{font:400 15px var(--cl-title,inherit)}
+.evo7-x{border:2px solid var(--cl-ink,#181a24);border-radius:6px;background:var(--cl-card,#fff);color:inherit;width:32px;height:32px;cursor:pointer;font-weight:900}
+.evo7-stage{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:10px;border-radius:10px;border:3px solid var(--cl-ink,#181a24);
+  background:radial-gradient(ellipse 60% 14% at 50% 86%,rgba(0,0,0,.18),transparent 70%),linear-gradient(180deg,#cfeaff,#f2faff 66%,#bfe2a8 66.5%,#d9efc6)}
+.evo7-stage>span{display:grid;justify-items:center;gap:4px;text-align:center;color:#1b1d2a}
+.evo7-stage img{width:110px;height:110px;object-fit:contain}
+.evo7-stage>span b{font:400 12px var(--cl-title,inherit)}
+.evo7-stage>span small{display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+.evo7-stage>i{font-style:normal;font-size:24px;font-weight:900;color:#2f9e5a;animation:evo7Ping 1.2s ease-in-out infinite}
+.evo7-cond{margin:0;text-align:center;font:700 10px var(--cl-pixel,monospace);color:#8a5a00}
+.evo7-cond.go{color:#1f7a44}
+.evo7-table{width:100%;border-collapse:collapse;font-size:12px}
+.evo7-table th,.evo7-table td{padding:4px 6px;border-bottom:1px solid var(--cl-line,#ddd);text-align:center}
+.evo7-table tbody th{text-align:left;font:700 10px var(--cl-pixel,monospace)}
+.evo7-table thead th{font:700 9px var(--cl-pixel,monospace);color:var(--cl-muted,#666)}
+.evo7-table small.up{color:#1f7a44;font-weight:800}
+.evo7-table small.down{color:#c0392b;font-weight:800}
+.evo7-keep{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 6px}
+.evo7-keep li{font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;background:color-mix(in srgb,#43c17a 18%,var(--cl-paper2,#f1f1f1));color:#1f6a3c}
+.evo7-acts{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.evo7-acts .evo7-go{min-width:150px}
+@media (max-width:520px){.evo7-stage img{width:80px;height:80px}.evo7-table{font-size:11px}}
+.evo7-acts .evo7-btn{padding:10px 14px;font-size:10px}
+.evo7-acts .evo7-btn:disabled{opacity:.55;animation:none;filter:grayscale(.6);cursor:default}
+#sumScreen .evo7-card{grid-column:1 / -1}
