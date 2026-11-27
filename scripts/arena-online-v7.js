@@ -41,8 +41,35 @@
   const pickScene=v=>v==="random"||!sceneOk(v)?SCENES[Math.floor(Math.random()*SCENES.length)].v:v;
   const sceneLabel=v=>SCENES.find(x=>x.v===v)?.label||"Padrão";
   /* Dano: "classic" (regra da ficha) ou "matrix" (🧪 Dano experimental / QD) */
-  let dmgMode=(()=>{const v=ls.get("hh_arena_dmg");if(v==="matrix"||v==="classic")return v;return state.damageMatrix&&state.damageMatrix.enabled!==false?"matrix":"classic";})();
-  const DMG_LABEL={classic:"Dano da ficha",matrix:"🧪 Dano experimental (QD)"};
+  // V7: o dano por Qualidade (QD) é o dano do sistema — vale em todas as batalhas
+  let dmgMode="matrix";
+  const DMG_LABEL={classic:"Dano antigo (d6)",matrix:"Dano por Qualidade (QD)"};
+  /* Prévia do dano no botão do golpe: quantos dados e qual dado (QD),
+     pela Qualidade do ATK/SP.ATK atual contra a DEF/SP.DEF do alvo. */
+  const QD_STEPS=["d4","d6","d8","d10","d12","d12+d4","d12+d6","d20"];
+  const qualityOf=v=>v<=49?0:v<=75?1:v<=100?2:v<=125?3:v<=150?4:v<=175?5:v<=200?6:v<=225?7:8;
+  const pdiceOf=p=>p<=0?0:p<=20?1:p<=40?2:p<=60?3:p<=80?4:p<=100?5:6;
+  const stageMul=n=>n>=0?(2+n)/2:2/(2-n);
+  function qdPreview(v,mine,move,power){
+    try{
+      const foe=mine==="p1"?"p2":"p1";
+      const A=B.teams[mine][v.sides[mine].active],D=B.teams[foe][v.sides[foe].active];
+      if(!A||!D||!power)return null;
+      const phys=String(move.category||"").toLowerCase()==="physical";
+      const ak=phys?"atk":"spa",dk=phys?"def":"spd";
+      const atk=Math.floor(Number(A.stats?.[ak]||0)*stageMul(v.sides[mine].stg?.[ak]||0));
+      const def=Math.floor(Number(D.stats?.[dk]||0)*stageMul(v.sides[foe].stg?.[dk]||0));
+      const oq=qualityOf(atk),dq=qualityOf(def),gap=oq-dq;
+      const mult=defensiveMultiplier(normalizeTypeName(move.type),(D.types||[]).map(normalizeTypeName).filter(Boolean));
+      if(mult===0)return {label:"imune",title:"O alvo é imune a esse tipo"};
+      let qi=gap<0?0:Math.min(7,gap+1),n=pdiceOf(power);
+      if(mult>1){n++;qi=Math.min(7,qi+1);}else if(mult<1){n=Math.max(1,n-1);qi=Math.max(0,qi-1);}
+      const qd=QD_STEPS[qi];
+      const stab=(A.types||[]).map(normalizeTypeName).includes(normalizeTypeName(move.type));
+      const label=qd.split("+").map(x=>`${n}${x}`).join("+")+(stab?"+1d6":"");
+      return {label,qd,mult,title:`QD ${qd}: Q${oq} do seu ${phys?"ATK":"SP.ATK"} contra Q${dq} da ${phys?"DEF":"SP.DEF"} do alvo · ${n} dado${n>1?"s":""} de Poder${mult>1?" (super efetivo)":mult<1?" (resistido)":""}${stab?" · STAB +1d6":""}`};
+    }catch(e){return null;}
+  }
   let people={},chat=[],outgoing=null,incoming=null,myTeamCache=null;
   // batalha atual: {id,role:'p1'|'p2'|'spec',host:bool,state,teams,format,opp,names,playing}
   let B=null;
@@ -367,7 +394,7 @@
 
   /* ---------- Batalha: rede ---------- */
   async function joinBattle({id,role,format,names,arena,dmg}){
-    B={id,role,dmg:dmg==="matrix"?"matrix":"classic",arena:sceneOk(arena)?arena:"standard",host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
+    B={id,role,dmg:"matrix",arena:sceneOk(arena)?arena:"standard",host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
     for(const k in lastHp)delete lastHp[k];
     sfx("page");render();
     battleCh=sb.channel("hh-arena-b:"+id,{config:{presence:{key:me.id},broadcast:{self:false}}});
@@ -379,7 +406,7 @@
       // descida do Abismo / Sem Fim: cada andar chega como um "start" novo
       if(payload.fresh&&B.teams&&payload.state?.id!==B.view?.id){B.view=null;B.log=[];B.queue=[];B.playing=false;B.teams=null;for(const k in lastHp)delete lastHp[k];}
       if(!B.teams){B.teams=payload.teams;B.names=payload.names;B.format=payload.format;}
-      B.sub=payload.sub||"";if(sceneOk(payload.arena))B.arena=payload.arena;if(payload.dmg)B.dmg=payload.dmg;applyState(payload.state,true);});
+      B.sub=payload.sub||"";if(sceneOk(payload.arena))B.arena=payload.arena;if(payload.dmg)B.dmg=payload.dmg==="classic"?"classic":"matrix";applyState(payload.state,true);});
     battleCh.on("broadcast",{event:"runend"},({payload})=>{if(!B||B.host)return;pushLog([{k:"info",text:payload.text||"A corrida acabou."}]);if(B.view)B.view.phase="end";render(true);});
     battleCh.on("broadcast",{event:"state"},({payload})=>{if(!B||B.host)return;applyState(payload,false);});
     battleCh.on("broadcast",{event:"emote"},({payload})=>showEmote(payload));
@@ -912,10 +939,7 @@
         <label class="ar7-field-label">Sala<span class="ar7-room"><input id="ar7Room" maxlength="24" value="${esc(room)}" autocomplete="off" spellcheck="false"><button type="button" class="ar7-btn" data-ar="room">Entrar</button></span></label>
       </div>
       <p class="ar7-hint">Use uma sala com nome próprio (ex.: <code>mesa-do-nando</code>) para jogar só com seus amigos, e mande o <button type="button" class="ar7-link" data-ar="share">convite 🔗</button>. A batalha não altera a ficha: todos começam com HP cheio.</p>
-      <div class="ar7-dmg-pick" role="radiogroup" aria-label="Sistema de dano"><small>Dano das suas batalhas (vale quando você desafia e no Desafio Sem Fim):</small>
-        <span>${["classic","matrix"].map(k=>`<button type="button" role="radio" aria-checked="${dmgMode===k}" class="ar7-btn${dmgMode===k?" primary":""}" data-ar="dmg" data-v="${k}">${k==="matrix"?"🧪 Experimental (QD)":"Padrão da ficha"}</button>`).join("")}</span>
-        <em>${dmgMode==="matrix"?"Poder define quantos dados; a Qualidade do seu ATK/SP.ATK contra a DEF/SP.DEF do alvo define o dado (d4 a d20). STAB +1d6 e nível÷5 fixo.":"Power vira d6, Attack/Sp.Atk somam dados e Defense/Sp.Def tiram dados."}</em>
-      </div>
+      <div class="ar7-dmg-pick"><small>⚔ Dano por Qualidade (QD): o Poder do golpe define quantos dados; a Qualidade do seu ATK/SP.ATK contra a DEF/SP.DEF do alvo define o dado (d4 a d20). Super efetivo +1 dado e +1 degrau; STAB +1d6; nível÷5 fixo. O botão de cada golpe já mostra os dados contra o rival atual.</small></div>
       <div class="ar7-scenes-head"><small>Ambiente das suas batalhas:</small><b>${scene==="random"?"Aleatório":esc(sceneLabel(scene))}</b></div>
       <div class="ar7-scenes" role="radiogroup" aria-label="Ambiente da batalha">
         <button type="button" role="radio" aria-checked="${scene==="random"}" class="ar7-scene rnd${scene==="random"?" on":""}" data-ar="scene" data-v="random"><i>🎲</i><b>Aleatório</b></button>
@@ -1037,8 +1061,18 @@
     RUN.alive.forEach((ri,j)=>{
       const t=st.sides.p1.team[j];if(!t?.part)return;
       const m=RUN.team[ri];
-      if(Number(m.level||1)-info.level>=10){gains.push({ri,m:{name:m.name,img:m.img},n:0,why:"nível bem acima do rival"});return;}
-      const p=state.pokemon.find(x=>String(x.id)===String(m.fid));if(!p)return;
+      const p=state.pokemon.find(x=>String(x.id)===String(m.fid));
+      if(Number(m.level||1)-info.level>=10){
+        // não ganha PPg, mas sempre passa 1 PPg inteiro para quem segura o Exp. Share
+        let passed=0;
+        try{for(const h of (state.pokemon||[]).filter(x=>(x.storageGroup||"team")==="team"&&String(x.id)!==String(m.fid)&&/^exp\.?\s*share$/i.test(String(x.heldItem||"").trim()))){
+          const before=Math.max(0,Number(h.currentPpg||0));h.currentPpg=Math.min(15,before+1);const add=h.currentPpg-before;passed+=add;
+          const g=shareGains.get(h.id)||{m:{name:h.name,img:(typeof displayPokemonImage==="function"?displayPokemonImage(h):"")||""},n:0,share:true};
+          g.n+=add;g.total=h.currentPpg;g.max=h.currentPpg>=15;g.half=!!h.ppgShareHalf;shareGains.set(h.id,g);RUN.ppg[h.id]=(RUN.ppg[h.id]||0)+add;
+        }}catch(e){console.error(e);}
+        gains.push({ri,m:{name:m.name,img:m.img},n:0,total:Number(p?.currentPpg||0),why:passed?`nível bem acima · passou 1 PPg pelo Exp. Share`:"nível bem acima do rival"});return;
+      }
+      if(!p)return;
       const before=Math.max(0,Number(p.currentPpg||0)),after=Math.min(15,before+info.ppg);
       p.currentPpg=after;RUN.ppg[m.fid]=(RUN.ppg[m.fid]||0)+(after-before);
       gains.push({ri,m:{name:m.name,img:m.img},n:after-before,total:after,max:after>=15});
@@ -1387,7 +1421,7 @@
         const streak=s.evadeStreak||0;
         panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} ${s.team?.[s.active]&&!s.team[s.active].fainted?"saiu de campo pelo item!":"desmaiou!"} Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
           ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const locked=s.lock!=null&&s.lock!==i;const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${(zOn&&!zOk)||locked?"disabled":""} ${locked?`title="Preso no golpe escolhido pelo item Choice"`:""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
-            <b>${zOk?"Z-":""}${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${zOk?` · ${powerToDice(zp)} · não erra`:`${m.power?` · ${powerToDice(m.power)}`:""}${m.accuracy!=null?` · ${m.accuracy}%`:""}`}</small></button>`;}).join("")}</div>
+            <b>${zOk?"Z-":""}${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${(()=>{const q=m.power?qdPreview(v,mine,m,zOk?zp:Number(m.power)):null;const dmg=q?` · <em class="ar9-qd${q.mult>1?" se":q.mult<1?" nve":""}" title="${esc(q.title)}">${esc(q.label)}</em>`:"";return zOk?`${dmg} · não erra`:`${dmg}${m.accuracy!=null?` · ${m.accuracy}%`:""}`;})()}</small></button>`;}).join("")}</div>
           <div class="ar9-tactics">
             ${g.mega.length||g.tera||g.z?`<div class="ar9-gims" role="group" aria-label="Gimmicks (uma de cada por batalha)">
               ${g.mega.map((f,i)=>`<button type="button" class="ar9-gim mega${sel.gimmick==="mega"&&(sel.form||0)===i?" on":""}" data-ar="gim" data-v="mega" data-form="${i}" aria-pressed="${sel.gimmick==="mega"&&(sel.form||0)===i}" title="Mega Evolui antes de atacar: ${esc(f.name)} (${esc((f.types||[]).join("/"))})"><i>◆</i>${g.mega.length>1?esc(f.name):"Mega Evoluir"}</button>`).join("")}
@@ -1408,7 +1442,7 @@
       }
     }
     return `<section class="ar7-battle">
-      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.role==="spec"&&B.sub?`${esc(B.sub)} · `:""}${B.solo&&RUN?.attempt?`🔁 ${RUN.attempt}ª tentativa · `:""}${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
+      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.role==="spec"&&B.sub?`${esc(B.sub)} · `:""}${B.solo&&RUN?.attempt?`🔁 ${RUN.attempt}ª tentativa · `:""}${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""}${B.dmg==="matrix"?"":" · Dano antigo (d6)"}</small></div>
       <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
@@ -1478,7 +1512,6 @@
     else if(a==="surv-reward")applyReward(b.dataset.v);
     else if(a==="surv-again"){closeRunCh();B=null;RUN=null;askOrder("");}
     else if(a==="rank-reload")loadRank(true);
-    else if(a==="dmg"){dmgMode=b.dataset.v==="matrix"?"matrix":"classic";ls.set("hh_arena_dmg",dmgMode);sfx("select");render();}
     else if(a==="pick-add")editPick(ids=>ids.length<6&&!ids.includes(b.dataset.id)?[...ids,b.dataset.id]:ids);
     else if(a==="pick-del")editPick(ids=>ids.filter(x=>x!==b.dataset.id));
     else if(a==="pick-lead")editPick(ids=>[b.dataset.id,...ids.filter(x=>x!==b.dataset.id)]);

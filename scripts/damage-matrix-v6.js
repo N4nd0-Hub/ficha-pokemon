@@ -41,7 +41,7 @@
     const clampStat=v=>Math.max(1,Math.min(999,Math.round(Number(v)||100)));
     const eff=EFFECTIVENESS.some(e=>e.v===Number(raw.effectiveness))?Number(raw.effectiveness):1;
     state.damageMatrix={
-      enabled:raw.enabled!==false,
+      enabled:true,// V7: dano por Qualidade é o dano do sistema
       targetDef:clampStat(raw.targetDef??100),
       targetSpd:clampStat(raw.targetSpd??100),
       effectiveness:eff
@@ -182,8 +182,8 @@
     const cfg=settings();
     return `
       <div class="dm-head">
-        <button type="button" class="dm-toggle" data-dm="toggle" aria-pressed="${cfg.enabled}">🧪 Dano experimental: <b>${cfg.enabled?"ligado":"desligado"}</b></button>
-        <small>${cfg.enabled?"Damage Matrix v0.2 · Poder define os dados, atributos definem a QD, nível soma dano fixo.":"Dano padrão: Poder em d6 + bônus do atributo."}</small>
+        <b class="dm-toggle" aria-hidden="true">⚔ Dano por Qualidade (QD)</b>
+        <small>Poder define quantos dados, a Qualidade do atributo contra a do alvo define o dado (d4 a d20), nível soma dano fixo.</small>
       </div>
       ${cfg.enabled?`
       <div class="dm-target">

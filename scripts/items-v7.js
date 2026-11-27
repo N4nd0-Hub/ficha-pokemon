@@ -300,15 +300,33 @@
   }
   function teamView(){
     const team=(state.pokemon||[]).filter(x=>(x.storageGroup||"team")==="team").slice(0,6);
-    if(!team.length)return `<p class="it7-empty">Nenhum Pokémon na Equipe.</p>`;
-    return `<div class="it7-team">${team.map(x=>{
+    if(!team.length)return `<p class="it7-empty">${ico("ball","it7-px big")}<span>Nenhum Pokémon na Equipe.</span></p>`;
+    const pal=t=>{try{return moveTypePalette(normalizeTypeName(t)).main;}catch(e){return "#8a90a0";}};
+    const holding=team.filter(x=>String(x.heldItem||"").trim()).length;
+    return `<div class="it7-teamhead"><b>${holding}/${team.length}</b><span>Pokémon segurando item</span><small>Toque no espaço do item para trocar</small></div>
+    <div class="it7-team">${team.map(x=>{
       let im="";try{im=displayPokemonImage(x)||"";}catch(e){}
       const it=x.heldItem?(officialOf(x.heldItem)||(x.itemMemory||[]).find(r=>String(r.name).toLowerCase()===String(x.heldItem).toLowerCase())||{name:x.heldItem,description:""}):null;
       const r=it?read({...it,name:x.heldItem}):null;
-      return `<article class="it7-slot"><span class="it7-mon">${im?`<img src="${esc(im)}" alt="">`:"◓"}</span>
-        <div class="it7-slot-txt"><b>${esc(x.name)}</b><small>Lv ${Number(x.level||1)}</small>
-          ${it?`<p class="it7-held">${face({img:sprite(it.apiName),icon:"px:gem"},28)} <b>${esc(x.heldItem)}</b></p><div class="it7-tags">${tagChips(r,4)}</div>`:`<p class="it7-held none">Sem item segurado</p>`}</div>
-        <div class="it7-slot-acts">${it?`<button type="button" class="it7-btn" data-it="take" data-p="${esc(String(x.id))}">Tirar</button>`:""}<button type="button" class="it7-btn" data-it="pickFor" data-p="${esc(String(x.id))}">${it?"Trocar":"Dar item"}</button></div></article>`;}).join("")}</div>`;
+      const types=[x.type1,x.type2].map(t=>typeof normalizeTypeName==="function"?normalizeTypeName(t):t).filter(Boolean);
+      const c1=pal(types[0]||"Normal"),c2=pal(types[1]||types[0]||"Normal");
+      const hp=Math.max(0,Number(x.currentHp??x.maxHp??0)),mx=Math.max(1,Number(x.maxHp||x.stats?.hp||1)),pc=Math.round(100*Math.min(hp,mx)/mx);
+      const arena=r?.usableInBattle&&r?.held;
+      return `<article class="it7-slot" style="--t1:${c1};--t2:${c2}">
+        <div class="it7-slot-top">
+          <span class="it7-mon">${im?`<img src="${esc(im)}" alt="" loading="lazy">`:"◓"}</span>
+          <div class="it7-slot-id"><b>${esc(x.name)}</b>
+            <span class="it7-slot-meta"><em>Lv ${Number(x.level||1)}</em>${types.map(t=>`<i style="--tc:${pal(t)}">${esc(t)}</i>`).join("")}</span>
+            <span class="it7-slot-hp ${pc<=25?"low":pc<=50?"mid":""}" title="HP ${hp}/${mx}"><i style="width:${pc}%"></i></span></div>
+        </div>
+        <button type="button" class="it7-hold${it?"":" empty"}" data-it="pickFor" data-p="${esc(String(x.id))}" aria-label="${it?`Trocar ${esc(x.heldItem)}`:"Dar um item"}">
+          <span class="it7-hold-ico">${it?face({img:sprite(it.apiName),icon:"px:gem"},32):ico("plus","it7-px")}</span>
+          <span class="it7-hold-txt"><small>${it?"Segurando":"Sem item"}</small><b>${it?esc(x.heldItem):"Toque para dar um item"}</b></span>
+          ${arena?`<span class="it7-hold-arena" title="Funciona sozinho na Arena">⚔</span>`:""}
+        </button>
+        ${r&&r.tags.length?`<div class="it7-tags">${tagChips(r,3)}</div>`:""}
+        <div class="it7-slot-acts">${it?`<button type="button" class="it7-btn" data-it="take" data-p="${esc(String(x.id))}">Tirar</button>`:""}<button type="button" class="it7-btn${it?"":" go"}" data-it="pickFor" data-p="${esc(String(x.id))}">${it?"Trocar":"Dar item"}</button></div>
+      </article>`;}).join("")}</div>`;
   }
   function onClick(e){
     const b=e.target.closest("[data-it]");
