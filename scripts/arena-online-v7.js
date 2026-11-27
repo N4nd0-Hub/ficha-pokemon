@@ -283,7 +283,7 @@
 
   /* ---------- Interface: casca ---------- */
   const root=document.createElement("section");
-  root.id="hhArena";root.className="ar7";root.hidden=true;root.setAttribute("aria-label","Arena Online");
+  root.id="hhArena";root.className="ar7";root.hidden=true;root.setAttribute("aria-label","Aventura: Exploração e Arena");
   document.body.appendChild(root);
   function open(){
     root.hidden=false;document.body.classList.add("ar7-open");sfx("page");
@@ -332,8 +332,8 @@
   /* Botão ⚔ Arena no topo (computador e celular) */
   const brand=document.querySelector(".topbar .brand");
   if(brand&&!document.getElementById("hhArenaBtn")){
-    brand.insertAdjacentHTML("afterend",`<button type="button" id="hhArenaBtn" class="ar7-open-btn" aria-label="Arena Online: desafie amigos" title="Arena Online: desafie amigos">
-      <span class="ar7-open-ico" aria-hidden="true">⚔</span><span class="ar7-open-txt">Arena</span><i class="ar7-open-dot" hidden></i></button>`);
+    brand.insertAdjacentHTML("afterend",`<button type="button" id="hhArenaBtn" class="ar7-open-btn" aria-label="Aventura: Exploração e Arena" title="Aventura: Exploração, Arena e desafios">
+      <span class="ar7-open-ico" aria-hidden="true">⚔</span><span class="ar7-open-txt">Aventura</span><i class="ar7-open-dot" hidden></i></button>`);
     const btn=document.getElementById("hhArenaBtn");
     btn.addEventListener("click",open);
     // No computador o botão fica junto das ferramentas; no celular, ao lado do ⋮.
@@ -765,7 +765,7 @@
     morph(root,`<div class="ar7-shell">
       <header class="ar7-top">
         <button type="button" class="ar7-back" data-ar="close" aria-label="Voltar para a ficha">← Ficha</button>
-        <div class="ar7-title"><b>⚔ Arena Online</b><small>${B?(B.role==="spec"?"Assistindo batalha":"Batalha"):`Sala <code>${esc(room)}</code> · ${statusText()}`}</small></div>
+        <div class="ar7-title"><b>⚔ Aventura</b><small>${B?(B.role==="spec"?"Assistindo batalha":"Batalha"):`Sala <code>${esc(room)}</code> · ${statusText()}`}</small></div>
         ${B?"":`<button type="button" class="ar7-share" data-ar="share" title="Copiar convite para esta sala">🔗 Convidar</button>`}
       </header>
       <div class="ar7-body">${B?battleView():lobbyView()}</div>
@@ -836,8 +836,23 @@
   const TABS=[["sala","people","Sala","Desafiar e assistir","#e0393e"],["time","ball","Meu time","Escalação","#e39a12"],["ranking","trophy","Ranking","Desafio Sem Fim","#c9961a"],["chat","chat","Chat","Conversa","#2f74d4"],["ajustes","gear","Ajustes","Sala e regras","#7a5ad0"]];
   const wideMq=matchMedia("(min-width:1100px)");
   wideMq.addEventListener?.("change",()=>{if(!B)render();});
+  /* Exploração de Helikon: primeiro cartão da Aventura (funciona sem internet da sala) */
+  function exploreCard(){
+    const X=window.hhExplore;if(!X)return "";
+    let st={},r=null,hp=0,mx=1;
+    try{st=X.state;r=X.REGIONS[st.region];hp=Math.floor(X.hpNow());mx=X.maxHp();}catch(e){return "";}
+    const pc=Math.round(100*hp/mx),inExp=st.exp&&st.exp.region===st.region;
+    const area=inExp?r.areas.find(a=>a.id===st.exp.area):null;
+    return `<section class="ar9-explore ar8-frame" style="--c:${r?.color||"#3f9e57"}">
+      <div class="ar9-ex-map" aria-hidden="true"></div>
+      <div class="ar9-ex-txt"><small>Exploração · Elysius · Helikon</small><h3>${esc(r?.name||"")} <em>${esc(r?.biome||"")} · Lv. ${r?.lv?.[0]}–${r?.lv?.[1]}</em></h3>
+        <p>${area?`Expedição em andamento: <b>${esc(area.name)}</b>.`:`Encontre Pokémon selvagens e itens nas ${r?.areas?.length||0} áreas da região.`}</p>
+        <span class="ar9-ex-life" title="Vida do treinador"><i style="width:${pc}%"></i><b>❤ ${hp}/${mx}</b></span></div>
+      <div class="ar9-ex-act"><button type="button" class="ar7-btn primary" data-ar="explore">🧭 ${area?"Continuar":"Explorar"}</button></div>
+    </section>`;
+  }
   function lobbyView(){
-    if(status==="error")return `<div class="ar7-card ar7-empty"><b>Não foi possível conectar à arena.</b><p>Confira a internet e tente de novo.</p><button type="button" class="ar7-btn primary" data-ar="retry">Tentar de novo</button></div>`;
+    if(status==="error")return `${exploreCard()}<div class="ar7-card ar7-empty"><b>Não foi possível conectar à arena.</b><p>Confira a internet e tente de novo.</p><button type="button" class="ar7-btn primary" data-ar="retry">Tentar de novo</button></div>`;
     const list=Object.values(people).sort((a,b)=>(a.id===me.id?-1:b.id===me.id?1:a.name.localeCompare(b.name)));
     const others=list.filter(p=>p.id!==me.id);
     const battles={};
@@ -868,6 +883,7 @@
       <div class="ar8-party" aria-label="Seu time">${Array.from({length:6},(_,i)=>{const p=slots[i];if(!p)return `<span class="ar8-slot empty">${PX("ball",22)}</span>`;const im=localImg(p);return `<span class="ar8-slot${i===0?" lead":""}" title="${esc(p.name)} • Lv. ${Number(p.level||1)}" style="--t:${typeColor(p.type1)}">${im?`<img src="${esc(im)}" alt="${esc(p.name)}">`:`<i>${esc((p.name||"?").slice(0,1))}</i>`}<small>Lv${Number(p.level||1)}</small></span>`;}).join("")}</div>
     </section>
     ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.format>=6?"time todo":`${outgoing.format} vs ${outgoing.format}`} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
+    ${exploreCard()}
     <section class="ar8-modes">
       <article class="ar8-mode friends ar8-frame">
         <span class="ar8-mode-ico">${PX("swords",72)}</span>
@@ -1180,6 +1196,7 @@
     if(!engine){toast("A Arena ainda está carregando.");return false;}
     const team=await buildTeam(6);
     if(!team.length){toast("Coloque Pokémon na Equipe primeiro.");return false;}
+    opt.fromHub=!root.hidden;
     const th=opt.teamHp||{};
     RUN={wild:opt,wave:1,team,hp:team.map(m=>{const mx=Math.max(1,Number(m.maxHp||1));const h=th[m.fid];return h?{hp:Math.max(0,Math.min(mx,Math.round(mx*h.pct))),maxHp:mx,fainted:!!h.fainted||h.pct<=0}:{hp:mx,maxHp:mx,fainted:false};}),
       train:0,dmg:dmgMode,cleared:0,done:false,region:null,mode:"wild",ppg:{},lastGains:[],attempt:0};
@@ -1230,7 +1247,8 @@
     if(kind==="caught"&&!RUN.done){try{awardPpg();}catch(e){console.error(e);}}
     const res={outcome:kind==="back"?(RUN.result||"lost"):kind,teamHp:RUN.snap||wildSnapshot(),foe:RUN.foeEnd||wildFoe(),gains:(RUN.lastGains||[]).filter(g=>g.n>0)};
     B=null;RUN=null;track();
-    root.hidden=true;document.body.classList.remove("ar7-open");
+    if(W.fromHub)render(true);
+    else{root.hidden=true;document.body.classList.remove("ar7-open");}
     document.getElementById("hhArenaBtn")?.classList.remove("ar9-running");
     try{W.onEnd?.(res);}catch(e){console.error(e);}
   }
@@ -1595,6 +1613,7 @@
     const b=e.target.closest("[data-ar]");if(!b)return;
     const a=b.dataset.ar;
     if(a==="close")close();
+    else if(a==="explore"){window.hhExplore?.open({from:"arena"});}
     else if(a==="retry"){status="off";connect();}
     else if(a==="room")switchRoom(document.getElementById("ar7Room")?.value);
     else if(a==="share"){
@@ -1669,7 +1688,7 @@
   root.addEventListener("keydown",e=>{
     if(e.key==="Enter"&&e.target.id==="ar7Room"){e.preventDefault();switchRoom(e.target.value);}
     if(e.key==="Escape"&&orderAsk){orderAsk=null;render();return;}
-    if(e.key==="Escape"&&!incoming&&!B)close();
+    if(e.key==="Escape"&&!incoming&&!B&&!document.body.classList.contains("ex7-open"))close();
   });
   window.addEventListener("beforeunload",()=>{if(B)leaveBattle(true);});
 

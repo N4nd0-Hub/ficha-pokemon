@@ -67,7 +67,7 @@
   /* ---------- Elysius · Helikon ---------- */
   const MAP_W=240,MAP_H=150; // mapa em pixel art de Helikon (assets/explore/helikon-map.png, 240×150 ampliado 4×)
   const REGIONS={
-    sylphora:{id:"sylphora",name:"Sylphora",biome:"Floresta",icon:"tree",lv:[8,18],bst:450,color:"#3f9e57",pos:[58,92],
+    sylphora:{id:"sylphora",name:"Sylphora",biome:"Floresta",icon:"tree",lv:[8,18],bst:450,color:"#3f9e57",pos:[57,112],
       hash:"a51919ee15315c49f8330456d262f682e0dad875ef5eb991e8737a4bf59e939f",
       desc:"A grande floresta do oeste de Helikon. Copas fechadas, riachos escondidos e muitos Pokémon Planta e Inseto.",
       areas:[
@@ -76,7 +76,7 @@
         {id:"copa",name:"Copa Antiga",types:["Flying","Bug","Normal"],scene:"forest",tiles:{tree:6,grass:3,path:2}},
         {id:"riacho",name:"Riacho Sombreado",types:["Water","Grass","Ghost"],scene:"night",dusk:true,tiles:{water:4,tree:4,grass:3,path:1}}
       ]},
-    nerona:{id:"nerona",name:"Nerona",biome:"Mares",icon:"wave",lv:[10,22],bst:470,color:"#3d7fd6",pos:[22,142],
+    nerona:{id:"nerona",name:"Nerona",biome:"Mares",icon:"wave",lv:[10,22],bst:470,color:"#3d7fd6",pos:[72,139],
       hash:"7a7f741016923f894b1e85e3520e9419e0560978ee799d4c5b414886724996ae",
       desc:"Os mares e a costa sul de Helikon, por onde passa a Rota do Dragão. Praias, recifes e grutas de maré.",
       areas:[
@@ -85,7 +85,7 @@
         {id:"falesias",name:"Falésias do Vento",types:["Flying","Water","Normal"],scene:"sky",tiles:{rock:4,grass:3,cloud:2,water:2,path:1}},
         {id:"grutas",name:"Grutas da Maré",types:["Water","Dark","Ghost"],scene:"cave",dusk:true,tiles:{cave:5,water:4,rock:3}}
       ]},
-    altamuralha:{id:"altamuralha",name:"Altamuralha",biome:"Montanhas e Vales",icon:"rock",lv:[15,30],bst:530,color:"#a2763c",pos:[151,86],
+    altamuralha:{id:"altamuralha",name:"Altamuralha",biome:"Montanhas e Vales",icon:"rock",lv:[15,30],bst:530,color:"#a2763c",pos:[150,95],
       hash:"27d0f366944cfc59a9a50fe618e2629a12bae1ecc9df372f572f1099e79451ba",
       desc:"A Grande Cidade na montanha, lar do Rochedo Eterno. Trilhas de pedra, vales de vento e cavernas de cristal no fim da Rota do Dragão.",
       areas:[
@@ -95,7 +95,7 @@
         {id:"rio",name:"Rio das Pedras",types:["Water","Ground","Rock"],scene:"mountain",tiles:{water:4,rock:3,grass:3,path:2}},
         {id:"encostas",name:"Encostas Floridas",types:["Grass","Fairy","Bug"],scene:"forest",tiles:{flower:4,grass:4,tree:2,rock:2}}
       ]},
-    frostrine:{id:"frostrine",name:"Frostrine",biome:"Montanhas Nevadas e Florestas Gélidas",icon:"snow",lv:[28,42],bst:560,color:"#7fb8d8",pos:[70,30],secret:true,
+    frostrine:{id:"frostrine",name:"Frostrine",biome:"Montanhas Nevadas e Florestas Gélidas",icon:"snow",lv:[28,42],bst:560,color:"#7fb8d8",pos:[76,34],secret:true,
       hash:"0ab3be77c78f4e6a394aa28818826e1a4df49e91b47b76b0e98b0ef93de8bbf0",
       desc:"Além de Altamuralha, a neve cobre montanhas e florestas inteiras. O frio corta, e cada passo pesa.",
       areas:[
@@ -103,7 +103,7 @@
         {id:"encostas",name:"Encostas Nevadas",types:["Ice","Rock","Steel"],scene:"mountain",tiles:{snow:6,rock:4,cave:1}},
         {id:"lago",name:"Lago Congelado",types:["Ice","Water"],scene:"ocean",dive:true,tiles:{water:5,snow:5,rock:1}}
       ]},
-    aelora:{id:"aelora",name:"Aelora",biome:"Pico de Dragons Peak",icon:"star",lv:[40,55],bst:600,color:"#c88bd8",pos:[190,30],secret:true,
+    aelora:{id:"aelora",name:"Aelora",biome:"Pico de Dragons Peak",icon:"star",lv:[40,55],bst:600,color:"#c88bd8",pos:[190,27],secret:true,
       hash:"bfcf344d4e62610c17a7d6749f56504ade33940c970db3bc6f91bed26e15e2aa",
       desc:"O cume de Dragons Peak, onde a Rota do Dragão termina. Escarpas, ninhos nas nuvens e ruínas antigas.",
       areas:[
@@ -512,6 +512,7 @@
     if(ui.cap&&ui.cap.C.inBattle){captureBack();return;}
     if(ui.busy)return;
     root.hidden=true;document.body.classList.remove("ex7-open");clearInterval(tick);cancelAnimationFrame(ringRaf);
+    refreshHub();
   }
   function hpBar(){
     const mx=maxHp(),h=hpNow(),pc=Math.round(100*h/mx),ms=fullIn();
@@ -526,23 +527,23 @@
       <span class="ex7-logo">${px("compass",34)}</span>
       <div class="ex7-title"><b>Exploração</b><small>Elysius · Helikon · <b>${esc(r.name)}</b></small></div>
       ${hpBar()}
-      <button type="button" class="ex7-x" data-ex="close" aria-label="Fechar exploração">✕</button>
+      <button type="button" class="ex7-back" data-ex="close" aria-label="Voltar para a Aventura">← Aventura</button>
     </header>`;
   }
   function mapView(){
     const x=X(),r=region();
     const pins=ORDER.map(id=>{const g=REGIONS[id];const k=known(id),here=id===x.region;
       return `<div class="ex7-pin${here?" here":""}${k?"":" unknown"}" style="left:${(g.pos[0]/MAP_W*100).toFixed(2)}%;top:${(g.pos[1]/MAP_H*100).toFixed(2)}%;--c:${g.color}" title="${k?esc(g.name+" · "+g.biome):"Região desconhecida"}">
-        <span class="ex7-pin-ico">${k?px(g.icon,22):"<b>?</b>"}</span><span class="ex7-pin-name">${k?esc(g.name):"???"}</span>${here?`<span class="ex7-here">${px("pin",16)} você está aqui</span>`:""}</div>`;}).join("");
+        <span class="ex7-pin-name"><span class="ex7-pin-ico">${k?px(g.icon,14):"<b>?</b>"}</span>${k?esc(g.name):"???"}</span>${here?`<span class="ex7-here">${px("pin",16)} você está aqui</span>`:""}</div>`;}).join("");
     return `<div class="ex7-body ex7-mapbody">
       <section class="ex7-map" aria-label="Mapa de Helikon">
-        <div class="ex7-mapimg"><img src="assets/explore/helikon-map.png?v=1" alt="Mapa em pixel art do continente de Helikon, em Elysius" draggable="false">
-          <span class="ex7-maplabel" style="left:46%;top:88%">Rota do Dragão</span>
-          <span class="ex7-maplabel" style="left:13%;top:66%">Cidade de Helikon</span>
-          <span class="ex7-maplabel big" style="left:47%;top:71%">H E L I K O N</span>
+        <div class="ex7-mapimg"><img src="assets/explore/helikon-map.png?v=2" alt="Mapa em pixel art do continente de Helikon, em Elysius" draggable="false">
+          <span class="ex7-maplabel" style="left:55%;top:86%">Rota do Dragão</span>
+          <span class="ex7-maplabel" style="left:10%;top:64%">Cidade de Helikon</span>
+          <span class="ex7-maplabel big" style="left:41%;top:60%">H E L I K O N</span>
           ${known("frostrine")?"":`<span class="ex7-fog" style="left:2%;top:0%;width:60%;height:44%"></span>`}
           ${known("aelora")?"":`<span class="ex7-fog" style="left:58%;top:4%;width:42%;height:66%"></span>`}
-          <span class="ex7-maplabel peak" style="left:80%;top:62%">Dragons Peak</span>
+          <span class="ex7-maplabel peak" style="left:86%;top:55%">Dragons Peak</span>
           ${pins}
         </div>
         <p class="ex7-mapnote">${px("key",16)} A região só muda com a senha que o Mestre entrega na história.</p>
@@ -714,21 +715,7 @@
     if(ui.view==="area"&&e2&&!ui.ev&&!ui.busy){const d={ArrowLeft:-1,ArrowRight:1,ArrowUp:-W,ArrowDown:W}[e.key];if(d){const to=e2.pos+d;if(to>=0&&to<W*H&&neighbors(e2.pos).includes(to)){e.preventDefault();step(to);}}}
   });
 
-  /* ---------- botão no topo (junto da Arena e da Mochila) ---------- */
-  function mountTop(){
-    let btn=document.getElementById("hhExploreBtn");
-    if(!btn){
-      const brand=document.querySelector(".topbar .brand");if(!brand)return;
-      brand.insertAdjacentHTML("afterend",`<button type="button" id="hhExploreBtn" class="ar7-open-btn ex7-top" aria-label="Exploração: viajar e capturar Pokémon" title="Exploração: viajar e capturar Pokémon"><span class="ex7-topico"></span><span class="ar7-open-txt">Explorar</span></button>`);
-      btn=document.getElementById("hhExploreBtn");
-      btn.addEventListener("click",open);
-    }
-    const ico=btn.querySelector(".ex7-topico");if(ico&&!ico.firstChild&&ensureIcons())ico.innerHTML=px("compass",20);
-    const anchor=document.getElementById("hhBagBtn")||document.getElementById("hhArenaBtn");
-    if(anchor&&anchor.nextElementSibling!==btn)anchor.after(btn);
-  }
-  matchMedia("(min-width:901px)").addEventListener?.("change",()=>setTimeout(mountTop,30));
-  let tries=0;const waitTop=setInterval(()=>{mountTop();if((document.getElementById("hhBagBtn")&&ensureIcons())||++tries>60)clearInterval(waitTop);},250);
-
+  /* Entrada: o cartão de Exploração dentro da Aventura (botão ⚔ Aventura no topo) */
+  function refreshHub(){try{if(!document.getElementById("hhArena")?.hidden)document.dispatchEvent(new CustomEvent("hh:render"));}catch(e){}}
   window.hhExplore={open,close,REGIONS,hpNow,maxHp,get state(){return X();}};
 })();
