@@ -44,3 +44,11 @@
 @media (max-width:560px){
   .sc7-chip{padding:3px 6px}.sc7-chip span{font-size:7px}.sc7-chip b{font-size:11px}
 }
+/* largura fixa: o gráfico não encolhe quando o cartão muda */
+.radar-box.sc7-on .sc7{width:100%;justify-self:stretch;align-self:start}
+.sc7-card{min-height:112px;align-content:center}
+/* etiquetas: nome mais alto e afastado do número */
+.sc7-chip{row-gap:6px;padding:6px 10px 6px}
+.sc7-chip span{line-height:1.25;margin-top:-2px}
+.sc7-chip b{line-height:1}
+.sc7-chip em{line-height:1.3}
