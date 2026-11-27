@@ -123,7 +123,7 @@ test("dano experimental (QD): dados pelo Poder, dado pela diferença de Qualidad
   const bt = e.newBattle({ id: "m", format: 1, damage: "matrix", p1: { id: "A", name: "A", team: [a] }, p2: { id: "B", name: "B", team: [b] } });
   assert.equal(bt.damage, "matrix");
   const hit = turn(e, bt, M(0), M(0)).find(x => x.k === "hit" && x.side === "p2");
-  // Poder 90 = 5 dados; Q2 contra Q3 → d4; super efetivo → 6 dados e d6; STAB +1d6; nível 50 → +10
-  assert.equal(hit.expr, "6d6 +1d6 +10");
+  // Poder 90 = 5 dados; Q2 contra Q3 → d4; super efetivo → 6 dados e d6; STAB +1 dado da QD; nível 50 → +10
+  assert.equal(hit.expr, "7d6 +10");
   assert.equal(hit.qd, "d6");
 });

@@ -9,7 +9,7 @@
        4 → d12+d4 · 5 → d12+d6 · 6+ → d20
    - Super efetivo: +1 dado e QD +1 passo. Resistido: −1 dado e
      QD −1 passo. Imune: 0.
-   - STAB +1d6 (Tera do mesmo tipo +2d6; Adaptability 1 + ⌈dados/2⌉).
+   - STAB +1 dado da QD (Tera do mesmo tipo ou Adaptability: +2 dados da QD).
    - Dano fixo de nível: ⌊nível ÷ 5⌋.
    - Crítico natural: dados da QD no máximo.
    Configuração salva em state.damageMatrix.
@@ -76,7 +76,8 @@
     if(tera?.active&&normType(tera.type)===type)return 2;
     const types=[normType(p?.type1),normType(p?.type2)].filter(Boolean);
     if(!types.includes(type))return 0;
-    return hasAbility(p,"Adaptability")?1+Math.ceil(bpDice/2):1;
+    void bpDice;
+    return hasAbility(p,"Adaptability")?2:1;
   }
 
   /* Perfil completo do golpe, ou null para golpes sem dano. */
@@ -97,11 +98,13 @@
     if(eff>1){count++;qd=QDS[Math.min(7,index+1)];}
     else if(eff>0&&eff<1){count=Math.max(1,count-1);qd=QDS[Math.max(0,index-1)];}
     const levelBonus=Math.floor(Number(p.level||1)/5);
+    // STAB agora são dados da QD (o mesmo dado do golpe)
     const stab=stabDice(p,m,bpDice);
+    count+=stab;
     const baseExpression=QD_DICE[qd].map(s=>`${count}d${s}`).join(" + ");
     const immune=eff===0;
-    const expression=immune?"Imune • 0 HP":`${baseExpression}${stab?` + ${stab}d6 STAB`:""}${levelBonus?` + ${levelBonus} fixos`:""}`;
-    const short=immune?"Imune":`${QD_DICE[qd].map(x=>`${count}d${x}`).join("+")}${stab?` +${stab}d6`:""}${levelBonus?` +${levelBonus}`:""}`;
+    const expression=immune?"Imune • 0 HP":`${baseExpression}${stab?` (inclui +${stab} STAB)`:""}${levelBonus?` + ${levelBonus} fixos`:""}`;
+    const short=immune?"Imune":`${QD_DICE[qd].map(x=>`${count}d${x}`).join("+")}${levelBonus?` +${levelBonus}`:""}`;
     return {baseQd:qdFromGap(gap),baseCount:bpDice,count,qd,sides:QD_DICE[qd],hits,effectiveBP,offKey,defKey,offStat,defStat,offQ,defQ,gap,effectiveness:eff,stab,levelBonus,immune,baseExpression,expression,short};
   }
 
@@ -111,7 +114,6 @@
     if(!pr||pr.immune)return {dice:[],total:0};
     const dice=[];
     pr.sides.forEach(s=>{for(let i=0;i<pr.count;i++)dice.push({sides:s,value:critical==="natural"?s:d(s),group:"qd"});});
-    for(let i=0;i<pr.stab;i++)dice.push({sides:6,value:d(6),group:"stab"});
     const total=dice.reduce((a,x)=>a+x.value,0)+pr.levelBonus;
     return {dice,total};
   }
@@ -170,8 +172,8 @@
         </section>
         <section>
           <h5>5 · O que soma por fora</h5>
-          <p><b>STAB</b> (golpe do seu tipo): +1d6 · com Tera do mesmo tipo: +2d6 · com Adaptability: 1 + metade dos dados do Poder.
-          <b>Nível</b>: + nível ÷ 5 de dano fixo. <b>Crítico</b>: os dados da QD saem no valor máximo (o STAB continua rolado).</p>
+          <p><b>STAB</b> (golpe do seu tipo): +1 dado da QD · com Tera do mesmo tipo ou Adaptability: +2 dados da QD.
+          <b>Nível</b>: + nível ÷ 5 de dano fixo. <b>Crítico</b>: todos os dados da QD saem no valor máximo.</p>
         </section>
       </div>
     </details>`;

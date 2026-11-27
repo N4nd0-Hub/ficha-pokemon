@@ -68,8 +68,9 @@
       if(mult>1){n++;qi=Math.min(7,qi+1);}else if(mult<1){n=Math.max(1,n-1);qi=Math.max(0,qi-1);}
       const qd=QD_STEPS[qi];
       const stab=(A.types||[]).map(normalizeTypeName).includes(normalizeTypeName(move.type));
-      const label=qd.split("+").map(x=>`${n}${x}`).join("+")+(stab?"+1d6":"")+(hits>1?` ×${hits}`:"");
-      return {label,qd,mult,title:`QD ${qd}: Q${oq} do seu ${phys?"ATK":"SP.ATK"} contra Q${dq} da ${phys?"DEF":"SP.DEF"} do alvo · ${n} dado${n>1?"s":""} de Poder${mult>1?" (super efetivo)":mult<1?" (resistido)":""}${stab?" · STAB +1d6":""}${hits>1?` · ${hits} acertos, cada um rola o próprio dano (2–5 = 3 fixos, 5 no Crítico Natural)`:""}`};
+      if(stab)n+=1;// STAB = +1 dado da QD
+      const label=qd.split("+").map(x=>`${n}${x}`).join("+")+(hits>1?` ×${hits}`:"");
+      return {label,qd,mult,title:`QD ${qd}: Q${oq} do seu ${phys?"ATK":"SP.ATK"} contra Q${dq} da ${phys?"DEF":"SP.DEF"} do alvo · ${n} dado${n>1?"s":""} de Poder${mult>1?" (super efetivo)":mult<1?" (resistido)":""}${stab?" · STAB +1 dado":""}${hits>1?` · ${hits} acertos, cada um rola o próprio dano (2–5 = 3 fixos, 5 no Crítico Natural)`:""}`};
     }catch(e){return null;}
   }
   let people={},chat=[],outgoing=null,incoming=null,myTeamCache=null;

@@ -485,8 +485,8 @@
       if(b.weather&&umb&&(b.weather.kind==="rain"||b.weather.kind==="sun"))notes.push("Utility Umbrella: sem clima");
       else if(b.weather){
         const w=b.weather.kind;
-        if((w==="rain"&&mtype==="Water")||(w==="sun"&&mtype==="Fire")){add+=1;notes.push(RULES.WEATHER_LABEL[w]+" +1d6");}
-        if((w==="rain"&&mtype==="Fire")||(w==="sun"&&mtype==="Water")){pen+=1;notes.push(RULES.WEATHER_LABEL[w]+" −1d6");}
+        if((w==="rain"&&mtype==="Water")||(w==="sun"&&mtype==="Fire")){add+=1;notes.push(RULES.WEATHER_LABEL[w]+" +1 QD");}
+        if((w==="rain"&&mtype==="Fire")||(w==="sun"&&mtype==="Water")){pen+=1;notes.push(RULES.WEATHER_LABEL[w]+" −1 QD");}
         for(const wb of A.abil.weatherBoost)if((wb.weather===w||(wb.weather==="hail"&&w==="snow"))&&(!wb.types?.length||wb.types.includes(mtype)))q(wb.dice,`${A.abil.name} +${wb.dice} QD`);
       }
       // abilities e efeitos do atacante
@@ -495,7 +495,7 @@
       if(physical&&aS.nextPhys){q(aS.nextPhys,`${A.abil.name} +${aS.nextPhys} QD`);aS.nextPhys=0;}
       if(physical&&aS.swagger>0)q(A.abil.critMode?.physDice||1,`Swagger Mode +${A.abil.critMode?.physDice||1} QD`);
       if(physical&&A.abil.aerial&&aS.lastType==="Flying")q(1,`${A.abil.name} +1 QD`);
-      if(physical&&(aS.status==="brn")&&!A.abil.guts){pen+=1;notes.push("Burn −1d6");}
+      if(physical&&(aS.status==="brn")&&!A.abil.guts){pen+=1;notes.push("Burn −1 QD");}
       if(physical&&A.abil.guts&&aS.status)q(1,"Guts +1 QD");
       // abilities do defensor
       {const P=A.abil?.proto;if(aS.protoOn&&P?.boost&&(!P.boost.cat||(P.boost.cat==="physical")===physical)&&(!P.boost.types?.length||P.boost.types.includes(mtype)))q(P.boost.dice,`${A.abil.name} +${P.boost.dice} QD`);}
@@ -560,12 +560,11 @@
       else if(mult<1){count=Math.max(1,count-1);qi=Math.max(0,qi-1);}
       const qd=QDS[qi];
       const sd=stabDice(b,atkSide,mtype);
-      let stab=sd?(ab==="adaptability"?1+Math.ceil(bpDice/2):1)+(sd>1?1:0):0;if(sd>1)ev.tera=true;
+      // STAB, clima e bônus de abilities/itens: tudo em dados da QD (o mesmo dado do golpe)
+      let stab=sd?(ab==="adaptability"||sd>1?2:1):0;if(sd>1)ev.tera=true;
       const ex=extraMods(b,atkSide,move,mtype,physical);
-      // dados da QD vindos de abilities/itens (+1 dado da QD = mais um dado igual aos do golpe)
-      count=Math.max(1,count+(ex.qa||0)-(ex.qp||0));
-      let extra=stab+ex.add-ex.pen;
-      if(extra<0){count=Math.max(1,count+extra);extra=0;}
+      count=Math.max(1,count+stab+(ex.qa||0)-(ex.qp||0)+(ex.add||0)-(ex.pen||0));
+      const extra=0;
       // acertos seguintes de um golpe de vários acertos não somam o bônus fixo de nível
       const level=follow?0:Math.floor(Number(A.level||1)/5);
       const rolls=[];let total=0;
@@ -576,6 +575,7 @@
       }
       const d6=roll(extra);rolls.push(...d6);total+=sum(d6)+level+(ex.flat||0);
       total=Math.max(1,finalMods(b,atkSide,cat,physical,total,ex.notes));
+      if(stab)ex.notes.unshift(`STAB +${stab} QD`);
       ev.stab=stab>0;ev.qd=qd;ev.count=count;ev.extra=extra;ev.level=level;ev.gap=gap;ev.offQ=offQ;ev.defQ=defQ;
       ev.expr=`${QD_SIDES[qd].map(x=>`${count}d${x}`).join("+")}${extra?` +${extra}d6`:""}${level?` +${level}`:""}`;
       ev.dice=count*QD_SIDES[qd].length+extra;ev.rolls=rolls;ev.fixed=level;

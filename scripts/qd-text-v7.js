@@ -7,9 +7,10 @@
    • dano fixo "sofre 1d6 de dano"              → "sofre dano igual a 1/16 (6,25%) do HP Máximo";
    • cura fixa de abilities "recupera 5 HP"     → % do HP Máximo (mesma escala).
    Escala: cada 1d6 (média 3,5) vale 1/16 do HP Máximo; outros dados
-   proporcionais à média (1d4 ≈ 4%, 1d8 ≈ 8%…). O STAB continua em d6
-   (regra da Damage Matrix) e tabelas sorteadas ("role 1d6: 1-2 …"),
-   durações ("por 1d4 turnos") ficam como estão.
+   proporcionais à média (1d4 ≈ 4%, 1d8 ≈ 8%…). O STAB também vira dado da
+   QD (+1; Tera do mesmo tipo e Adaptability +2). Dados base dos golpes
+   ("6d6 base") viram "6 dados base". Ficam como estão: tabelas sorteadas
+   ("role 1d6: 1-2 …"), durações ("por 1d4 turnos") e dano periódico de status.
    Funciona no navegador (window.hhQdText) e no Node (testes / conversão).
    ============================================================ */
 (function(root){
@@ -25,12 +26,28 @@
   }
   const dice=n=>`${n} dado${n>1?"s":""} da QD`;
   const D="(\\d+)\\s*d\\s*(\\d+)";
-  const HEAL_VERB="(cura|curam|recupera|recuperam|restaura|restauram|regenera|regeneram)";
+  const HEAL_VERB="(cura|curam|curar|recupera|recuperam|recuperar|restaura|restauram|restaurar|regenera|regeneram)";
   const HURT_VERB="(sofre|sofrem|perde|perdem|toma|tomam)";
 
   function sentence(s,{abilityFlat=true}={}){
-    if(/\bSTAB\b/i.test(s))return s;                         // STAB segue em d6
-    if(/peri[óo]dic/i.test(s))return s;                      // dano de status (regra) segue em d6
+    // dano de status (periódico) segue em d6; só converte bônus de dano com sinal fora dele
+    if(/peri[óo]dic/i.test(s))return s.replace(new RegExp("([+＋−\\-–])\\s*"+D+"\\s+de\\s+dano(?!\\s+peri)","g"),(m,sg,n,d)=>d==="6"?`${/[+＋]/.test(sg)?"+":"−"}${dice(+n)} de dano`:m);
+    // golpes: dados base do Poder e crítico
+    s=s.replace(/(\d+)d6(?=→)/g,"$1");
+    s=s.replace(/o dano base (\d+)d6 é maximizado em \d+/gi,"os $1 dados base saem no valor máximo");
+    s=s.replace(/maximiza apenas os (\d+)d6 base(?: para \d+)?/gi,"maximiza apenas os $1 dados base");
+    s=s.replace(/(\d+)\s*d6\s+base/gi,(m,n)=>`${n} dado${+n>1?"s":""} base`);
+    // defesa: "ignore -1d6 da Defense", "ignora -3d6 da redução de dano", "equivalente a -1d6 na Redução de Dano"
+    s=s.replace(/(ignore|ignora|ignoram)\s*[−\-–]?\s*(\d+)\s*d6\s+(?:da|de|na)\s+(?:Defense(?:\s+ou\s+Sp\.?\s*Def)?|Sp\.?\s*Def|redu[çc][ãa]o (?:de dano|defensiva)|defesa)(?:\s+(?:dele|do alvo))?/gi,
+      (m,v,n)=>`${v} ${+n>1?`${n} degraus`:"1 degrau"} da defesa do alvo (QD +${n} passo${+n>1?"s":""})`);
+    s=s.replace(/equivalente a\s*[−\-–]\s*(\d+)\s*d6\s+na\s+Redu[çc][ãa]o de Dano/gi,(m,n)=>`equivalente a −${n} degrau${+n>1?"s":""} na defesa (QD do atacante +${n})`);
+    s=s.replace(/(ganha|ganham|recebe|recebem)\s+(\d+)\s*d6\s+de\s+Redu[çc][ãa]o de Dano/gi,(m,v,n)=>`${v} ${n} degrau${+n>1?"s":""} de defesa (a QD do atacante cai ${n} passo${+n>1?"s":""})`);
+    s=s.replace(/dados de dano f[íi]sico \(d6\)/gi,"dados de dano físico (dados da QD)");
+    s=s.replace(/perder\s+(\d+)\s*d6\b/gi,(m,n)=>`perder ${dice(+n)}`);
+    s=s.replace(/(\d+)\s*d6\s+a menos/gi,(m,n)=>`${dice(+n)} a menos`);
+    s=s.replace(/[+＋]?\s*(\d+)\s*d6\s+(adicional\s+)?de\s+STAB/gi,(m,n,ad)=>`+${dice(+n)} ${ad?"adicional ":""}de STAB`);
+    s=s.replace(/STAB\s+([+＋])?\s*(\d+)\s*d6/gi,(m,sg,n)=>`STAB +${dice(+n)}`);
+    s=s.replace(/STAB duplo,\s*\+?(\d+)\s*d6/gi,(m,n)=>`STAB duplo, +${dice(+n)}`);
     // "ignora 1d6 de redução defensiva" → QD sobe um passo
     s=s.replace(new RegExp("(ignora|ignoram)\\s+"+D+"(\\s+adicional)?\\s+(?:de|da)\\s+redu[çc][ãa]o defensiva","gi"),
       (m,v,n,d,ad)=>`${v} ${+n>1?`${n} degraus`:"1 degrau"}${ad?" a mais":""} da defesa do alvo (QD +${n} passo${+n>1?"s":""})`);
@@ -38,7 +55,7 @@
     s=s.replace(new RegExp("((?:cura|regenera[çc][ãa]o|recupera[çc][ãa]o)(?:\\s+(?:de|fica em|sobe para|passa a ser|para))?)\\s+"+D+"(?:\\s*(?:de\\s+)?(?:HP|PV))?","gi"),
       (m,pre,n,d)=>`${pre} ${pctText(pctOf(+n,+d))}`);
     // cura em dados
-    s=s.replace(new RegExp(HEAL_VERB+"\\s+"+D+"(?:\\s*(?:de\\s+)?(?:HP|PV|pontos de vida|de Vida|Vida))?","gi"),
+    s=s.replace(new RegExp(HEAL_VERB+"\\s+(?:imediatamente\\s+|ainda\\s+|mais\\s+|tamb[ée]m\\s+)?[+＋]?\\s*"+D+"(?:\\s*(?:de\\s+)?(?:HP|PV|pontos de vida|de Vida|Vida))?","gi"),
       (m,v,n,d)=>`${v} ${pctText(pctOf(+n,+d))}`);
     // cura fixa (abilities): "recupera 5 HP"
     if(abilityFlat)s=s.replace(new RegExp(HEAL_VERB+"\\s+(\\d+)\\s*(?:de\\s+)?(?:HP|PV|pontos de vida)(?![^.]*%)","gi"),

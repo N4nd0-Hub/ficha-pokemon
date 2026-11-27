@@ -174,7 +174,7 @@
       var accuracy = m.accuracy == null || m.accuracy === '' ? null : Number(m.accuracy);
       return {name:String(m.name),type:m.type || 'Normal',category:m.category || 'Status',
         power:Number(m.power || 0),accuracy:accuracy == null ? null : Math.max(1,Math.min(90,accuracy)),
-        alwaysHits:accuracy == null,description:String(m.text || m.description || ''),
+        alwaysHits:accuracy == null,description:window.hhQdText?window.hhQdText.convert(String(m.text || m.description || '')):String(m.text || m.description || ''),
         learnLevel:learnLevel(m.learn),learnMethod:m.learn || '',
         source:'Pokédex GM',specialRules:m.specialRules || []};
     }) : [];

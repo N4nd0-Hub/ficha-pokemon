@@ -40,9 +40,9 @@ test('Qualidade por faixa de atributo, igual ao Arena',()=>{
 test('Poder define os dados, a diferença de Qualidade define a QD, nível soma fixo',()=>{
   const dm=load(blaziken());
   const p=dm.profile(move('Blaze Kick','Fire','Physical',85));
-  // ATK 120 (Q3) vs DEF 100 (Q2): gap 1 → d8; Poder 85 → 5 dados; STAB 1d6; nível 36 → +7
-  assert.equal(p.count,5);assert.equal(p.qd,'d8');assert.equal(p.stab,1);assert.equal(p.levelBonus,7);
-  assert.equal(p.expression,'5d8 + 1d6 STAB + 7 fixos');
+  // ATK 120 (Q3) vs DEF 100 (Q2): gap 1 → d8; Poder 85 → 5 dados; STAB +1 dado da QD; nível 36 → +7
+  assert.equal(p.count,6);assert.equal(p.qd,'d8');assert.equal(p.stab,1);assert.equal(p.levelBonus,7);
+  assert.equal(p.expression,'6d8 (inclui +1 STAB) + 7 fixos');
 });
 
 test('QD d4 quando o alvo tem Qualidade maior e d20 no topo',()=>{
@@ -54,9 +54,9 @@ test('QD d4 quando o alvo tem Qualidade maior e d20 no topo',()=>{
 test('Super efetivo sobe um dado e um passo; resistido desce; imune zera',()=>{
   const m=move('Blaze Kick','Fire','Physical',85);
   const up=load(blaziken(),{effectiveness:2}).profile(m);
-  assert.equal(up.count,6);assert.equal(up.qd,'d10');
+  assert.equal(up.count,7);assert.equal(up.qd,'d10');
   const down=load(blaziken(),{effectiveness:.5}).profile(m);
-  assert.equal(down.count,4);assert.equal(down.qd,'d6');
+  assert.equal(down.count,5);assert.equal(down.qd,'d6');
   const none=load(blaziken(),{effectiveness:0}).profile(m);
   assert.equal(none.immune,true);assert.equal(load(blaziken()).roll(none).total,0);
 });
@@ -66,11 +66,11 @@ test('Especial usa SP.ATK contra SP.DEF do alvo',()=>{
   assert.equal(p.offKey,'spa');assert.equal(p.defKey,'spd');assert.equal(p.qd,'d12'); // Q3 vs Q0: diferença 3 → d12
 });
 
-test('STAB: Tera do mesmo tipo dá 2d6; Adaptability 1 + metade dos dados',()=>{
+test('STAB: +1 dado da QD; Tera do mesmo tipo e Adaptability +2',()=>{
   const tera=load(blaziken({gimmicks:{tera:{active:true,type:'Fire'}}})).profile(move('Blaze Kick','Fire','Physical',85));
   assert.equal(tera.stab,2);
   const adapt=load(blaziken({abilityName:'Adaptability'})).profile(move('Blaze Kick','Fire','Physical',85));
-  assert.equal(adapt.stab,1+Math.ceil(5/2));
+  assert.equal(adapt.stab,2);
   assert.equal(load(blaziken()).profile(move('Thunder Punch','Electric','Physical',75)).stab,0);
 });
 

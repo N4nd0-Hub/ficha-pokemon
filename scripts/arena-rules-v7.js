@@ -270,8 +270,8 @@
         continue;
       }
       // dreno e cura
-      const dr=/recupera\s+(\d+)\s*%\s*do dano|recovers?\s+(\d+)\s*%\s*of the damage|(metade|half) do dano causado/i.exec(s);
-      if(dr){fx.drain=dr[3]?50:Number(dr[1]||dr[2]);continue;}
+      const dr=/(?:recupera|cura|drena|restaura|recebe de volta)\w*\s+(\d+)\s*%\s*(?:do|de)\s+(?:todo\s+o\s+)?dano|recovers?\s+(\d+)\s*%\s*of the damage|(?:recupera|cura|drena)\w*\s+(metade|half|tr[êe]s quartos|3\/4)\s+do dano|(?:restores?|heals?)\s+(?:the user\s+)?(?:by\s+)?(half|75%)\s+(?:of\s+)?the damage/i.exec(s);
+      if(dr){const w=String(dr[3]||dr[4]||"").toLowerCase();fx.drain=w?(/tr[êe]s|3\/4|75/.test(w)?75:50):Number(dr[1]||dr[2]);continue;}
       const hl=/(?:recupera|cura|restaura|heals?|restores?)\s+(?:at[ée]\s+)?(\d+)\s*%\s*(?:do|of)?\s*(?:seu\s+)?(?:hp|vida)/i.exec(s)||/(?:recupera|cura|restaura)\s+(metade)\s+(?:do|de)\s+(?:seu\s+)?(?:hp|vida)/i.exec(s);
       if(hl&&cat==="status"){fx.heal=hl[1]==="metade"?50:Number(hl[1]);continue;}
       const rc=/(?:recebe|sofre|takes?)\s+(\d+)\s*%\s*(?:do dano|of the damage)[^.]*(?:recuo|recoil)?|(?:recuo|recoil)[^.]*?(\d+)\s*%|(\d)\/(\d)\s+do dano[^.]*recuo/i.exec(s);
@@ -304,6 +304,9 @@
     if(name==="royal command")fx.field="royal";
     if(name==="rest"){fx.rest=true;fx.heal=0;}
     if(fx.hazard)fx.status=[];
+    // golpes de dreno oficiais (quando o texto não diz quanto)
+    const DRAIN={"absorb":50,"mega drain":50,"giga drain":50,"drain punch":50,"leech life":50,"horn leech":50,"draining kiss":75,"oblivion wing":75,"parabolic charge":50,"dream eater":50,"bitter blade":50,"matcha gotcha":50};
+    if(!fx.drain&&DRAIN[name]&&cat!=="status")fx.drain=DRAIN[name];
     // tabela oficial manda sobre o texto
     if(MULTI[name]){const [a,b2,per]=MULTI[name];fx.hits={min:a,max:b2,...(per?{perHit:per}:{})};}
     if(cat==="status")fx.hits=null;
