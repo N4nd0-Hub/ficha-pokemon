@@ -1033,7 +1033,7 @@
      ou 3 (Guardião). Nada se o Pokémon está 10+ níveis acima do rival. */
   function awardPpg(){
     const info=RUN.waveInfo,st=B.state;if(!info||!st)return;
-    const gains=[];
+    const gains=[],shareGains=new Map();
     RUN.alive.forEach((ri,j)=>{
       const t=st.sides.p1.team[j];if(!t?.part)return;
       const m=RUN.team[ri];
@@ -1042,7 +1042,14 @@
       const before=Math.max(0,Number(p.currentPpg||0)),after=Math.min(15,before+info.ppg);
       p.currentPpg=after;RUN.ppg[m.fid]=(RUN.ppg[m.fid]||0)+(after-before);
       gains.push({ri,m:{name:m.name,img:m.img},n:after-before,total:after,max:after>=15});
+      // Exp. Share: quem segura (na Equipe) recebe metade do que este Pokémon ganhou
+      try{for(const x of (window.hhPpg?.expShareList?.(p,after-before)||[])){
+        const g=shareGains.get(x.p.id)||{m:{name:x.p.name,img:(typeof displayPokemonImage==="function"?displayPokemonImage(x.p):"")||""},n:0,share:true};
+        g.n+=x.add;g.total=x.total;g.max=x.total>=15;g.half=x.half;shareGains.set(x.p.id,g);
+        RUN.ppg[x.p.id]=(RUN.ppg[x.p.id]||0)+x.add;
+      }}catch(e){console.error(e);}
     });
+    shareGains.forEach(g=>gains.push(g));
     RUN.lastGains=gains;
     saveNow();
     try{if(typeof renderAll==="function")setTimeout(()=>{try{renderAll();}catch(e){}},50);}catch(e){}
@@ -1198,7 +1205,7 @@
       const gains=RUN.lastGains||[];
       return `<div class="ar7-result win ar9-floor">
         <b>⛰ Andar ${RUN.wave} vencido! <small>${RUN.waveInfo?.depth||0} m · ${esc(RUN.waveInfo?.zone||"")}</small></b>
-        ${gains.length?`<ul class="ar9-ppg">${gains.map(g=>{const m=g.m||RUN.team[g.ri];return `<li class="${g.n?"":"none"}">${m.img?`<img src="${esc(m.img)}" alt="" width="26" height="26">`:""}<b>${esc(m.name)}</b>${g.n?`<i>+${g.n} PPg</i><small>${g.total}/15${g.max?" · máximo":""}</small>`:`<small>${g.why?esc(g.why):"já está no máximo (15)"}</small>`}</li>`;}).join("")}</ul>`:""}
+        ${gains.length?`<ul class="ar9-ppg">${gains.map(g=>{const m=g.m||RUN.team[g.ri];return `<li class="${g.n?"":"none"}">${m.img?`<img src="${esc(m.img)}" alt="" width="26" height="26">`:""}<b>${esc(m.name)}</b>${g.share?`<i>🔗 +${g.n} PPg</i><small>Exp. Share · ${g.total}/15${g.half?" · +½ guardado":""}</small>`:g.n?`<i>+${g.n} PPg</i><small>${g.total}/15${g.max?" · máximo":""}</small>`:`<small>${g.why?esc(g.why):"já está no máximo (15)"}</small>`}</li>`;}).join("")}</ul>`:""}
         <small>Sem cura grátis no abismo: use a Mochila antes de descer. Próximo: <b>Andar ${RUN.wave+1}</b>${next?` · Lv. ${next.level} · ${next.depth} m${next.boss?" · <b>GUARDIÃO</b>":next.elite?" · Montanhista":""}`:""}.</small>
         ${hpRow}
         ${runOrderRow()}
