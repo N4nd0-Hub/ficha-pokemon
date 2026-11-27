@@ -1198,25 +1198,67 @@
   }
   function regionPanel(v){
     const R0=RUN.region,won=v.winner==="p1"&&!RUN.over;
-    const hpRow=`<div class="ar7-surv-hp">${RUN.team.map((m,i)=>{const h=RUN.hp[i];const pc=Math.round(100*h.hp/h.maxHp);return `<span class="${h.fainted?"out":""}" title="${esc(m.name)} ${h.fainted?"desmaiado":`${h.hp}/${h.maxHp}`}">${m.img?`<img src="${esc(m.img)}" alt="" width="28" height="28">`:""}<i style="--p:${h.fainted?0:pc}%"></i></span>`;}).join("")}</div>`;
     const totalPpg=Object.values(RUN.ppg||{}).reduce((a,b)=>a+b,0);
-    if(won){
-      const next=SURV()?.regionInfo(R0.id,RUN.wave+1);
-      const gains=RUN.lastGains||[];
-      return `<div class="ar7-result win ar9-floor">
-        <b>⛰ Andar ${RUN.wave} vencido! <small>${RUN.waveInfo?.depth||0} m · ${esc(RUN.waveInfo?.zone||"")}</small></b>
-        ${gains.length?`<ul class="ar9-ppg">${gains.map(g=>{const m=g.m||RUN.team[g.ri];return `<li class="${g.n?"":"none"}">${m.img?`<img src="${esc(m.img)}" alt="" width="26" height="26">`:""}<b>${esc(m.name)}</b>${g.share?`<i>🔗 +${g.n} PPg</i><small>Exp. Share · ${g.total}/15${g.half?" · +½ guardado":""}</small>`:g.n?`<i>+${g.n} PPg</i><small>${g.total}/15${g.max?" · máximo":""}</small>`:`<small>${g.why?esc(g.why):"já está no máximo (15)"}</small>`}</li>`;}).join("")}</ul>`:""}
-        <small>Sem cura grátis no abismo: use a Mochila antes de descer. Próximo: <b>Andar ${RUN.wave+1}</b>${next?` · Lv. ${next.level} · ${next.depth} m${next.boss?" · <b>GUARDIÃO</b>":next.elite?" · Montanhista":""}`:""}.</small>
-        ${hpRow}
-        ${runOrderRow()}
-        ${bagPanel(true)}
-        <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="region-stop">Subir e encerrar</button><button type="button" class="ar7-btn primary" data-ar="surv-reward" data-v="next">⬇ Descer ao andar ${RUN.wave+1}</button></div>
-      </div>`;
-    }
+    if(won)return floorPanel(R0);
     const best=regionBest(R0.id);
     return `<div class="ar7-result lose"><b>${RUN.cleared>=R0.floors?"🏔 Você voltou do Coração do Abismo!":"O abismo venceu desta vez…"}</b>
       <small>Andares vencidos: <b>${RUN.cleared}</b> (${RUN.cleared*40} m). Recorde em ${esc(R0.city)}: <b>${best}</b>. PPg ganhos nesta descida: <b>${totalPpg}</b>. Esta foi a sua <b>${RUN.attempt||myAttempts(R0.id)}ª tentativa</b>.${RUN.cleared>=1?" A descida foi para o ranking.":""}</small>
       <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button><button type="button" class="ar7-btn primary" data-ar="region-again">Descer de novo</button></div></div>`;
+  }
+  /* Andar vencido no Abismo: prêmios de PPg, próximo andar, time (ordem e
+     HP) e Mochila — tudo num painel só, com o tema de caverna. */
+  function floorPanel(R0){
+    const info=RUN.waveInfo||{},next=SURV()?.regionInfo(R0.id,RUN.wave+1);
+    const gains=RUN.lastGains||[];
+    const floors=R0.floors||16,pct=Math.min(100,Math.round(100*RUN.wave/floors));
+    const list=bagList({between:true});
+    const sel=B.betweenItem||"",it=list.find(x=>x.slug===sel);
+    const mon=(m)=>m.img?`<img src="${esc(m.img)}" alt="" loading="lazy">`:`<i>${esc(String(m.name||"?").slice(0,1))}</i>`;
+    const kind=next?.boss?["boss","👑 Guardião"]:next?.elite?["elite","🧗 Montanhista"]:["wild","🪨 Selvagem"];
+    const gainCard=g=>{
+      const m=g.m||RUN.team[g.ri]||{};const tot=Number(g.total||0);
+      const status=g.share?`🔗 Exp. Share${g.half?" · +½ guardado":""}`:g.n?(g.max?"Reserva cheia":"Ganhou neste andar"):(g.why||"Reserva cheia (15)");
+      return `<li class="ab9-gain${g.n?"":" none"}${g.share?" share":""}"><span class="ab9-mon">${mon(m)}</span>
+        <span class="ab9-gain-txt"><b>${esc(m.name)}</b><small>${esc(status)}</small>
+          <span class="ab9-meter" title="${tot}/15 PPg"><i style="width:${Math.round(100*tot/15)}%"></i></span></span>
+        <em class="ab9-plus">${g.n?`+${g.n}`:"—"}<small>${g.n?"PPg":tot>=15?"15/15":""}</small></em></li>`;
+    };
+    const teamCard=(m,i)=>{
+      const h=RUN.hp[i];const pc=h.fainted?0:Math.round(100*h.hp/h.maxHp);
+      const can=it&&(it.revive===!!h.fainted)&&(it.revive||h.hp<h.maxHp);
+      return `<li class="ab9-member${h.fainted?" out":""}${it?(can?" target":" dim"):""}">
+        <span class="ab9-pos">${i+1}º</span><span class="ab9-mon">${mon(m)}</span>
+        <span class="ab9-member-txt"><b>${esc(m.name)}</b>
+          <span class="ab9-hp ${pc<=25?"low":pc<=50?"mid":""}"><i style="width:${pc}%"></i></span>
+          <small>${h.fainted?"desmaiado":`${h.hp}/${h.maxHp} HP`}</small></span>
+        <span class="ab9-member-acts">${it?`<button type="button" class="ab9-use" data-ar="bag-use-between" data-slug="${esc(it.slug)}" data-idx="${i}" ${can?"":"disabled"}>${can?"Usar":"—"}</button>`
+          :i>0?`<button type="button" data-ar="run-lead" data-i="${i}" title="Começar com ${esc(m.name)}" aria-label="Começar com ${esc(m.name)}">★</button><button type="button" data-ar="run-up" data-i="${i}" title="Subir na ordem" aria-label="Subir ${esc(m.name)}">▲</button>`:`<em title="Começa o próximo andar">LÍDER</em>`}</span></li>`;
+    };
+    return `<section class="ab9">
+      <header class="ab9-head">
+        <span class="ab9-badge ab9-e">🏔️</span>
+        <div class="ab9-title"><small>Abismo Rochoso · ${esc(R0.city||"")}</small><b>Andar ${RUN.wave} vencido!</b><span>${info.depth||RUN.wave*40} m · ${esc(info.zone||"")}</span></div>
+        <div class="ab9-depth" title="${RUN.wave}/${floors} andares até o Coração do Abismo"><span>${RUN.wave}<small>/${floors}</small></span><i><em style="height:${pct}%;--w:${pct}%"></em></i></div>
+      </header>
+      <div class="ab9-grid">
+        <div class="ab9-col">
+          <article class="ab9-card"><h4><i class="ab9-e">⭐</i> PPg do andar <small>${gains.reduce((a,g)=>a+(g.n||0),0)} no total</small></h4>
+            ${gains.length?`<ul class="ab9-gains">${gains.map(gainCard).join("")}</ul>`:`<p class="ab9-empty">Ninguém ganhou PPg neste andar.</p>`}</article>
+          ${next?`<article class="ab9-card ab9-next ${kind[0]}"><h4><i class="ab9-e">⬇️</i> Próximo: Andar ${next.n}</h4>
+            <div class="ab9-next-row"><span class="ab9-kind">${kind[1]}</span><span><b>Lv. ${next.level}</b><small>nível</small></span><span><b>${next.depth} m</b><small>profundidade</small></span><span><b>+${next.ppg}</b><small>PPg por Pokémon</small></span></div>
+            <p>${esc(next.zone||"")}${next.count>1?` · ${next.count} rivais`:""}</p></article>`:""}
+        </div>
+        <div class="ab9-col">
+          <article class="ab9-card"><h4><i class="ab9-e">🔀</i> Seu time <small>${it?`toque em <b>Usar</b> para dar ${esc(it.name)}`:"o 1º de pé começa · ★ lidera · ▲ sobe"}</small></h4>
+            <ol class="ab9-team">${RUN.team.map(teamCard).join("")}</ol></article>
+          <article class="ab9-card ab9-bag"><h4><i class="ab9-e">🎒</i> Mochila <small>sem cura grátis no abismo · cada uso gasta 1</small></h4>
+            ${list.length?`<div class="ab9-items">${list.map(x=>`<button type="button" class="ab9-item${x.slug===sel?" on":""}" data-ar="bag-between" data-slug="${esc(x.slug)}" title="${esc(x.desc)}" aria-pressed="${x.slug===sel}">${x.img||!x.slug.startsWith("inv:")?`<img src="${esc(x.img||itemImg(x.slug))}" alt="" loading="lazy">`:`<i>${esc(x.icon||"🧪")}</i>`}<b>${esc(x.name)}</b><small>×${x.qty}</small></button>`).join("")}</div>
+              ${it?`<p class="ab9-hint">Escolha quem recebe <b>${esc(it.name)}</b> no time acima, ou toque no item de novo para cancelar.</p>`:`<p class="ab9-hint">Toque num item e depois em <b>Usar</b> no Pokémon.</p>`}`
+              :`<p class="ab9-empty">Nenhum item de cura na Bolsa. Compre na Mochila da ficha.</p>`}</article>
+        </div>
+      </div>
+      <footer class="ab9-actions"><button type="button" class="ab9-btn" data-ar="region-stop"><i class="ab9-e">⬆️</i> Subir e encerrar</button><button type="button" class="ab9-btn go" data-ar="surv-reward" data-v="next"><i class="ab9-e">⬇️</i> Descer ao andar ${RUN.wave+1}</button></footer>
+    </section>`;
   }
   function survivalPanel(v){
     if(RUN?.region)return regionPanel(v);
