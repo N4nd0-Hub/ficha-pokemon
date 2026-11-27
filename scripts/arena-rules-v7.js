@@ -150,6 +150,60 @@
     "draco meteor":{stages:[{who:"self",stat:"spa",n:-2}]},"overheat":{stages:[{who:"self",stat:"spa",n:-2}]},"leaf storm":{stages:[{who:"self",stat:"spa",n:-2}]}
   };
 
+  /* Golpes com mecânica própria (Arena): o motor lê fx.mech */
+  const SEMI_HIT={fly:{"thunder":1,"hurricane":1,"gust":2,"twister":2,"sky uppercut":1,"smack down":1,"thousand arrows":1},
+    dig:{"earthquake":2,"magnitude":2,"fissure":1},dive:{"surf":2,"whirlpool":2},phantom:{}};
+  const MECH={
+    // dois turnos com invulnerabilidade
+    "fly":{semi:"fly",say:"voou bem alto!"},"bounce":{semi:"fly",say:"saltou bem alto!"},"sky drop":{semi:"fly",say:"subiu aos céus!"},
+    "dig":{semi:"dig",say:"cavou um buraco!"},"dive":{semi:"dive",say:"mergulhou fundo!"},
+    "phantom force":{semi:"phantom",breakProtect:true,say:"sumiu de vista!"},"shadow force":{semi:"phantom",breakProtect:true,say:"sumiu nas sombras!"},
+    // dois turnos sem invulnerabilidade
+    "solar beam":{charge:true,skipIn:"sun",say:"absorveu luz!"},"solar blade":{charge:true,skipIn:"sun",say:"absorveu luz!"},
+    "sky attack":{charge:true,say:"foi envolto por uma luz forte!"},"razor wind":{charge:true,say:"criou um redemoinho!"},
+    "skull bash":{charge:true,chargeStage:{stat:"def",n:1},say:"abaixou a cabeça!"},"meteor beam":{charge:true,chargeStage:{stat:"spa",n:1},say:"juntou energia cósmica!"},
+    "electro shot":{charge:true,skipIn:"rain",chargeStage:{stat:"spa",n:1},say:"juntou eletricidade!"},
+    "freeze shock":{charge:true,say:"ficou coberto de gelo!"},"ice burn":{charge:true,say:"ficou coberto de ar congelante!"},
+    "geomancy":{charge:true,say:"absorveu energia!",selfStages:[{stat:"spa",n:2},{stat:"spd",n:2},{stat:"spe",n:2}]},
+    // precisa recarregar
+    "hyper beam":{recharge:true},"giga impact":{recharge:true},"blast burn":{recharge:true},"hydro cannon":{recharge:true},"frenzy plant":{recharge:true},
+    "rock wrecker":{recharge:true},"roar of time":{recharge:true},"prismatic laser":{recharge:true},"eternabeam":{recharge:true},"meteor assault":{recharge:true},
+    // só funcionam contra a ação do alvo
+    "sucker punch":{needFoeAttack:true},"thunderclap":{needFoeAttack:true},"upper hand":{needFoePriority:true,flinch:100},
+    "feint":{breakProtect:true,needFoeProtect:false},"fake out":{firstTurn:true,flinch:100},"first impression":{firstTurn:true},
+    "focus punch":{focus:true},
+    // custam a própria vida
+    "explosion":{selfKO:true},"self-destruct":{selfKO:true},"misty explosion":{selfKO:true},
+    "memento":{selfKO:true,foeStages:[{stat:"atk",n:-2},{stat:"spa",n:-2}]},
+    "healing wish":{selfKO:true,healWish:true},"lunar dance":{selfKO:true,healWish:true},
+    "final gambit":{selfKO:true,gambit:true},
+    "curse":{curse:true},"belly drum":{bellyDrum:true},"substitute":{substitute:true},"destiny bond":{destiny:true},"perish song":{perish:true},
+    "mind blown":{halfCost:true},"steel beam":{halfCost:true},"chloroblast":{halfCost:true},
+    "endure":{endure:true},"pain split":{painSplit:true},"endeavor":{endeavor:true},
+    // dano fixo e nocaute
+    "seismic toss":{fixed:"level"},"night shade":{fixed:"level"},"dragon rage":{fixed:40},"sonic boom":{fixed:20},"psywave":{fixed:"psywave"},
+    "super fang":{fixed:"half"},"ruination":{fixed:"half"},"nature's madness":{fixed:"half"},
+    "fissure":{ohko:true},"guillotine":{ohko:true},"horn drill":{ohko:true},"sheer cold":{ohko:true},
+    // Power variável
+    "reversal":{power:"reversal"},"flail":{power:"reversal"},"eruption":{power:"hpHigh"},"water spout":{power:"hpHigh"},"dragon energy":{power:"hpHigh"},
+    "stored power":{power:"boosts"},"power trip":{power:"boosts"},"acrobatics":{power:"acrobatics"},"brine":{power:"brine"},
+    "weather ball":{power:"weather"},"knock off":{knockOff:true},"metal burst":{metalBurst:true},
+    // efeitos no alvo
+    "taunt":{taunt:true},"encore":{encore:true},"disable":{disable:true},"leech seed":{leechSeed:true},"yawn":{yawn:true},
+    "trick":{swapItems:true},"switcheroo":{swapItems:true},"thief":{stealItem:true},"covet":{stealItem:true},
+    "roar":{phaze:true},"whirlwind":{phaze:true},"dragon tail":{phaze:true},"circle throw":{phaze:true},
+    "u-turn":{pivot:true},"volt switch":{pivot:true},"flip turn":{pivot:true},"teleport":{pivot:true},
+    "parting shot":{pivot:true,foeStages:[{stat:"atk",n:-1},{stat:"spa",n:-1}]},"baton pass":{pivot:true,baton:true},"shed tail":{pivot:true,shedTail:true},
+    "sleep talk":{sleepTalk:true},"snore":{snore:true},"wish":{wish:true},
+    // campo
+    "trick room":{trickRoom:true},"tailwind":{tailwind:true},"reflect":{screen:"reflect"},"light screen":{screen:"light"},"aurora veil":{screen:"veil"},
+    "brick break":{breakScreens:true},"psychic fangs":{breakScreens:true},"raging bull":{breakScreens:true},
+    "stealth rock":{hazard:"rocks"},"spikes":{hazard:"spikes"},"sticky web":{hazard:"web"},
+    "rapid spin":{clearHazards:"self",selfStages:[{stat:"spe",n:1}]},"mortal spin":{clearHazards:"self"},"defog":{clearHazards:"both",clearFoeScreens:true},
+    "tidy up":{clearHazards:"both",selfStages:[{stat:"atk",n:1},{stat:"spe",n:1}]},
+    "smack down":{grounds:true},"thousand arrows":{grounds:true}
+  };
+
   function parseMove(move){
     const name=key(move?.name);
     const text=String(move?.desc||move?.description||"");
@@ -236,6 +290,16 @@
     if(name==="royal command")fx.field="royal";
     if(name==="rest"){fx.rest=true;fx.heal=0;}
     if(fx.hazard)fx.status=[];
+    fx.mech=MECH[name]||null;
+    if(fx.mech){
+      const M=fx.mech;
+      if(M.firstTurn)fx.firstTurnOnly=true;
+      if(M.flinch)fx.flinch=Math.max(fx.flinch,M.flinch);
+      // o motor cuida destes: não deixa o texto aplicar de novo
+      if(M.curse||M.bellyDrum||M.substitute||M.selfKO||M.taunt||M.encore||M.disable||M.leechSeed||M.yawn||M.screen||M.hazard||M.trickRoom||M.tailwind||M.perish||M.destiny||M.pivot||M.wish||M.painSplit){fx.stages=M.foeStages||M.curse?[]:fx.stages.filter(x=>x.who!=="foe"||cat!=="status");fx.status=[];fx.heal=0;}
+      if(M.curse||M.bellyDrum)fx.stages=[];
+      if(M.hazard)fx.hazard=null;
+    }
     return fx;
   }
 
@@ -377,7 +441,7 @@
     "water veil":a=>{a.immune.status.add("brn");a.immune.status.add("dbrn");}
   };
 
-  const api={parseMove,parseAbility,parseStages,statusKeys,weatherKey,STAT_LABEL,STATUS_LABEL,WEATHER_LABEL,key};
+  const api={parseMove,parseAbility,parseStages,statusKeys,weatherKey,STAT_LABEL,STATUS_LABEL,WEATHER_LABEL,key,SEMI_HIT,MECH};
   if(typeof module!=="undefined"&&module.exports)module.exports=api;
   else root.hhArenaRules=api;
 })(typeof window!=="undefined"?window:globalThis);
