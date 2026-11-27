@@ -1336,7 +1336,7 @@
               <button type="button" class="ar9-active" data-ar="evade" title="Evasão Ativa: gasta a ação, a Precisão do rival cai 50"><i>🛡</i>Evasão ativa <small>gasta a ação · −50</small></button>
               ${s.items?`<button type="button" class="ar9-bagbtn" data-ar="bag-open"><i>🎒</i>Mochila <small>gasta a ação</small></button>`:""}
             </div>
-            ${streak>=2?`<p class="ar9-tired">${streak>=3?"⚠ Cansado: a próxima evasão custa HP (1d6).":"Mais uma evasão seguida e o cansaço começa."}</p>`:""}
+            ${streak>=2?`<p class="ar9-tired">${streak>=3?"⚠ Cansado: a próxima evasão custa 1/16 do HP.":"Mais uma evasão seguida e o cansaço começa."}</p>`:""}
           </div>`}
           <p class="ar7-party-title">${mustSwitch?"Escolha quem entra:":`Trocar Pokémon <small>(gasta o turno)</small>`}</p>
           <div class="ar7-party">${team.map((m,i)=>{const st=s.team[i];const dis=st.fainted||i===s.active;return `<button type="button" class="ar7-switch" data-ar="switch" data-idx="${i}" ${dis?"disabled":""} title="Trocar para ${esc(m.name)}">

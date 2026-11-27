@@ -23,7 +23,7 @@
    • efeitos dos textos de golpes e abilities lidos por arena-rules-v7.js;
    • Evasão (regra 3): Reativa (junto do golpe, Precisão inimiga −25) e
      Ativa (gasta a ação, −50). Depois de 3 evasões seguidas cada nova
-     custa 1d6 de HP (com Pressure do rival: depois de 2, 2d6). Crítico
+     custa 1/16 do HP Máximo (com Pressure do rival: depois de 2, 1/8). Crítico
      natural ignora; Freeze e Sleep impedem;
    • gimmicks (uma de cada por time na batalha): Mega Evolução (nova
      forma: tipos, atributos e ability), Terastalização (vira o Tera Type,
@@ -313,7 +313,7 @@
       const pen=kind==="active"?50:25;
       ctx.evade[s]=Math.max(ctx.evade[s]||0,pen);
       events.push({k:"evade",side:s,mon:mon.name,kind,pen,streak:ms.evadeStreak,limit,tired});
-      if(tired)hurt(b,s,sum(roll(pressure?2:1)),events,"evade");
+      if(tired)hurt(b,s,Math.max(1,Math.floor(ms.maxHp*(pressure?2:1)/16)),events,"evade");
     }
 
     /* ---------- Dano ---------- */
@@ -362,24 +362,28 @@
       const defSide=other(atkSide);
       const A=activeMon(b,atkSide),D=activeMon(b,defSide),aS=activeState(b,atkSide),dS=activeState(b,defSide);
       let add=0,pen=0;const notes=[];
+      // bônus de abilities/itens: no sistema de QD viram dados da QD do golpe
+      let qa=0,qp=0;const q=(n,label)=>{if(n>0)qa+=n;else qp-=n;notes.push(label);};
       // clima
       if(b.weather){
         const w=b.weather.kind;
         if((w==="rain"&&mtype==="Water")||(w==="sun"&&mtype==="Fire")){add+=1;notes.push(RULES.WEATHER_LABEL[w]+" +1d6");}
         if((w==="rain"&&mtype==="Fire")||(w==="sun"&&mtype==="Water")){pen+=1;notes.push(RULES.WEATHER_LABEL[w]+" −1d6");}
-        for(const wb of A.abil.weatherBoost)if(wb.weather===w&&(!wb.types?.length||wb.types.includes(mtype))){add+=wb.dice;notes.push(`${A.abil.name} +${wb.dice}d6`);}
+        for(const wb of A.abil.weatherBoost)if(wb.weather===w&&(!wb.types?.length||wb.types.includes(mtype)))q(wb.dice,`${A.abil.name} +${wb.dice} QD`);
       }
       // abilities e efeitos do atacante
-      if(A.abil.pinch===mtype&&aS.hp*3<=aS.maxHp){add+=1;notes.push(`${A.abil.name} +1d6`);}
-      if(A.abil.royal&&b.sides[atkSide].field.royal>0&&(mtype==="Bug"||mtype==="Fairy")){add+=1;notes.push("Campo Real +1d6");}
-      if(physical&&aS.nextPhys){add+=aS.nextPhys;notes.push(`${A.abil.name} +${aS.nextPhys}d6`);aS.nextPhys=0;}
-      if(physical&&aS.swagger>0){add+=A.abil.critMode?.physDice||1;notes.push("Swagger Mode +1d6");}
-      if(physical&&A.abil.aerial&&aS.lastType==="Flying"){add+=1;notes.push(`${A.abil.name} +1d6`);}
+      if(A.abil.pinch===mtype&&aS.hp*3<=aS.maxHp)q(1,`${A.abil.name} +1 QD`);
+      if(A.abil.royal&&b.sides[atkSide].field.royal>0&&(mtype==="Bug"||mtype==="Fairy"))q(1,"Campo Real +1 QD");
+      if(physical&&aS.nextPhys){q(aS.nextPhys,`${A.abil.name} +${aS.nextPhys} QD`);aS.nextPhys=0;}
+      if(physical&&aS.swagger>0)q(A.abil.critMode?.physDice||1,`Swagger Mode +${A.abil.critMode?.physDice||1} QD`);
+      if(physical&&A.abil.aerial&&aS.lastType==="Flying")q(1,`${A.abil.name} +1 QD`);
       if(physical&&(aS.status==="brn")&&!A.abil.guts){pen+=1;notes.push("Burn −1d6");}
-      if(physical&&A.abil.guts&&aS.status){add+=1;notes.push("Guts +1d6");}
+      if(physical&&A.abil.guts&&aS.status)q(1,"Guts +1 QD");
       // abilities do defensor
-      for(const t of D.abil.dmgTaken)if((!t.type||t.type===mtype)&&(!t.fullHp||dS.hp>=dS.maxHp)){pen-=t.dice;notes.push(`${D.abil.name} ${t.dice}d6`);}
-      return {add,pen,notes};
+      for(const t of D.abil.dmgTaken)if((!t.type||t.type===mtype)&&(!t.fullHp||dS.hp>=dS.maxHp))q(t.dice,`${D.abil.name} ${t.dice} QD`);
+      // no dano da ficha (clássico) o dado é sempre d6
+      if(b.damage!=="matrix"){add+=qa;pen+=qp;qa=0;qp=0;}
+      return {add,pen,notes,qa,qp};
     }
     function finalMods(b,atkSide,cat,physical,total,notes){
       const aS=activeState(b,atkSide),dS=activeState(b,other(atkSide));
@@ -425,6 +429,8 @@
       const sd=stabDice(b,atkSide,mtype);
       let stab=sd?(ab==="adaptability"?1+Math.ceil(bpDice/2):1)+(sd>1?1:0):0;if(sd>1)ev.tera=true;
       const ex=extraMods(b,atkSide,move,mtype,physical);
+      // dados da QD vindos de abilities/itens (+1 dado da QD = mais um dado igual aos do golpe)
+      count=Math.max(1,count+(ex.qa||0)-(ex.qp||0));
       let extra=stab+ex.add-ex.pen;
       if(extra<0){count=Math.max(1,count+extra);extra=0;}
       const level=Math.floor(Number(A.level||1)/5);
@@ -540,7 +546,7 @@
         if(fx.field==="royal"){
           if(side.field.royal>0){side.field.royal+=2;events.push({k:"field",side:s,kind:"royal",turns:side.field.royal,extended:true});}
           else{side.field.royal=3;events.push({k:"field",side:s,kind:"royal",turns:3});if(!tS.fainted)addStage(b,tSide,"spe",-1,events,{src:"Campo Real",fromFoe:true});}
-          heal(b,s,sum(roll(1)),events,"Royal Command");
+          heal(b,s,Math.max(1,Math.floor(aS.maxHp/16)),events,"Royal Command");
         }else if(A.abil.royal&&side.field.royal>0&&k==="quiver dance"){side.field.royal+=2;events.push({k:"field",side:s,kind:"royal",turns:side.field.royal,extended:true});}
         if(!fx.stages.length&&!fx.status.length&&!fx.heal&&!fx.rest&&!fx.selfCrit&&!fx.weather&&!fx.hazard&&!fx.haze&&!fx.field&&!fx.nextDouble&&!fx.nextHalf&&!(A.abil.royal&&k==="quiver dance")){
           ev.status=true;ev.desc=String(move.desc||"").slice(0,160);
@@ -707,7 +713,7 @@
         }
         if(ms.fainted)continue;
         // Campo Real cura os aliados
-        if(side.field.royal>0)heal(b,s,sum(roll(1)),events,"Campo Real");
+        if(side.field.royal>0)heal(b,s,Math.max(1,Math.floor(ms.maxHp/16)),events,"Campo Real");
         // ability de fim de turno
         const A=mon.abil;
         A.endTurn.stages.forEach(st=>addStage(b,s,st.stat,st.n,events,{src:A.name,cap:st.cap}));

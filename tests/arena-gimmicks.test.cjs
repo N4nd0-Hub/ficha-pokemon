@@ -66,7 +66,7 @@ test("Crítico natural ignora a evasão", () => {
   assert.ok(evs.some(x => x.k === "hit" && x.side === "p1" && x.crit));
 });
 
-test("Exaustão: a 4ª evasão seguida custa 1d6; com Pressure, a 3ª custa 2d6", () => {
+test("Exaustão: a 4ª evasão seguida custa 1/16 do HP; com Pressure, a 3ª custa 1/8", () => {
   const run = (ability) => {
     const { e, bt } = battle(() => 0.99,
       [mon("Esquivo", ["Normal"], { spe: 10 }, [tackle])],
@@ -77,10 +77,10 @@ test("Exaustão: a 4ª evasão seguida custa 1d6; com Pressure, a 3ª custa 2d6"
   };
   const plain = run("");
   assert.deepEqual(plain.map(Boolean), [false, false, false, true]);
-  assert.equal(plain[3].amount, 6);
+  assert.equal(plain[3].amount, 12); // 200 HP / 16
   const pres = run("Pressure");
   assert.deepEqual(pres.map(Boolean), [false, false, true, true]);
-  assert.equal(pres[2].amount, 12);
+  assert.equal(pres[2].amount, 25); // 200 HP / 8
 });
 
 test("Freeze impede a evasão", () => {
@@ -180,4 +180,17 @@ test("participação marca quem entrou em campo (para os PPg)", () => {
   assert.equal(bt.sides.p1.team[0].part, true); assert.equal(bt.sides.p1.team[1].part, false);
   e.submit(bt, "p1", { kind: "switch", idx: 1 }); e.submit(bt, "p2", { kind: "move", idx: 0 }); e.resolve(bt);
   assert.equal(bt.sides.p1.team[1].part, true);
+});
+
+test("Sistema de QD: bônus de ability vira dado da QD no dano experimental", () => {
+  const e = engine(() => 0.5);
+  const bt = e.newBattle({ id: "q", format: 6, damage: "matrix",
+    p1: { id: "A", name: "A", team: [mon("Guts", ["Normal"], { atk: 120, spe: 200 }, [tackle], { ability: "Guts", abilityText: "Quando está com status, golpes físicos causam +1 dado da QD de dano." })] },
+    p2: { id: "B", name: "B", team: [mon("Alvo", ["Normal"], { hp: 500, spe: 1 }, [tackle])] } });
+  e.activeState(bt, "p1").status = "par";
+  e.submit(bt, "p1", { kind: "move", idx: 0 }); e.submit(bt, "p2", { kind: "move", idx: 0 });
+  const hit = e.resolve(bt).find(x => x.k === "hit" && x.side === "p2");
+  assert.ok(hit.notes.includes("Guts +1 QD"));
+  // Tackle (40) = 2 dados de Poder +1 dado da QD do Guts = 3 dados da QD
+  assert.equal(hit.count, 3);
 });

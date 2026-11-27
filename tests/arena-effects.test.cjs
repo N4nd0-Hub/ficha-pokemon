@@ -75,7 +75,7 @@ test("Command Pheromone: +1 Attack para o time todo, mesmo quem está fora de ca
   assert.equal(e.stageTotal(e.activeState(bt, "p2"), "acc"), 0, "−1 de Precisão só no primeiro turno");
 });
 
-test("Royal Field: campo de 3 turnos, −1 Speed no inimigo, cura 1d6 e Bug +1d6", () => {
+test("Royal Field: campo de 3 turnos, −1 Speed no inimigo, cura 1/16 e Bug +1 dado da QD", () => {
   const txt = "Ao entrar em campo, cria o Campo Real por 3 turnos:\n• Aliados recuperam 1d6 de HP no fim de cada turno.\n• Inimigos recebem −1 estágio de Speed.\n• Moves Bug ou Fairy de Beecrown causam +1d6 de dano.";
   const buzz = mv("Bug Buzz", "Bug", "Special", 90, "");
   const { e, bt } = duel([mon("Beecrown", ["Bug", "Rock"], { spa: 100, hp: 200 }, [buzz], "Royal Field", txt)], [mon("B", ["Normal"], { spd: 60 }, [tackle])]);
@@ -83,7 +83,7 @@ test("Royal Field: campo de 3 turnos, −1 Speed no inimigo, cura 1d6 e Bug +1d6
   assert.equal(e.stageTotal(e.activeState(bt, "p2"), "spe"), -1);
   const ev = turn(e, bt, M(0), M(0));
   const hit = ev.find(x => x.k === "hit" && x.side === "p2");
-  assert.ok(hit.notes.includes("Campo Real +1d6"));
+  assert.ok(hit.notes.includes("Campo Real +1 QD"));
   assert.ok(ev.some(x => x.k === "heal" && x.side === "p1" && x.src === "Campo Real") || e.activeState(bt, "p1").hp === 200);
   assert.equal(bt.sides.p1.field.royal, 2);
 });
