@@ -28,9 +28,9 @@
   const save=()=>{try{saveState();}catch(e){try{debouncedSave();}catch(_){}}};
 
   /* ---------- Descobrir as próximas formas ---------- */
-  const LS="hh_evo_cache_v1";
+  const LS="hh_evo_cache_v2";
   let disk={};try{disk=JSON.parse(localStorage.getItem(LS)||"{}")||{};}catch(e){disk={};}
-  const mem=new Map(),pending=new Map();
+  const mem=new Map(),pending=new Map(),lines=new Map();
   const findInt=v=>{try{return v?findIntegratedCustomSpecies(v):null;}catch(e){return null;}};
   function keyOf(p){
     const a=p?.apiData||{};
@@ -49,12 +49,14 @@
     if(k.startsWith("loc:"))return localOptions(p);
     if(k.startsWith("nx:")){const t=findInt(p.nextEvolution.name);if(t)return [intOption(t,p.nextEvolution.level,p.nextEvolution.method||"")];}
     if(mem.has(k))return mem.get(k);
-    if(disk[k]&&Date.now()-(disk[k].at||0)<14*864e5){mem.set(k,disk[k].list);return disk[k].list;}
+    if(disk[k]&&Date.now()-(disk[k].at||0)<14*864e5){mem.set(k,disk[k].list);if(disk[k].line)lines.set(k,disk[k].line);return disk[k].list;}
+    if(pending.has(k))return null;
     const job=k.startsWith("nx:")?nextByName(p.nextEvolution):officialOptions(k.slice(4));
-    if(!pending.has(k))pending.set(k,job.then(list=>{
-      mem.set(k,list);disk[k]={at:Date.now(),list};
+    if(!pending.has(k))pending.set(k,job.then(res=>{
+      const list=Array.isArray(res)?res:res.list,line=Array.isArray(res)?null:res.line;
+      mem.set(k,list);if(line)lines.set(k,line);disk[k]={at:Date.now(),list,line};
       try{localStorage.setItem(LS,JSON.stringify(disk));}catch(e){}
-      pending.delete(k);refresh(true);
+      pending.delete(k);refresh(true);document.dispatchEvent(new CustomEvent("hh:evoline"));
     }).catch(()=>{pending.delete(k);mem.set(k,[]);}));
     return null;
   }
@@ -65,7 +67,12 @@
     const chain=await (await fetch(sp.evolution_chain.url)).json();
     const find=(n)=>{if(!n)return null;if(n.species?.name===sp.name)return n;for(const c of n.evolves_to||[]){const f=find(c);if(f)return f;}return null;};
     const node=find(chain.chain);if(!node)return [];
-    return (node.evolves_to||[]).map(c=>{
+    // linha: tem forma anterior? é a última? em que nível vem a forma final?
+    // amizade conta como evolução cedo (Riolu → Lucario ~Lv 30)
+    const stepLv=c=>{const ds=c.evolution_details||[];const d=ds.find(x=>x.min_level)||{};return d.min_level||(ds.some(x=>x.min_happiness)?30:null);};
+    const finalLv=n=>{let best=null;for(const c of n.evolves_to||[]){const v=(c.evolves_to||[]).length?finalLv(c):stepLv(c);if(v!=null&&(best==null||v>best))best=v;}return best;};
+    const line={hasPrev:node!==chain.chain,isFinal:!(node.evolves_to||[]).length,finalLevel:finalLv(node)};
+    const list=(node.evolves_to||[]).map(c=>{
       const id=Number(String(c.species?.url||"").match(/\/(\d+)\/?$/)?.[1]||0);
       const ds=c.evolution_details||[];
       const d=ds.find(x=>x.trigger?.name==="level-up"&&x.min_level)||ds[0]||{};
@@ -73,6 +80,7 @@
       return {source:"official",name:pretty(c.species?.name||""),apiName:c.species?.name||"",speciesId:id,img:id?ART(id):"",
         level:d.min_level||null,happiness:d.min_happiness||null,item:d.item?.name||d.held_item?.name||"",trade:d.trigger?.name==="trade",detail};
     }).filter(o=>o.apiName);
+    return {list,line};
   }
   /* "Evolução Futura" da Importação Rápida apontando para uma espécie oficial */
   async function nextByName(nx){
@@ -112,6 +120,26 @@
       if(textReq&&level==null)o.special=textReq;
       return o;
     });
+  }
+  /* Linha evolutiva da espécie (para o custo de PPg por nível) */
+  function lineOf(p){
+    const k=keyOf(p);
+    if(!k)return {hasPrev:false,isFinal:true,finalLevel:null,known:true};
+    if(k.startsWith("int:")){
+      const sp=findInt(k.slice(4));const ev=sp?.evolution||{};
+      const hasPrev=!!(ev.previousId||ev.previous||ev.evolvesFrom);
+      const walk=(id,depth)=>{const opts=integratedOptions(id);if(!opts.length||depth>4)return null;let best=null;
+        for(const o of opts){const sub=walk(o.species.id,depth+1);const v=sub!=null?sub:o.level;if(v!=null&&(best==null||v>best))best=v;}return best;};
+      const opts=integratedOptions(k.slice(4));
+      return {hasPrev,isFinal:!opts.length,finalLevel:walk(k.slice(4),0),known:true};
+    }
+    if(k.startsWith("loc:")||k.startsWith("nx:")){
+      const opts=optionsOf(p)||[];
+      let hasPrev=false;try{hasPrev=(state.speciesBank||[]).some(s=>String(s.nextEvolution?.name||"").toLowerCase()===String(p.name).toLowerCase());}catch(e){}
+      return {hasPrev,isFinal:!opts.length,finalLevel:opts.reduce((a,o)=>o.level!=null&&(a==null||o.level>a)?o.level:a,null),known:true};
+    }
+    optionsOf(p);
+    return lines.get(k)||null;
   }
   function localOptions(p){
     let tpl=null,tgt=null;try{tpl=findLocalSpecies(p.name);tgt=tpl?.nextEvolution?.name?findLocalSpecies(tpl.nextEvolution.name):null;}catch(e){}
@@ -326,6 +354,6 @@
   });
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal?.classList.contains("open"))closePreview();});
 
-  window.hhEvolution={optionsOf,statusOf,readyOptions,openPreview,refresh};
+  window.hhEvolution={optionsOf,statusOf,readyOptions,openPreview,refresh,lineOf};
   if(document.readyState!=="loading")setTimeout(()=>refresh(false),0);
 })();

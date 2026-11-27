@@ -1,0 +1,38 @@
+/* ============================================================
+   V7 — Card Progresso (PPg)
+   ============================================================ */
+#sumScreen .ppg7-card{grid-column:1 / -1;padding:8px 10px;border:3px solid var(--cl-ink,#181a24);border-radius:8px;background:var(--cl-paper,#fff);
+  box-shadow:0 3px 0 var(--cl-ink,#181a24);display:grid;gap:6px;color:var(--cl-text,#222)}
+.ppg7-card header{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.ppg7-card header b{font:700 10px var(--cl-pixel,monospace);letter-spacing:.06em}
+.ppg7-card header small{font:700 9px var(--cl-pixel,monospace);color:var(--cl-muted,#666);text-transform:uppercase}
+.ppg7-row{display:flex;align-items:center;gap:8px}
+.ppg7-bar{position:relative;flex:1;height:14px;padding:2px;border:2px solid var(--cl-ink,#181a24);border-radius:99px;background:#3b3f4a;overflow:hidden}
+.ppg7-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(180deg,#ffe58a 0 40%,#f0a818 40%);transition:width .5s steps(10)}
+.ppg7-bar em{position:absolute;top:2px;bottom:2px;width:2px;margin-left:-1px;background:rgba(0,0,0,.35)}
+.ppg7-num{font:400 13px var(--cl-title,inherit);white-space:nowrap}
+.ppg7-num small{font:700 9px var(--cl-pixel,monospace);color:var(--cl-muted,#666);margin-left:2px}
+.ppg7-cost{margin:0;font-size:11px;color:var(--cl-muted,#555)}
+.ppg7-cost b{color:var(--cl-text,#222)}
+.ppg7-acts{display:flex;gap:6px}
+.ppg7-btn{padding:7px 8px;border:3px solid var(--cl-ink,#181a24);border-radius:7px;background:var(--cl-card,#fff);color:var(--cl-text,#222);
+  font:700 9px var(--cl-pixel,monospace);letter-spacing:.04em;box-shadow:0 3px 0 var(--cl-ink,#181a24);cursor:pointer}
+.ppg7-btn.sm{min-width:40px}
+.ppg7-btn.up{flex:1}
+.ppg7-btn.go{background:linear-gradient(180deg,#ffd45a,#e39a12);color:#2a1a00;animation:ppg7Glow 1.4s ease-in-out infinite}
+.ppg7-btn:disabled{opacity:.5;cursor:default;animation:none}
+.ppg7-btn:not(:disabled):active{transform:translateY(3px);box-shadow:none}
+#sumScreen .ppg7-card.ready{border-color:#e39a12;box-shadow:0 3px 0 var(--cl-ink,#181a24),0 0 0 3px rgba(255,210,63,.45),0 0 18px rgba(255,190,40,.5)}
+#sumScreen .ppg7-card.ready header small{color:#b26b00}
+.ppg7-card.ppg7-pop{animation:ppg7Pop .5s ease-out}
+@keyframes ppg7Glow{50%{filter:brightness(1.12);box-shadow:0 3px 0 var(--cl-ink,#181a24),0 0 12px rgba(255,200,60,.9)}}
+@keyframes ppg7Pop{40%{transform:scale(1.04)}}
+.ppg7-more summary{cursor:pointer;font:700 9px var(--cl-pixel,monospace);color:var(--cl-muted,#666);letter-spacing:.04em}
+.ppg7-more[open]{display:grid;gap:6px}
+.ppg7-gain{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px}
+.ppg7-chip{display:flex;align-items:center;gap:5px;padding:5px 6px;border-radius:7px;border:2px solid var(--cl-line,#ccc);
+  background:var(--cl-paper2,#f1f1f1);color:var(--cl-text,#222);font:800 12px inherit;text-align:left;cursor:pointer}
+.ppg7-chip small{font-size:9.5px;font-weight:700;opacity:.75;line-height:1.1}
+.ppg7-hint{margin:0;font-size:10.5px;color:var(--cl-muted,#666)}
+.ppg7-pick{display:grid;gap:3px;font:700 9px var(--cl-pixel,monospace);color:var(--cl-muted,#666)}
+.ppg7-pick select{padding:5px;border:2px solid var(--cl-ink,#181a24);border-radius:6px;background:var(--cl-card,#fff);color:var(--cl-text,#222);font:700 12px inherit}
