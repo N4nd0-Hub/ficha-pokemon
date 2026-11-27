@@ -2851,6 +2851,8 @@ function applyIntegratedCustomSpecies(species,options={}){
   current.baseStats=newBase;
   current.abilityName=species?.ability?.name||"";
   current.abilityText=species?.ability?.description||"";
+  // a Ability veio com texto próprio da espécie (Pokédex GM): o Compêndio não substitui
+  current.abilityFromSpecies=current.abilityText?current.abilityName:"";
   current.nextEvolution=integratedSpeciesNextEvolution(species);
 
   const profile=integratedEvolutionProfile(species);
@@ -3108,7 +3110,9 @@ function localizePokemonOfficialAbilities(p){
     return entryKey===currentKey;
   });
 
-  if(activeEntry && !findCustomAbility(p.abilityName)){
+  // Pokémon da Pokédex GM trazem o texto da Ability da própria criação (ex.: Protosynthesis do Brute Chaos)
+  const fromGm=!!(p.abilityFromSpecies&&p.abilityFromSpecies===p.abilityName&&String(p.abilityText||"").trim());
+  if(activeEntry && !fromGm && !findCustomAbility(p.abilityName)){
     const apiName=officialAbilityKey(activeEntry.apiName||activeEntry.name);
     const translated=officialAbilityTranslation(apiName);
 
@@ -10710,6 +10714,7 @@ function fillAbilityFromSystem(){
 }
 
 function applySystemAbilityOverrides(){
+  if(current.abilityFromSpecies&&current.abilityFromSpecies===current.abilityName&&String(current.abilityText||"").trim())return;
   const active=findCustomAbility(current.abilityName);
 
   if(active){

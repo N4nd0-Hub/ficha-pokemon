@@ -340,7 +340,7 @@
       const b=/golpes\s+(f[íi]sicos|especiais)?\s*([^.]*?)\s+(?:recebem|ganham|causam)\s*\+\s*(\d)\s*(?:QD|dados? da QD)/i.exec(s);
       if(b){a.proto.boost={cat:b[1]?(/f[íi]s/i.test(b[1])?"physical":"special"):null,types:typesIn(b[2]),dice:Number(b[3])};continue;}
       const sp=/\+\s*(\d+)\s*de\s*(?:Speed|Velocidade)/i.exec(s);if(sp){a.proto.speedFlat=Number(sp[1]);continue;}
-      const g=/primeira vez[^.]*?(?:reduz|diminui)[^.]*?[−–-]\s*(\d)\s*QD[^.]*?(f[íi]sico|especial)?/i.exec(s);
+      const g=/primeira vez[^.]*?(?:reduz|diminui)[^.]*?[−–-]\s*(\d)\s*QD(?:[^.]*?(f[íi]sico|especial))?/i.exec(s);
       if(g){a.proto.firstGuard={dice:Number(g[1]),cat:g[2]?(/f[íi]s/i.test(g[2])?"physical":"special"):null};continue;}
       const m=/×\s*(\d+[.,]\d+)/.exec(s);if(m&&/maior atributo|highest stat/i.test(s))a.proto.mult=Number(m[1].replace(",","."));
     }
