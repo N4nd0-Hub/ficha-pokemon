@@ -238,3 +238,6 @@ html[data-cl-scheme="dark"] .inv-bonus-note{color:#7ee0ad}
 .inv-icon-picker input{flex:1 1 90px;min-width:80px}
 @media (max-width:720px){.inv-grid{grid-template-columns:minmax(0,1fr)}}
 .inv-editor-grid{align-items:start}
+.inv-shop-catalog{display:grid;gap:6px;justify-items:start;padding:12px;border-radius:12px;border:2px solid var(--cl-ink,#181a24);color:#fff;background:linear-gradient(135deg,#7b5a3a,#4a3524)}
+.inv-shop-catalog b{font:700 13px var(--cl-pixel,monospace);letter-spacing:.03em}
+.inv-shop-catalog span{font-size:12.5px;opacity:.92}

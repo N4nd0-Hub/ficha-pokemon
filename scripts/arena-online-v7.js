@@ -1336,7 +1336,7 @@
         const g=gimmicksFor(mine);
         const zOn=sel.gimmick==="z";
         const streak=s.evadeStreak||0;
-        panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} desmaiou! Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
+        panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} ${s.team?.[s.active]&&!s.team[s.active].fainted?"saiu de campo pelo item!":"desmaiou!"} Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
           ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const locked=s.lock!=null&&s.lock!==i;const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${(zOn&&!zOk)||locked?"disabled":""} ${locked?`title="Preso no golpe escolhido pelo item Choice"`:""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
             <b>${zOk?"Z-":""}${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${zOk?` · ${powerToDice(zp)} · não erra`:`${m.power?` · ${powerToDice(m.power)}`:""}${m.accuracy!=null?` · ${m.accuracy}%`:""}`}</small></button>`;}).join("")}</div>
           <div class="ar9-tactics">

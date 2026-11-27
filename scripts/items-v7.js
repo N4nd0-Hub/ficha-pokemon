@@ -5,7 +5,8 @@
    • Bolsa: o que você tem (Bolsa de combate + inventário do treinador),
      por categoria, com busca e o efeito "lido" de cada item;
    • Equipe: o item segurado de cada Pokémon, para trocar ou tirar;
-   • Loja: PokéMart com os itens oficiais já no sistema de QD;
+   • Loja de Altamuralha: a primeira cidade grande vende quase todos os
+     itens oficiais (menos Master Ball, itens-chave e afins), 25% mais caro;
    • Itemdex: o catálogo inteiro para consultar.
    O efeito de cada item é interpretado por item-rules-v7.js (o mesmo
    leitor que faz o item funcionar nas batalhas da Arena).
@@ -105,8 +106,10 @@
     try{renderAll();}catch(e){}
     save();render();
   }
+  const INV_CAT={ball:"balls",heal:"consumables",status:"consumables",battle:"consumables",held:"held",berry:"held",evo:"other",other:"other"};
   function buy(item,n=1){
-    const price=Number(item.cost||0)*n;
+    const unit=altPrice(item);if(!unit){toast("Esse item não é vendido aqui.");return;}
+    const price=unit*n;
     const t=ensureTrainerData();
     if(money()<price){toast("Dinheiro insuficiente.");return;}
     t.money=money()-price;
@@ -114,19 +117,70 @@
     else{
       const I=inv();const ex=I.items.find(i=>String(i.name).toLowerCase()===String(item.name).toLowerCase());
       if(ex)ex.qty=Number(ex.qty||0)+n;
-      else I.items.push({id:"it"+Math.random().toString(36).slice(2,9),name:item.name,icon:groupOf(item)==="held"?"💎":"📦",category:groupOf(item)==="held"?"held":"other",qty:n,price:Number(item.cost||0),desc:item.description||""});
+      else{const g=groupOf(item),ic=item.category==="spelunking"?"exploration":(INV_CAT[g]||"other");
+        I.items.push({id:"it"+Math.random().toString(36).slice(2,9),name:item.name,icon:ic==="held"?"💎":ic==="balls"?"ball:poke":"📦",category:ic==="consumables"&&!/^(heal|status|battle)$/.test(g)?"other":ic,qty:n,price:unit,desc:item.description||"",shopId:"altamuralha"});}
     }
     try{renderAll();}catch(e){}
     save();sfx("page");toast(`🛒 ${item.name} ×${n} por ${fmtMoney(price)}.`);
   }
 
-  /* ---------- Loja (PokéMart oficial) ---------- */
-  const SHOP_GROUPS=new Set(["heal","status","battle","ball","berry","held"]);
+  /* ---------- Loja de Altamuralha ----------
+     Primeira cidade grande da região: vende quase tudo do catálogo oficial,
+     25% mais caro que o preço base. Fora da loja: Master Ball e outras bolas
+     de captura garantida, itens-chave/de história, itens de eventos,
+     doces de nível/EXP, Ability Patch, Bottle Caps, itens de valor (que só
+     servem para vender) e materiais de jogos que a ficha não usa. */
+  const ALT={id:"altamuralha",name:"Loja de Altamuralha",mult:1.25};
+  const ALT_BLOCK_CAT=/^(plot-advancement|unused|event-items|data-cards|dynamax-crystals|tm-materials|picnic|sandwich-ingredients|curry-ingredients|all-mail|miracle-shooter|gameplay|loot|species-candies)$/;
+  const ALT_BLOCK=new Set(["master-ball","cherish-ball","laorigin-ball","lastrange-ball","rare-candy","ability-patch","dynamax-candy","gold-bottle-cap","bottle-cap","max-mushrooms","wishing-piece","armorite-ore","dynite-ore","galarica-twig","pass-orb","blank-plate","sacred-ash"]);
+  const BALL_PRICE={"safari-ball":600,"park-ball":600,"lapoke-ball":200,"lagreat-ball":600,"laultra-ball":800,"laheavy-ball":400,"laleaden-ball":800,"lagigaton-ball":1200,"lafeather-ball":300,"lawing-ball":600,"lajet-ball":1000,"dream-ball":1500,"beast-ball":3000,"premier-ball":200};
+  function basePrice(it){
+    const slug=String(it.apiName||""),c=String(it.category||""),cost=Number(it.cost||0),d=String(it.description||"");
+    if(BALL_PRICE[slug])return BALL_PRICE[slug];
+    if(c==="apricorn-balls")return 1000;
+    if(/-berry$/.test(slug)&&c!=="catching-bonus"){
+      const b=read(it).battle;
+      if(b.pinch?.healFrac||b.seHeal||b.hitRecoil)return 2000;
+      if(b.pinch?.stage||b.pinch?.nextAcc||b.pinch?.nextFirst)return 2500;
+      if(b.cure==="any")return 2000;
+      if(b.resist)return 1500;
+      if(b.cure||b.pinch?.healFlat||b.hitStage)return 600;
+      return c==="effort-drop"?1000:300;
+    }
+    if(c==="mega-stones")return 30000;
+    if(c==="z-crystals")return /^Segurado por/.test(d)?24000:16000;
+    if(/-mask$/.test(slug))return 25000;
+    if(slug==="legend-plate")return 20000;
+    if(c==="species-specific"&&!cost)return 15000;
+    if(c==="nature-mints")return 8000;
+    if(c==="vitamins")return Math.max(cost,1000);
+    if(c==="choice")return Math.max(cost,5000);
+    if(/^(held-items|bad-held-items)$/.test(c))return Math.max(cost,4000);
+    if(/^(type-enhancement|plates|memories)$/.test(c))return Math.max(cost,2000);
+    if(c==="jewels")return Math.max(cost,1500);
+    if(c==="all-machines")return Math.min(cost||3000,10000);
+    if(c==="evolution")return cost||3000;
+    if(c==="flutes"||c==="collectibles"||c==="spelunking")return Math.max(cost,500);
+    if(c==="training")return cost||3000;
+    return Math.max(cost,100);
+  }
+  function altSells(it){
+    if(!it?.apiName||ALT_BLOCK.has(it.apiName)||ALT_BLOCK_CAT.test(String(it.category||"")))return false;
+    if(/-candy(-l|-xl)?$/.test(it.apiName))return false;
+    if(/^Item registrado no PokéAPI/.test(String(it.description||""))&&!/held|mega|z-crystal/.test(String(it.category||"")))return false;
+    return true;
+  }
+  const priceCache=new Map();
+  function altPrice(it){
+    if(!it?.apiName)return Number(it?.cost||0);
+    if(!priceCache.has(it.apiName))priceCache.set(it.apiName,altSells(it)?Math.max(1000,Math.round(basePrice(it)*ALT.mult/50)*50):0);
+    return priceCache.get(it.apiName);
+  }
   let shopCache=null;
   function shopItems(){
     if(shopCache)return shopCache;
-    shopCache=[...CAT().values()].filter(it=>Number(it.cost)>0&&SHOP_GROUPS.has(groupOf(it))&&!/Sem efeito/.test(it.description||"")&&!/^(dynamax|tm-materials|picnic|sandwich|curry|all-mail|data-cards|loot)/.test(it.category||""))
-      .sort((a,b)=>GROUPS.findIndex(g=>g[0]===groupOf(a))-GROUPS.findIndex(g=>g[0]===groupOf(b))||a.cost-b.cost);
+    shopCache=[...CAT().values()].filter(altSells)
+      .sort((a,b)=>GROUPS.findIndex(g=>g[0]===groupOf(a))-GROUPS.findIndex(g=>g[0]===groupOf(b))||altPrice(a)-altPrice(b)||a.name.localeCompare(b.name));
     return shopCache;
   }
 
@@ -150,8 +204,8 @@
 
   function listData(){
     if(ui.tab==="bag")return owned();
-    if(ui.tab==="shop")return shopItems().map(it=>({id:"shop:"+it.apiName,src:"shop",name:it.name,description:it.description,automation:it.automation,category:it.category,apiName:it.apiName,cost:it.cost,img:sprite(it.apiName),item:it}));
-    if(ui.tab==="dex")return [...CAT().values()].map(it=>({id:"dex:"+it.apiName,src:"dex",name:it.name,description:it.description,automation:it.automation,category:it.category,apiName:it.apiName,cost:it.cost,img:sprite(it.apiName),item:it}));
+    if(ui.tab==="shop")return shopItems().map(it=>({id:"shop:"+it.apiName,src:"shop",name:it.name,description:it.description,automation:it.automation,category:it.category,apiName:it.apiName,cost:altPrice(it),img:sprite(it.apiName),item:it}));
+    if(ui.tab==="dex")return [...CAT().values()].map(it=>({id:"dex:"+it.apiName,src:"dex",name:it.name,description:it.description,automation:it.automation,category:it.category,apiName:it.apiName,cost:altPrice(it),img:sprite(it.apiName),item:it}));
     return [];
   }
   function filtered(){
@@ -161,7 +215,7 @@
   function render(){
     ensure();
     const p=cur();
-    const tabs=[["bag","🎒","Bolsa","O que você tem"],["team","💎","Equipe","Itens segurados"],["shop","🛒","Loja","PokéMart"],["dex","📖","Itemdex","Todos os itens"]];
+    const tabs=[["bag","🎒","Bolsa","O que você tem"],["team","💎","Equipe","Itens segurados"],["shop","🛒","Loja","Altamuralha"],["dex","📖","Itemdex","Todos os itens"]];
     box.innerHTML=`<div class="it7-win">
       <header class="it7-head">
         <div class="it7-title"><b>🎒 Mochila</b><small>${p?`Usar em <b>${esc(p.name)}</b> · `:""}Carteira: <b>${fmtMoney(money())}</b></small></div>
@@ -170,7 +224,7 @@
       <nav class="it7-tabs" role="tablist">${tabs.map(([k,i,l,s])=>`<button type="button" role="tab" aria-selected="${ui.tab===k}" class="${ui.tab===k?"on":""}" data-it="tab" data-v="${k}"><i>${i}</i><b>${l}</b><small>${s}</small></button>`).join("")}</nav>
       <div class="it7-body" data-tab="${ui.tab}">${ui.tab==="team"?teamView():`
         <div class="it7-listcol">
-          <div class="it7-tools"><input class="it7-q" data-it="q" type="search" placeholder="Buscar item ou efeito (ex.: Fire, cura, crítico)…" value="${esc(ui.q)}" aria-label="Buscar item">
+          <div class="it7-tools">${ui.tab==="shop"?`<div class="it7-city"><b>🏔 Loja de Altamuralha</b><small>Primeira cidade grande: vende ${shopItems().length} itens, 25% mais caro e nada abaixo de 1.000₽. Não vende Master Ball, itens-chave nem doces de nível.</small></div>`:""}<input class="it7-q" data-it="q" type="search" placeholder="Buscar item ou efeito (ex.: Fire, cura, crítico)…" value="${esc(ui.q)}" aria-label="Buscar item">
             <div class="it7-groups">${GROUPS.map(([k,l,i])=>`<button type="button" class="${ui.group===k?"on":""}" data-it="group" data-v="${k}">${i} ${l}</button>`).join("")}</div></div>
           <div class="it7-list" role="list"></div>
         </div>
@@ -206,7 +260,7 @@
         ${usable&&p?`<button type="button" class="it7-btn go" data-it="use">Usar em ${esc(p.name)}</button>`:""}
         ${holdable?`<div class="it7-give"><small>Dar para segurar:</small><div>${team.map(x=>{let im="";try{im=displayPokemonImage(x)||"";}catch(err){}return `<button type="button" data-it="give" data-p="${esc(String(x.id))}" title="${esc(x.name)}${x.heldItem?` (segura ${esc(x.heldItem)})`:""}">${im?`<img src="${esc(im)}" alt="" width="34" height="34">`:"◓"}<span>${esc(x.name)}</span>${x.heldItem?`<em>${esc(x.heldItem)}</em>`:""}</button>`;}).join("")}</div></div>`:""}
         ${e.src==="shop"?`<div class="it7-buy"><button type="button" class="it7-btn go" data-it="buy" data-n="1" ${money()<e.cost?"disabled":""}>Comprar 1 · ${fmtMoney(e.cost)}</button><button type="button" class="it7-btn" data-it="buy" data-n="5" ${money()<e.cost*5?"disabled":""}>×5 · ${fmtMoney(e.cost*5)}</button></div>`:""}
-        ${e.src==="dex"&&e.cost?`<button type="button" class="it7-btn" data-it="toShop" data-id="${esc(e.apiName)}">Ver na Loja · ${fmtMoney(e.cost)}</button>`:""}
+        ${e.src==="dex"?(e.cost?`<button type="button" class="it7-btn" data-it="toShop" data-id="${esc(e.apiName)}">Ver na Loja de Altamuralha · ${fmtMoney(e.cost)}</button>`:`<p class="it7-note off">Não é vendido em Altamuralha.</p>`):""}
       </div>`;
   }
   function teamView(){
@@ -226,7 +280,7 @@
     if(!b){if(e.target===box)close();return;}
     const a=b.dataset.it;
     if(a==="close")close();
-    else if(a==="tab"){ui.tab=b.dataset.v;ui.sel=null;ui.page=1;if(ui.tab!=="bag")ui.group=ui.group==="held"&&ui.tab==="shop"?"held":"all";sfx("select");render();}
+    else if(a==="tab"){ui.tab=b.dataset.v;ui.sel=null;ui.page=1;if(ui.tab!=="bag")ui.group=ui.group==="held"&&ui.tab==="shop"?"held":"all";ui.q="";sfx("select");render();}
     else if(a==="group"){ui.group=b.dataset.v;ui.page=1;box.querySelectorAll(".it7-groups button").forEach(x=>x.classList.toggle("on",x===b));renderList();}
     else if(a==="sel"){ui.sel=b.dataset.id;box.querySelectorAll(".it7-card").forEach(x=>x.classList.toggle("on",x===b));renderDetail();sfx("select");if(matchMedia("(max-width:760px)").matches)box.querySelector(".it7-detail")?.scrollIntoView({behavior:"smooth",block:"start"});}
     else if(a==="more"){ui.page++;renderList();}
@@ -258,5 +312,5 @@
   document.addEventListener("click",e=>{const b=e.target.closest("[data-it-open]");if(b){e.preventDefault();open(b.dataset.itOpen==="team"?"bag":b.dataset.itOpen);if(b.dataset.itOpen==="team"){ui.group="held";render();}}});
   ["hh:render","hh:pokemonchange"].forEach(ev=>document.addEventListener(ev,()=>{mountEntry();if(ui.open)render();}));
   if(document.readyState!=="loading")setTimeout(mountEntry,0);
-  window.hhItemsUI={open,close,interpret:read,groupOf,owned};
+  window.hhItemsUI={open,close,interpret:read,groupOf,owned,altPrice,shopItems,ALT};
 })();
