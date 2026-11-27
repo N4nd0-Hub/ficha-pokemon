@@ -100,7 +100,7 @@ test('Rolagem fica dentro dos limites e o crítico natural maximiza a QD',()=>{
   assert.ok(crit.total>=40+1+7);
 });
 
-test('Quadro de STATUS mostra Qualidade e QD com a Matrix ligada e volta ao normal desligada',()=>{
+test('Quadro de STATUS mostra Qualidade e QD (o dano por QD é sempre o do sistema)',()=>{
   const boxes={atkBonus:fakeBox('Bônus físico'),spaBonus:fakeBox('Bônus especial'),defReduce:fakeBox('Redução física'),spdReduce:fakeBox('Redução especial')};
   const dm=load(blaziken(),{targetDef:100},boxes);
   assert.equal(boxes.atkBonus.b.textContent,'ATK 120 · Q3');
@@ -108,8 +108,8 @@ test('Quadro de STATUS mostra Qualidade e QD com a Matrix ligada e volta ao norm
   assert.equal(boxes.defReduce.b.textContent,'DEF 70 · Q1');
   assert.equal(boxes.atkBonus.box.classList.on,true);
   dm.set({enabled:false});
-  assert.equal(boxes.atkBonus.span.textContent,'Bônus físico');
-  assert.equal(boxes.atkBonus.box.classList.on,false);
+  assert.match(boxes.atkBonus.span.textContent,/QD d8/);
+  assert.equal(boxes.atkBonus.box.classList.on,true);
 });
 
 test('Régua mostra o degrau base e o final quando a efetividade muda a QD',()=>{
