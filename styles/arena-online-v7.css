@@ -900,3 +900,18 @@ html[data-theme-skin] .ar7{background:var(--sk-body,var(--bg,#121316))}
 .ar9-abyss-load .ar7-surv-ico{animation:ar8-bob 2.4s ease-in-out infinite}
 .ar7-result.ar9-floor small b{font-size:inherit;color:inherit}
 .ar9-tries{display:block;font-style:normal;font-size:10px;font-weight:800;opacity:.8;margin-top:2px}
+/* ordem do time (antes de começar e entre andares) */
+.ar9-order{max-width:520px;width:100%;text-align:left}
+.ar9-order h3,.ar9-order>p{text-align:center}
+.ar9-order .ar7-pick-list{max-height:52vh;overflow:auto}
+.ar9-runorder{width:100%;text-align:left;display:grid;gap:6px}
+.ar9-runorder ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.ar9-runorder li{display:grid;grid-template-columns:30px 1fr auto;grid-template-rows:auto auto;column-gap:6px;align-items:center;padding:4px 6px;border-radius:9px;
+  background:var(--cl-paper2,#f3f3f3);border:2px solid var(--cl-line,#ccc);color:var(--cl-text,#222)}
+.ar9-runorder li img{grid-row:1/3;object-fit:contain}
+.ar9-runorder li b{font-size:12px!important;color:inherit!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ar9-runorder li small{font-size:10px;font-weight:700;opacity:.75}
+.ar9-runorder li span,.ar9-runorder li em{grid-column:3;grid-row:1/3;display:flex;gap:3px;font-style:normal;font-weight:900;font-size:11px;color:#b26b00}
+.ar9-runorder li button{width:28px;height:28px;border-radius:7px;border:2px solid var(--cl-ink,#181a24);background:var(--cl-card,#fff);color:var(--cl-text,#222);font-weight:900;cursor:pointer}
+.ar9-runorder li.out{opacity:.55}
+.ar9-order .ar7-pick-list{grid-template-columns:1fr!important}
