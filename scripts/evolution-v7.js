@@ -28,7 +28,7 @@
   const save=()=>{try{saveState();}catch(e){try{debouncedSave();}catch(_){}}};
 
   /* ---------- Descobrir as próximas formas ---------- */
-  const LS="hh_evo_cache_v2";
+  const LS="hh_evo_cache_v3";
   let disk={};try{disk=JSON.parse(localStorage.getItem(LS)||"{}")||{};}catch(e){disk={};}
   const mem=new Map(),pending=new Map(),lines=new Map();
   const findInt=v=>{try{return v?findIntegratedCustomSpecies(v):null;}catch(e){return null;}};
@@ -80,7 +80,23 @@
       return {source:"official",name:pretty(c.species?.name||""),apiName:c.species?.name||"",speciesId:id,img:id?ART(id):"",
         level:d.min_level||null,happiness:d.min_happiness||null,item:d.item?.name||d.held_item?.name||"",trade:d.trigger?.name==="trade",detail};
     }).filter(o=>o.apiName);
-    return {list,line};
+    return {list:splitForms(list),line};
+  }
+  /* Evoluções que viram formas diferentes da mesma espécie (a PokéAPI lista
+     só a espécie): cada forma vira uma opção própria para escolher. */
+  const FORM_SPLIT={
+    lycanroc:[{api:"lycanroc-midday",id:745,name:"Lycanroc (Dia)",detail:"Lv. 25 · de dia"},{api:"lycanroc-midnight",id:10126,name:"Lycanroc (Noite)",detail:"Lv. 25 · de noite"},{api:"lycanroc-dusk",id:10152,name:"Lycanroc (Crepúsculo)",detail:"Lv. 25 · ao entardecer, com Own Tempo"}],
+    toxtricity:[{api:"toxtricity-amped",id:849,name:"Toxtricity (Amped)",detail:"Lv. 30 · natureza agitada"},{api:"toxtricity-low-key",id:10184,name:"Toxtricity (Low Key)",detail:"Lv. 30 · natureza calma"}],
+    urshifu:[{api:"urshifu-single-strike",id:892,name:"Urshifu (Golpe Único)",detail:"Pergaminho das Trevas"},{api:"urshifu-rapid-strike",id:10191,name:"Urshifu (Golpe Fluido)",detail:"Pergaminho das Águas"}]
+  };
+  function splitForms(list){
+    const out=[];
+    for(const o of list){
+      const forms=FORM_SPLIT[o.apiName];
+      if(!forms){out.push(o);continue;}
+      forms.forEach(f=>out.push({...o,name:f.name,apiName:f.api,speciesId:f.id,img:ART(f.id),detail:f.detail,form:true}));
+    }
+    return out;
   }
   /* "Evolução Futura" da Importação Rápida apontando para uma espécie oficial */
   async function nextByName(nx){
@@ -199,7 +215,7 @@
           ${st.kind==="level"&&!st.ready||st.kind==="happy"?`<span class="evo7-bar" title="${esc(st.label)}"><i style="width:${st.pct||0}%"></i></span>`:""}
           <em class="${st.ready?"go":st.soft?"soft":""}">${esc(st.label)}</em></span>
         <button type="button" class="evo7-btn${st.ready?" go":""}" data-evo="open" data-i="${i}">${st.ready?"EVOLUIR":"VER"}</button>
-      </li>`;}).join("")}</ul>${undo}`;
+      </li>`;}).join("")}</ul>${list.length>1?`<button type="button" class="evo7-btn evo7-cmp${anyReady?" go":""}" data-evo="choose">🧬 Comparar os ${list.length} caminhos</button>`:""}${undo}`;
   }
 
   /* ---------- Aviso quando fica pronto ---------- */
@@ -259,12 +275,57 @@
     let abName=ab?.ability?.name||"";try{abName=officialAbilityEnglishName(abName)||abName;}catch(e){}
     return {types:rework?rework.types:(d.types||[]).map(x=>norm(pretty(x.type.name))),baseStats:rework?rework.baseStats:base,ability:rework?rework.abilityName:abName};
   }
-  async function openPreview(i){
+  /* ---------- Escolha entre vários caminhos (split evolution) ---------- */
+  const tdCache=new Map();
+  function tdOf(o){
+    const k=o.speciesId||o.apiName||o.name;
+    if(tdCache.has(k))return tdCache.get(k);
+    tdCache.set(k,null);
+    targetData(o).then(t=>{tdCache.set(k,t);if(modal?.classList.contains("open")&&modal.dataset.view==="choose")openChooser(Number(modal.dataset.sel||0));}).catch(()=>{});
+    return null;
+  }
+  function ensureModal(){
+    if(modal)return;
+    modal=document.createElement("div");modal.className="evo7-modal";modal.setAttribute("role","dialog");modal.setAttribute("aria-modal","true");document.body.appendChild(modal);
+    modal.addEventListener("click",e=>{
+      if(e.target===modal||e.target.closest("[data-evo=close]"))closePreview();
+      else if(e.target.closest("[data-evo=go]"))confirmEvolve();
+      else if(e.target.closest("[data-evo=back]"))openChooser(Number(modal.dataset.sel||0));
+      else{const c=e.target.closest("[data-evo=pick]");if(c)openPreview(Number(c.dataset.i),{fromChooser:true});
+        const h=e.target.closest("[data-evo=hl]");if(h&&!c){modal.dataset.sel=h.dataset.i;modal.querySelectorAll(".evo7-path").forEach(x=>x.classList.toggle("sel",x===h));}}
+    });
+  }
+  function openChooser(sel=0){
+    const p=cur();const list=optionsOf(p)||[];if(!list.length)return;
+    ensureModal();open_=null;
+    modal.dataset.view="choose";modal.dataset.sel=String(sel);
+    const img=(()=>{try{return displayPokemonImage(p)||"";}catch(e){return "";}})();
+    const max=Math.max(1,...list.map(o=>{const t=tdOf(o);return t?Math.max(...STATS.map(([k])=>Number(t.baseStats[k]||0))):1;}),150);
+    const cards=list.map((o,i)=>{
+      const st=statusOf(p,o),t=tdOf(o);
+      const bst=t?STATS.reduce((a,[k])=>a+Number(t.baseStats[k]||0),0):0;
+      return `<article class="evo7-path${i===sel?" sel":""}${st.ready?" ok":""}" data-evo="hl" data-i="${i}" tabindex="0">
+        <div class="evo7-path-art">${o.img?`<img src="${esc(o.img)}" alt="${esc(o.name)}" loading="lazy">`:"◓"}</div>
+        <b class="evo7-path-name">${esc(o.name)}</b>
+        <span class="evo7-path-types">${t?t.types.map(typeBadge).join(" "):'<i class="evo7-dots">…</i>'}</span>
+        <small class="evo7-path-cond">${esc(o.detail||"")}</small>
+        ${t?`<div class="evo7-mini">${STATS.map(([k,l])=>{const v=Number(t.baseStats[k]||0);return `<span title="${l} ${v}"><em>${l.replace("SP.","S")}</em><i style="width:${Math.round(100*v/max)}%"></i><b>${v}</b></span>`;}).join("")}<span class="tot"><em>TOTAL</em><b>${bst}</b></span></div>`:`<div class="evo7-mini wait">Carregando atributos…</div>`}
+        ${t&&t.ability?`<small class="evo7-path-ab">Ability: <b>${esc(t.ability)}</b></small>`:""}
+        <em class="evo7-path-st ${st.ready?"go":st.soft?"soft":""}">${esc(st.label)}</em>
+        <button type="button" class="evo7-btn${st.ready?" go":""}" data-evo="pick" data-i="${i}">${st.ready?"Escolher":"Ver prévia"}</button>
+      </article>`;}).join("");
+    modal.innerHTML=`<div class="evo7-box evo7-choose"><header><b>🧬 Escolha a evolução</b><button type="button" class="evo7-x" data-evo="close" aria-label="Fechar">✕</button></header>
+      <div class="evo7-from">${img?`<img src="${esc(img)}" alt="">`:""}<div><b>${esc(p.name)}</b><small>tem <b>${list.length}</b> caminhos de evolução. Compare e escolha um.</small></div></div>
+      <div class="evo7-paths" style="--n:${Math.min(list.length,4)}">${cards}</div>
+      <p class="evo7-note">A condição de cada caminho (horário, item, felicidade…) é decidida na mesa: escolha a que o Mestre liberou.</p></div>`;
+    modal.classList.add("open");
+  }
+  async function openPreview(i,{fromChooser=false}={}){
     const p=cur();const list=optionsOf(p)||[];const o=list[i];if(!o)return;
+    if(list.length>1&&!fromChooser){openChooser(i);sfx("select");return;}
+    ensureModal();modal.dataset.view="preview";modal.dataset.sel=String(i);
     const st=statusOf(p,o);
     open_={o,pid:p.id};
-    if(!modal){modal=document.createElement("div");modal.className="evo7-modal";modal.setAttribute("role","dialog");modal.setAttribute("aria-modal","true");document.body.appendChild(modal);
-      modal.addEventListener("click",e=>{if(e.target===modal||e.target.closest("[data-evo=close]"))closePreview();else if(e.target.closest("[data-evo=go]"))confirmEvolve();});}
     const img=(()=>{try{return displayPokemonImage(p)||"";}catch(e){return "";}})();
     const box=(body)=>`<div class="evo7-box"><header><b>🧬 Evolução</b><button type="button" class="evo7-x" data-evo="close" aria-label="Fechar">✕</button></header>${body}</div>`;
     modal.innerHTML=box(`<div class="evo7-stage"><span>${img?`<img src="${esc(img)}" alt="">`:""}<b>${esc(p.name)}</b></span><i>➜</i><span class="next">${o.img?`<img src="${esc(o.img)}" alt="">`:""}<b>${esc(o.name)}</b></span></div><p class="evo7-note">Carregando os atributos de ${esc(o.name)}…</p>`);
@@ -285,7 +346,7 @@
       ${t.ability&&t.ability!==p.abilityName?`<p class="evo7-note">Ability: <b>${esc(p.abilityName||"—")}</b> ➜ <b>${esc(t.ability)}</b></p>`:""}`:`<p class="evo7-note">Não consegui carregar a prévia dos atributos, mas dá para evoluir assim mesmo.</p>`}
       <ul class="evo7-keep"><li>✓ Pontos investidos mantidos</li><li>✓ Nível, golpes e Nature</li><li>✓ PPg, felicidade e item</li>${nick?`<li>✓ Apelido "${esc(p.name)}"</li>`:""}<li>✓ Dá para desfazer depois</li></ul>
       ${itemNote?`<p class="evo7-note">${itemNote}</p>`:""}
-      <div class="evo7-acts"><button type="button" class="evo7-btn" data-evo="close">AGORA NÃO</button>
+      <div class="evo7-acts">${list.length>1?`<button type="button" class="evo7-btn" data-evo="back">← Outros caminhos</button>`:`<button type="button" class="evo7-btn" data-evo="close">AGORA NÃO</button>`}
         <button type="button" class="evo7-btn go evo7-go" data-evo="go" ${!st.ready&&st.kind==="level"?"disabled":""}>${!st.ready&&st.kind==="level"?`Requer Lv. ${o.level}`:"🧬 Evoluir!"}</button></div>`);
   }
   function closePreview(){modal?.classList.remove("open");open_=null;}
@@ -350,6 +411,7 @@
   document.addEventListener("click",e=>{
     const b=e.target.closest("#evo7Card [data-evo]");if(!b)return;
     if(b.dataset.evo==="open")openPreview(Number(b.dataset.i));
+    else if(b.dataset.evo==="choose"){openChooser(0);sfx("select");}
     else if(b.dataset.evo==="undo")undo();
   });
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&modal?.classList.contains("open"))closePreview();});

@@ -880,5 +880,7 @@
 
   /* Entrada: o cartão de Exploração dentro da Aventura (botão ⚔ Aventura no topo) */
   function refreshHub(){try{if(!document.getElementById("hhArena")?.hidden)document.dispatchEvent(new CustomEvent("hh:render"));}catch(e){}}
+  /* Modo Mestre compartilhado com a Mochila (Baú do Mestre) */
+  window.hhGm={isOn:()=>!!gm.on,async unlock(pwd){let h="";try{h=await sha("hh-gm:"+pwd);}catch(e){}if(h!==GM_HASH)return false;gm.on=true;gmSave();try{render();}catch(e){}return true;},lock(){gm.on=false;gmSave();}};
   window.hhExplore={open,close,REGIONS,hpNow,maxHp,get state(){return X();}};
 })();

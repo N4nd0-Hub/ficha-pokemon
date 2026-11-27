@@ -32,6 +32,8 @@
      treinador (window.hhInvPx: poção, gema, Poké Ball, carrinho…). */
   const PAL={o:"#1b1d2a",R:"#e0393e",r:"#a8222a",Y:"#ffd23f",y:"#d9961a",W:"#fff6dc",G:"#7a5a3a",B:"#3b6fd8",b:"#234a9e",P:"#f4efe0",p:"#cfc6a8",S:"#dfe5f0",s:"#8a93a8",H:"#a0703a",L:"#43c17a",l:"#2d8a4a"};
   const ICONS={
+    disc:["................",".....oooooo.....","...ooBBBBBBoo...","..oBBBBBBBBBBo..","..oBWWBBBBBBBo..",".oBBWBBoooBBBBo.",".oBBBBoYYoBBBBo.",".oBBBBoYYoBBBBo.",".oBBBBBooBBBBBo.",".oBBBBBBBBBBBbo.","..oBBBBBBBBBbo..","..oBBBBBBBBbbo..","...oobbbbbboo...",".....oooooo.....","................","................"],
+    gift:["................","....oo....oo....","...oRRo..oRRo...","....oRRooRRo....","..oooooooooooo..","..oRRRRYYRRRRo..","..oRRRRYYRRRRo..","..oooooooooooo..","...oRRRYYRRRo...","...oRRRYYRRRo...","...oRRRYYRRRo...","...oRRRYYRRRo...","...orrrYYrrro...","...oooooooooo...","................","................"],
     bag:["................",".....oooooo.....","....oGGGGGGo....","....oGo..oGo....","..oooooooooooo..",".oRWRRRRRRRRRro.",".oWRRRRRRRRRRro.",".oRRRRRRRRRRRro.",".oooooooooooooo.",".oRRoYYYYYYoRro.",".oRRoYWWyyYoRro.",".oRRoYyyyyYoRro.",".oRRooooooooRro.",".orRRRRRRRRRRro.","..orrrrrrrrrro..","...oooooooooo..."],
     book:["................","...ooooooooooo..","..oBBBBBBBBBBpo.","..oBWBBBBBBBBpo.","..oBBBYYYYBBBpo.","..oBBBYooYBBBpo.","..oBBBYYYYBBBpo.","..oBBBBBBBBBBpo.","..oBBBBBBBBBBpo.","..oBBBBBBBBBBpo.","..obbbbbbbbbbpo.","..oPPPPPPPPPPPo.","..opppppppppppo.","...ooooooooooo..","................","................"],
     sword:["................","............oo..","...........oSso.","..........oSso..",".........oSso...","........oSso....",".......oSso.....","......oSso......","..oo.oSso.......","..oYoSso........","...oYso.........","...oHYYo........","..oHo.oYo.......",".oHo...oo.......",".oo.............","................"],
@@ -219,7 +221,8 @@
     box=document.createElement("div");box.className="it7";box.hidden=true;box.setAttribute("role","dialog");box.setAttribute("aria-modal","true");box.setAttribute("aria-label","Mochila");
     document.body.appendChild(box);
     box.addEventListener("click",onClick);
-    box.addEventListener("input",e=>{if(e.target.matches("[data-it=q]")){ui.q=e.target.value;ui.page=1;renderList();}});
+    box.addEventListener("submit",e=>{const ext=(window.hhItemsTabs||[]).find(t=>t.key===ui.tab);if(ext?.onSubmit){e.preventDefault();ext.onSubmit(e);}});
+    box.addEventListener("input",e=>{const ext=(window.hhItemsTabs||[]).find(t=>t.key===ui.tab);if(ext?.onInput&&!e.target.matches("[data-it=q]")){ext.onInput(e);return;}if(e.target.matches("[data-it=q]")){ui.q=e.target.value;ui.page=1;renderList();}});
     return box;
   }
   function open(tab){ensure();ui.open=true;if(tab)ui.tab=tab;box.hidden=false;document.body.classList.add("it7-open");sfx("page");render();setTimeout(()=>box.querySelector("[data-it=q]")?.focus({preventScroll:true}),60);}
@@ -243,8 +246,10 @@
   function render(){
     ensure();
     const p=cur();
-    const tabs=[["bag","bag","Bolsa","O que você tem"],["team","gem","Equipe","Itens segurados"],["shop","cart","Loja","Altamuralha"],["dex","book","Itemdex","Todos os itens"]];
-    const all=ui.tab==="team"?[]:listData();
+    const extra=(window.hhItemsTabs||[]);
+    const tabs=[["bag","bag","Bolsa","O que você tem"],["team","gem","Equipe","Itens segurados"],["shop","cart","Loja","Altamuralha"],["dex","book","Itemdex","Todos os itens"],...extra.map(t=>[t.key,t.icon,t.label,t.sub])];
+    const ext=extra.find(t=>t.key===ui.tab);
+    const all=ui.tab==="team"||ext?[]:listData();
     const count=k=>k==="all"?all.length:all.filter(e=>groupOf(e)===k).length;
     box.innerHTML=`<div class="it7-win">
       <header class="it7-head">
@@ -254,7 +259,7 @@
         <button type="button" class="it7-x" data-it="close" aria-label="Fechar">✕</button>
       </header>
       <nav class="it7-tabs" role="tablist">${tabs.map(([k,i,l,s])=>`<button type="button" role="tab" aria-selected="${ui.tab===k}" class="${ui.tab===k?"on":""}" data-it="tab" data-v="${k}">${ico(i)}<b>${l}</b><small>${s}</small></button>`).join("")}</nav>
-      <div class="it7-body" data-tab="${ui.tab}">${ui.tab==="team"?teamView():`
+      <div class="it7-body" data-tab="${ui.tab}">${ext?`<div class="it7-ext">${ext.view()}</div>`:ui.tab==="team"?teamView():`
         <nav class="it7-pockets" aria-label="Bolsos">${GROUPS.map(([k,l])=>{const n=count(k);return `<button type="button" class="${ui.group===k?"on":""}${n?"":" empty"}" data-it="group" data-v="${k}">${ico(GROUP_ICO[k])}<span>${l}</span><em>${n}</em></button>`;}).join("")}</nav>
         <div class="it7-listcol">
           <div class="it7-tools">${ui.tab==="shop"?`<div class="it7-city">${ico("mart")}<div><b>Loja de Altamuralha</b><small>A Grande Cidade na montanha, lar do Rochedo Eterno. · ${shopItems().length} itens à venda</small></div></div>`:""}
@@ -263,7 +268,8 @@
         </div>
         <aside class="it7-detail" aria-live="polite"></aside>`}</div>
     </div>`;
-    if(ui.tab!=="team"){renderList();renderDetail();}
+    if(ui.tab!=="team"&&!ext){renderList();renderDetail();}
+    if(ext)ext.after?.(box);
   }
   function renderList(){
     const el=box?.querySelector(".it7-list");if(!el)return;
@@ -332,6 +338,8 @@
     const b=e.target.closest("[data-it]");
     if(!b){if(e.target===box)close();return;}
     const a=b.dataset.it;
+    const ext=(window.hhItemsTabs||[]).find(t=>t.key===ui.tab);
+    if(ext?.onClick?.(a,b,e)===true)return;
     if(a==="close")close();
     else if(a==="tab"){ui.tab=b.dataset.v;ui.sel=null;ui.page=1;if(ui.tab!=="bag")ui.group=ui.group==="held"&&ui.tab==="shop"?"held":"all";ui.q="";sfx("select");render();}
     else if(a==="group"){ui.group=b.dataset.v;ui.page=1;box.querySelectorAll(".it7-pockets button").forEach(x=>x.classList.toggle("on",x===b));renderList();sfx("select");}
@@ -375,5 +383,5 @@
   document.addEventListener("click",e=>{const b=e.target.closest("[data-it-open]");if(b){e.preventDefault();open(b.dataset.itOpen==="team"?"bag":b.dataset.itOpen);if(b.dataset.itOpen==="team"){ui.group="held";render();}}});
   ["hh:render","hh:pokemonchange"].forEach(ev=>document.addEventListener(ev,()=>{mountEntry();if(ui.open)render();}));
   if(document.readyState!=="loading")setTimeout(mountEntry,0);
-  window.hhItemsUI={open,close,interpret:read,groupOf,owned,altPrice,shopItems,ALT};
+  window.hhItemsUI={open,close,interpret:read,groupOf,owned,altPrice,shopItems,ALT,render:()=>{if(ui.open)render();},ico,sprite,inv,esc,fmtMoney,get tab(){return ui.tab;}};
 })();
