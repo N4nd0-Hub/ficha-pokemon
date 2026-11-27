@@ -631,7 +631,7 @@
                 <datalist id="officialMoveSuggestions"></datalist>
                 <div class="move-form">
                   <input class="input wide" id="moveName" list="officialMoveSuggestions" placeholder="Nome do move" />
-                  <input class="input" id="moveType" placeholder="Tipo" />
+                  <select class="input" id="moveType" aria-label="Tipo"><option value="Normal">Normal · Normal</option><option value="Fire">Fire · Fogo</option><option value="Water">Water · Água</option><option value="Electric">Electric · Elétrico</option><option value="Grass">Grass · Grama</option><option value="Ice">Ice · Gelo</option><option value="Fighting">Fighting · Lutador</option><option value="Poison">Poison · Veneno</option><option value="Ground">Ground · Terra</option><option value="Flying">Flying · Voador</option><option value="Psychic">Psychic · Psíquico</option><option value="Bug">Bug · Inseto</option><option value="Rock">Rock · Pedra</option><option value="Ghost">Ghost · Fantasma</option><option value="Dragon">Dragon · Dragão</option><option value="Dark">Dark · Sombrio</option><option value="Steel">Steel · Aço</option><option value="Fairy">Fairy · Fada</option></select>
                   <select class="input" id="moveCategory">
                     <option>Physical</option><option>Special</option><option>Status</option>
                   </select>
@@ -1803,7 +1803,7 @@
       <input type="hidden" id="editMoveId" />
       <div class="move-edit-grid">
         <div class="field wide-edit"><label>Nome</label><input class="input" id="editMoveName" /></div>
-        <div class="field"><label>Tipo</label><input class="input" id="editMoveType" /></div>
+        <div class="field"><label>Tipo</label><select class="input" id="editMoveType"><option value="Normal">Normal · Normal</option><option value="Fire">Fire · Fogo</option><option value="Water">Water · Água</option><option value="Electric">Electric · Elétrico</option><option value="Grass">Grass · Grama</option><option value="Ice">Ice · Gelo</option><option value="Fighting">Fighting · Lutador</option><option value="Poison">Poison · Veneno</option><option value="Ground">Ground · Terra</option><option value="Flying">Flying · Voador</option><option value="Psychic">Psychic · Psíquico</option><option value="Bug">Bug · Inseto</option><option value="Rock">Rock · Pedra</option><option value="Ghost">Ghost · Fantasma</option><option value="Dragon">Dragon · Dragão</option><option value="Dark">Dark · Sombrio</option><option value="Steel">Steel · Aço</option><option value="Fairy">Fairy · Fada</option></select></div>
         <div class="field"><label>Categoria</label><select class="input" id="editMoveCategory"><option>Physical</option><option>Special</option><option>Status</option></select></div>
         <div class="field"><label>Power</label><input class="input" id="editMovePower" type="number" min="0" /></div>
         <div class="field"><label>Accuracy</label><input class="input" id="editMoveAccuracy" type="number" min="0" max="90" /></div>
@@ -2404,7 +2404,7 @@
 </div>
 
 
-<script src="scripts/app-core.js?v=20261126x"></script>
+<script src="scripts/app-core.js?v=20261126t1"></script>
 
   <!-- Catálogo público: Pokédex GM V5.0 -->
   <script src="scripts/pokedex-gm-bridge.js?v=20261125-linha" defer></script>

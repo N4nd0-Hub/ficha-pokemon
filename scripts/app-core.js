@@ -3397,7 +3397,7 @@ function applyMoveDataToForm(move,target){
     setVal("trainingAccuracy",move.accuracy);setVal("trainingEffectChance",move.effectChance);
     setVal("trainingDescription",text);
   }else{
-    setVal("moveName",move.name);setVal("moveType",move.type);
+    setVal("moveName",move.name);setVal("moveType",normalizeTypeName(move.type)||"Normal");
     setVal("moveCategory",move.category);setVal("movePower",move.power);
     setVal("moveAccuracy",move.accuracy);setVal("moveEffectChance",move.effectChance);
     setVal("moveDescription",text);
@@ -11268,9 +11268,23 @@ const TYPE_CHART={
   Fairy:{Fire:.5,Fighting:2,Poison:.5,Dragon:2,Dark:2,Steel:.5}
 };
 
+/* Nomes em português (e sem acento) também valem: "Fada" vira Fairy. */
+const TYPE_ALIASES_PT={
+  normal:"Normal",fogo:"Fire",agua:"Water",eletrico:"Electric",eletrica:"Electric",grama:"Grass",planta:"Grass",
+  gelo:"Ice",lutador:"Fighting",luta:"Fighting",veneno:"Poison",venenoso:"Poison",terra:"Ground",solo:"Ground",
+  voador:"Flying",voo:"Flying",psiquico:"Psychic",inseto:"Bug",pedra:"Rock",rocha:"Rock",fantasma:"Ghost",
+  dragao:"Dragon",sombrio:"Dark",noturno:"Dark",trevas:"Dark",metal:"Steel",aco:"Steel",fada:"Fairy",fadas:"Fairy"
+};
+const TYPE_PT_LABEL={Normal:"Normal",Fire:"Fogo",Water:"Água",Electric:"Elétrico",Grass:"Grama",Ice:"Gelo",Fighting:"Lutador",
+  Poison:"Veneno",Ground:"Terra",Flying:"Voador",Psychic:"Psíquico",Bug:"Inseto",Rock:"Pedra",Ghost:"Fantasma",Dragon:"Dragão",
+  Dark:"Sombrio",Steel:"Aço",Fairy:"Fada"};
 function normalizeTypeName(type){
   const raw=String(type||"").trim().toLowerCase();
-  return POKEMON_TYPES.find(t=>t.toLowerCase()===raw)||"";
+  if(!raw)return "";
+  const found=POKEMON_TYPES.find(t=>t.toLowerCase()===raw);
+  if(found)return found;
+  const plain=raw.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z]/g,"");
+  return TYPE_ALIASES_PT[plain]||POKEMON_TYPES.find(t=>t.toLowerCase()===plain)||"";
 }
 
 function defensiveMultiplier(attackingType, defendingTypes){
@@ -11941,7 +11955,7 @@ function openMoveEditModal(moveId){
 
   setVal("editMoveId",String(m.id));
   setVal("editMoveName",m.name||"");
-  setVal("editMoveType",m.type||"Normal");
+  setVal("editMoveType",normalizeTypeName(m.type)||"Normal");
   setVal("editMoveCategory",m.category||"Physical");
   setVal("editMovePower",Number(m.power||0));
   setVal("editMoveAccuracy",Math.min(90,Number(m.accuracy||90)));
@@ -11969,7 +11983,7 @@ function saveMoveEdit(){
   }
 
   m.name=name;
-  m.type=document.getElementById("editMoveType").value.trim()||"Normal";
+  m.type=normalizeTypeName(document.getElementById("editMoveType").value)||"Normal";
   m.category=document.getElementById("editMoveCategory").value;
   m.power=Math.max(0,Number(document.getElementById("editMovePower").value||0));
   m.accuracy=Math.max(0,Math.min(90,Number(document.getElementById("editMoveAccuracy").value||90)));
@@ -11988,7 +12002,7 @@ function addMove(){
   const meta=moveLookupMeta.memory||{};
   current.moves.push({
     id:uid(),name,
-    type:document.getElementById("moveType").value.trim()||"Normal",
+    type:normalizeTypeName(document.getElementById("moveType").value)||"Normal",
     category:document.getElementById("moveCategory").value,
     power:Number(document.getElementById("movePower").value||0),
     powerLabel:meta.powerLabel||"",
@@ -12004,7 +12018,7 @@ function addMove(){
     active:false
   });
   moveLookupMeta.memory=null;
-  ["moveName","moveType","movePower","moveAccuracy"].forEach(id=>document.getElementById(id).value="");
+  ["moveName","movePower","moveAccuracy"].forEach(id=>document.getElementById(id).value="");document.getElementById("moveType").value="Normal";
   document.getElementById("moveEffectChance").value=0;
   document.getElementById("moveDescription").value="";
   renderMoves();debouncedSave();
