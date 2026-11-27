@@ -102,3 +102,8 @@ body.it7-open{overflow:hidden}
   .it7-list{max-height:52vh}
 }
 #sumScreen .sum-left-actions .it7-open{grid-column:1 / -1}
+.it7-city{display:grid;gap:2px;padding:7px 10px;border-radius:10px;border:2px solid var(--cl-ink,#181a24);color:#fff;
+  background:linear-gradient(135deg,#7b5a3a,#4a3524);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.it7-city b{font:700 12px var(--cl-pixel,monospace);letter-spacing:.04em}
+.it7-city small{font-size:11px;opacity:.9}
+.it7-note.off{color:#a0462f}

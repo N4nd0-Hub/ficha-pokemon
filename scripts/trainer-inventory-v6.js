@@ -124,7 +124,8 @@
   ];
   const SHOPS=[
     {id:"elysius",name:"Loja Inicial de Elysius",icon:"px:coin",items:ELYSIUS,note:"Cada treinador começa com <b>12.000₽</b> para gastar livremente.",starter:true},
-    {id:"sylphora",name:"PokéMart de Sylphora",icon:"px:mart",items:SYLPHORA,note:"Cura, captura, exploração e Held Items. A cada <b>10 Poké Balls</b> compradas aqui você ganha <b>1 Premier Ball</b>."}
+    {id:"sylphora",name:"PokéMart de Sylphora",icon:"px:mart",items:SYLPHORA,note:"Cura, captura, exploração e Held Items. A cada <b>10 Poké Balls</b> compradas aqui você ganha <b>1 Premier Ball</b>."},
+    {id:"altamuralha",name:"Loja de Altamuralha",icon:"px:rock",items:[],catalog:true,note:"A primeira cidade grande vende quase todos os itens oficiais — Held Items, Mega Stones, Cristais Z, TMs, bagas, Poké Balls — <b>25% mais caro</b>, nada abaixo de <b>1.000₽</b>. Só não vende Master Ball, itens-chave e doces de nível."}
   ];
   const SHOP=Object.fromEntries(SHOPS.map(x=>[x.id,x]));
   const NO_GEAR={pct:10,hp:2};
@@ -274,17 +275,18 @@
         <div class="inv-shop-wallet">Carteira <b>${money(t.money)}</b></div>
       </div>
       <p class="inv-shop-note">${shop?.note||""} Comprar desconta da carteira e guarda o item no inventário.</p>
+      ${shop?.catalog?`<div class="inv-shop-catalog"><b>🏔 ${window.hhItemsUI?.shopItems?window.hhItemsUI.shopItems().length:"Centenas de"} itens à venda</b><span>A loja é grande demais para esta lista: abra na Mochila, com busca, categorias e o efeito de cada item.</span><button type="button" class="inv-btn buy" data-it-open="shop">🛒 Entrar na Loja de Altamuralha</button></div>`:""}
       <div class="inv-shop-tools">
         ${empty?`<button type="button" class="inv-btn" data-inv="startmoney">💰 Receber os 12.000₽ iniciais</button>`:""}
         ${lastBuy?`<button type="button" class="inv-btn ghost" data-inv="undo">↶ Desfazer: ${esc(lastBuy.name)} ×${lastBuy.qty}</button>`:""}
         <span class="inv-spacer"></span>
         <button type="button" class="inv-btn ghost" data-inv="newshop">＋ Item na loja</button>
       </div>
-      <div class="inv-chips small">
+      <div class="inv-chips small"${shop?.catalog?" hidden":""}>
         <button type="button" data-shopcat="all" class="${shopCat==="all"?"on":""}">Tudo</button>
         ${CATS.map(c=>`<button type="button" data-shopcat="${c.id}" class="${shopCat===c.id?"on":""}">${pxOr(c.icon)} ${c.label}</button>`).join("")}
       </div>
-      ${groups.length?groups.map(g=>`<div class="inv-shop-group" style="--inv-c:${g.c.color}">
+      ${shop?.catalog?"":groups.length?groups.map(g=>`<div class="inv-shop-group" style="--inv-c:${g.c.color}">
         <h4>${pxOr(g.c.icon)} ${esc(g.c.label)}</h4>
         ${g.rows.map(s=>{
           const owned=inv.items.find(i=>sameItem(i,s));

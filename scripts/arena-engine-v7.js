@@ -70,7 +70,13 @@
         const r=ITEMS.interpret(m.item);item={name:String(m.item.name),...r.battle};
         if(item.species?.length){const who=`${m.name} ${m.species||""}`.toLowerCase();if(!item.species.some(x=>who.includes(String(x).toLowerCase())))item.inactive=true;}
       }
-      return {...m,moves,gimmick,item,origTypes:(m.types||[]).map(normT).filter(Boolean),abil:RULES.parseAbility(m.ability||"",m.abilityText||"")};
+      let types=m.types||[];
+      // Memory / Drive / Plate: muda o tipo do golpe exclusivo (e do Pokémon) de quem conhece o golpe
+      if(item&&!item.inactive&&item.form){
+        const fk=key(item.form.move);const knows=moves.some(mv=>key(mv.name)===fk);
+        if(knows){moves.forEach(mv=>{if(key(mv.name)===fk)mv.type=item.form.type;});if(item.form.setTypes)types=[item.form.type];}
+      }
+      return {...m,types,moves,gimmick,item,origTypes:types.map(normT).filter(Boolean),abil:RULES.parseAbility(m.ability||"",m.abilityText||"")};
     }
     function monState(m){
       const hp=Math.max(1,Number(m.maxHp||m.stats?.hp||1));
@@ -105,6 +111,12 @@
       activeState(b,s).itemGone=true;
       events.push({k:"held",side:s,mon:activeMon(b,s).name,item:it.name,text:text||"foi consumido"});
     }
+    /* ainda tem alguém no banco para entrar? */
+    const canEject=(b,s)=>b.sides[s].team.some((t,i)=>!t.fainted&&i!==b.sides[s].active)&&!activeState(b,s).fainted;
+    const SOUND=/^(boomburst|bug buzz|chatter|clanging scales|clangorous soul|clangorous soulblaze|confide|disarming voice|echoed voice|eerie spell|grass whistle|growl|heal bell|hyper voice|metal sound|noble roar|overdrive|parting shot|perish song|psychic noise|relic song|roar|round|screech|sing|snarl|snore|sparkling aria|supersonic|torch song|alluring voice|uproar)$/;
+    const PUNCH=/punch|^(hammer arm|ice hammer|meteor mash|sky uppercut|rage fist|headlong rush|double iron bash|plasma fists|surging strikes|wicked blow)$/;
+    const isSound=move=>!!move?.fx?.sound||SOUND.test(key(move?.name));
+    const isPunch=move=>PUNCH.test(key(move?.name));
     function heldSay(b,s,events,text){const it=itemOf(b,s);if(it)events.push({k:"held",side:s,mon:activeMon(b,s).name,item:it.name,text});}
 
     /* ---------- Estágios ---------- */
@@ -129,10 +141,11 @@
     }
     function effSpeed(b,s){return effStat(b,s,"spe");}
     /* aplica um estágio respeitando limites, imunidades e duração da ficha */
-    function addStage(b,s,stat,n,events,{src="",cap=null,rounds,persist=false,fromFoe=false,monIdx}={}){
+    function addStage(b,s,stat,n,events,{src="",cap=null,rounds,persist=false,fromFoe=false,monIdx,noMirror=false}={}){
       const side=b.sides[s],idx=monIdx??side.active,ms=side.team[idx],mon=b.teams[s][idx];
       if(!n||ms.fainted)return 0;
-      if(stat==="all"){let t=0;for(const x of ["atk","def","spa","spd","spe"])t+=addStage(b,s,x,n,events,{src,cap,rounds,persist,fromFoe,monIdx});return t;}
+      if(stat==="all"){let t=0;for(const x of ["atk","def","spa","spd","spe"])t+=addStage(b,s,x,n,events,{src,cap,rounds,persist,fromFoe,monIdx,noMirror});return t;}
+      if(n<0&&fromFoe&&idx===side.active&&itemOf(b,s)?.clearAmulet){heldSay(b,s,events,"impediu a redução");return 0;}
       if(n<0&&fromFoe){
         if(mon.abil.immune.statDrop||(ms.swagger>0&&mon.abil.critMode?.immuneDrops?.includes(stat))){
           events.push({k:"stage",side:s,mon:mon.name,stat,n,applied:0,blocked:true,total:stageTotal(ms,stat),src:mon.abil.name});return 0;
@@ -145,6 +158,13 @@
       if(persist)ms.persist[stat]=(ms.persist[stat]||0)+applied;
       else ms.stages.push({stat,n:applied,rounds:rounds!==undefined?rounds:(applied<0?3:applied>=2?2:null)});
       if(idx===side.active)events.push({k:"stage",side:s,mon:mon.name,stat,n,applied,total:stageTotal(ms,stat),src});
+      if(idx===side.active){
+        // Eject Pack: estágio reduzido → sai de campo no fim do turno
+        if(applied<0&&itemOf(b,s)?.ejectPack&&canEject(b,s)){useUpItem(b,s,events,"tirou o Pokémon de campo");ms.eject=true;}
+        // Mirror Herb do outro lado: copia o aumento
+        const o=other(s);
+        if(applied>0&&!noMirror&&!activeState(b,o).fainted&&itemOf(b,o)?.mirrorHerb){useUpItem(b,o,events,"copiou o aumento");addStage(b,o,stat,applied,events,{src:"Mirror Herb",noMirror:true});}
+      }
       return applied;
     }
 
@@ -167,8 +187,9 @@
       if(st==="cnf")ms.cnf=d(3);
       else{ms.status=st;if(st==="slp")ms.slp=d(3);if(st==="tox")ms.tox=1;}
       events.push({k:"status",side:s,mon:mon.name,st,src});
-      // bagas que curam status na hora (Lum, Cheri…)
+      // bagas que curam status na hora (Lum, Cheri…) e Mental Herb (confusão)
       const it=itemOf(b,s);
+      if(st==="cnf"&&it?.mentalHerb){ms.cnf=0;useUpItem(b,s,events,"curou a confusão");events.push({k:"statusEnd",side:s,mon:mon.name,st});return true;}
       if(it?.cure&&(it.cure==="any"||it.cure.includes(st))){
         if(st==="cnf")ms.cnf=0;else{ms.status=null;ms.slp=0;ms.tox=0;}
         useUpItem(b,s,events,`curou ${st==="cnf"?"a confusão":"o status"}`);events.push({k:"statusEnd",side:s,mon:mon.name,st});
@@ -188,7 +209,8 @@
       ms.part=true;
       ms.enteredTurn=start?1:(b.phase==="switch"?b.turn:b.turn+1);
       // Toxic Spikes
-      if(side.hazards.tspikes>0){
+      if(side.hazards.tspikes>0&&itemOf(b,s)?.boots)heldSay(b,s,events,"protegeu dos espinhos");
+      else if(side.hazards.tspikes>0){
         const t=typesOf(b,s);
         if(t.includes("Poison")){side.hazards.tspikes=0;events.push({k:"hazard",side:s,kind:"tspikes",layers:0,cleared:true,mon:mon.name});}
         else if(!t.includes("Flying")&&!t.includes("Steel"))giveStatus(b,s,side.hazards.tspikes>=2?"tox":"psn",events,"Toxic Spikes");
@@ -206,16 +228,21 @@
         else if(st.who==="foe"){
           const F=abil(b,foe);
           if(F.immune.intimidate&&st.n<0){events.push({k:"stage",side:foe,mon:activeMon(b,foe).name,stat:st.stat,n:st.n,applied:0,blocked:true,total:stageTotal(activeState(b,foe),st.stat),src:F.name});}
-          else if(!activeState(b,foe).fainted)addStage(b,foe,st.stat,st.n,events,{src:A.name,fromFoe:true,rounds:st.rounds});
+          else if(!activeState(b,foe).fainted){addStage(b,foe,st.stat,st.n,events,{src:A.name,fromFoe:true,rounds:st.rounds});
+            if(st.n<0&&key(A.name)==="intimidate"&&itemOf(b,foe)?.adrenaline){useUpItem(b,foe,events,"reagiu ao Intimidate");addStage(b,foe,"spe",itemOf(b,foe)?.adrenaline||1,events,{src:"Adrenaline Orb"});}}
         }else if(st.who==="team"){
           side.team.forEach((t,i)=>{if(!t.fainted)addStage(b,s,st.stat,st.n,events,{src:A.name,cap:st.cap??3,persist:true,monIdx:i});});
           events.push({k:"info",text:`${mon.name} inspirou o time: +${st.n} de ${RULES.STAT_LABEL[st.stat]} para todos (máx. +${st.cap??3}).`});
         }
       }
+      if(itemOf(b,s)?.booster&&/^(protosynthesis|quark drive)$/.test(key(A.name))){
+        const best=["atk","def","spa","spd","spe"].reduce((x,y)=>Number(mon.stats?.[y]||0)>Number(mon.stats?.[x]||0)?y:x,"atk");
+        useUpItem(b,s,events,`ativou ${A.name}`);addStage(b,s,best,1,events,{src:"Booster Energy",rounds:null});
+      }
       if(A.onEnter.foeAccFirstTurn&&!activeState(b,foe).fainted){say();addStage(b,foe,"acc",A.onEnter.foeAccFirstTurn,events,{src:A.name,fromFoe:true,rounds:1});}
     }
     function resetVolatile(ms){
-      ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;ms.evadeStreak=0;ms.lock=null;ms.metro={k:"",n:0};
+      ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.eject=false;ms.nextAcc=0;ms.nextFirst=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;ms.evadeStreak=0;ms.lock=null;ms.metro={k:"",n:0};
       if(ms.status==="tox")ms.tox=1;
     }
 
@@ -349,6 +376,7 @@
     function typeMult(b,atkSide,mtype){
       const defTypes=typesOf(b,other(atkSide));
       let mult=defTypes.length?rules.typeMultiplier(mtype,defTypes):1;
+      if(mult===0&&itemOf(b,other(atkSide))?.ringTarget)mult=defTypes.reduce((x,t)=>{const v=rules.typeMultiplier(mtype,[t]);return x*(v===0?1:v);},1);
       if(abil(b,other(atkSide)).immune.types.has(mtype))mult=0;
       if(mtype==="Ground"&&itemOf(b,other(atkSide))?.groundImmune)mult=0;
       if(abil(b,atkSide).tinted&&mult>0&&mult<1)mult=Math.min(1,mult*2);
@@ -395,7 +423,9 @@
       // bônus de abilities/itens: no sistema de QD viram dados da QD do golpe
       let qa=0,qp=0;const q=(n,label)=>{if(n>0)qa+=n;else qp-=n;notes.push(label);};
       // clima
-      if(b.weather){
+      const umb=itemOf(b,atkSide)?.umbrella||itemOf(b,defSide)?.umbrella;
+      if(b.weather&&umb&&(b.weather.kind==="rain"||b.weather.kind==="sun"))notes.push("Utility Umbrella: sem clima");
+      else if(b.weather){
         const w=b.weather.kind;
         if((w==="rain"&&mtype==="Water")||(w==="sun"&&mtype==="Fire")){add+=1;notes.push(RULES.WEATHER_LABEL[w]+" +1d6");}
         if((w==="rain"&&mtype==="Fire")||(w==="sun"&&mtype==="Water")){pen+=1;notes.push(RULES.WEATHER_LABEL[w]+" −1d6");}
@@ -418,6 +448,7 @@
         if(it.allQD)q(it.allQD,`${it.name} +${it.allQD} QD`);
         if(it.seQD&&typeMult(b,atkSide,mtype)>=2)q(it.seQD,`${it.name} +${it.seQD} QD`);
         if(it.catFlat&&it.catFlat.cat===(physical?"physical":"special")){flat+=it.catFlat.n;notes.push(`${it.name} +${it.catFlat.n}`);}
+        if(it.punch&&isPunch(move))q(it.punch,`${it.name} +${it.punch} QD`);
         if(it.metronome&&aS.metro.n>1){const n=Math.min(3,aS.metro.n-1);q(n,`${it.name} +${n} QD`);}
       }
       // no dano da ficha (clássico) o dado é sempre d6
@@ -566,13 +597,14 @@
       const tS=activeState(b,tSide),T=activeMon(b,tSide);
       const affectsFoe=fx.stages.some(x=>x.who==="foe")||fx.status.some(x=>x.who==="foe")||cat!=="status";
       if(affectsFoe&&ctx.protected.has(tSide)&&cat!=="status"){events.push({k:"blocked",side:tSide});return;}
-      if(fx.powder&&(typesOf(b,tSide).includes("Grass")||abil(b,tSide).immune.powder)){events.push({k:"cant",side:tSide,mon:T.name,reason:"powder",src:abil(b,tSide).immune.powder?abil(b,tSide).name:"Grass"});return;}
+      if(fx.powder&&(typesOf(b,tSide).includes("Grass")||abil(b,tSide).immune.powder||itemOf(b,tSide)?.goggles)){const gg=itemOf(b,tSide)?.goggles&&!typesOf(b,tSide).includes("Grass")&&!abil(b,tSide).immune.powder;events.push({k:"cant",side:tSide,mon:T.name,reason:"powder",src:gg?itemOf(b,tSide).name:abil(b,tSide).immune.powder?abil(b,tSide).name:"Grass"});return;}
 
       // golpes de status
       if(cat==="status"){
         if(affectsFoe&&!tS.fainted&&move.accuracy!=null&&!move.alwaysHits&&!fx.neverMiss&&(fx.stages.some(x=>x.who==="foe")||fx.status.some(x=>x.who==="foe"))){
           const acc=accuracyFor(b,s,move,ctx);const r=d(100);ev.roll=r;ev.acc=acc;
-          if(r>acc&&r>5){ev.miss=true;if(ctx.evade?.[tSide]&&r<=acc+ctx.evade[tSide])ev.dodged=true;return;}
+          aS.nextAcc=0;
+          if(r>acc&&r>5){ev.miss=true;if(ctx.evade?.[tSide]&&r<=acc+ctx.evade[tSide])ev.dodged=true;blunder(b,s,events);return;}
         }
         if(ctx.protected.has(tSide)&&affectsFoe){events.push({k:"blocked",side:tSide});return;}
         applySecondary(b,s,move,events,{hit:true,status:true});
@@ -591,6 +623,7 @@
           else{side.field.royal=3;events.push({k:"field",side:s,kind:"royal",turns:3});if(!tS.fainted)addStage(b,tSide,"spe",-1,events,{src:"Campo Real",fromFoe:true});}
           heal(b,s,Math.max(1,Math.floor(aS.maxHp/16)),events,"Royal Command");
         }else if(A.abil.royal&&side.field.royal>0&&k==="quiver dance"){side.field.royal+=2;events.push({k:"field",side:s,kind:"royal",turns:side.field.royal,extended:true});}
+        if(isSound(move))throatSpray(b,s,events);
         if(!fx.stages.length&&!fx.status.length&&!fx.heal&&!fx.rest&&!fx.selfCrit&&!fx.weather&&!fx.hazard&&!fx.haze&&!fx.field&&!fx.nextDouble&&!fx.nextHalf&&!(A.abil.royal&&k==="quiver dance")){
           ev.status=true;ev.desc=String(move.desc||"").slice(0,160);
         }
@@ -601,12 +634,13 @@
       // precisão e crítico
       const r=d(100);
       const acc=move.accuracy==null||move.alwaysHits||fx.neverMiss?null:accuracyFor(b,s,move,ctx);
+      aS.nextAcc=0;
       ev.roll=r;ev.acc=acc;
       const natural=r<=5;
       const crit=natural||(r<=critMargin(b,s,move)&&(acc==null||r<=acc));
       ev.crit=crit;ev.critKind=natural?"natural":crit?"boosted":"";
       if(!crit&&acc!=null&&r>acc){
-        ev.miss=true;aS.fury=0;if(ctx.evade?.[tSide]&&r<=acc+ctx.evade[tSide])ev.dodged=true;
+        ev.miss=true;aS.fury=0;if(ctx.evade?.[tSide]&&r<=acc+ctx.evade[tSide])ev.dodged=true;blunder(b,s,events);
         if(A.abil.keepOnMiss&&aS.abilStages.length){aS.stages=aS.stages.filter(x=>!aS.abilStages.includes(x));aS.abilStages=[];events.push({k:"info",text:`${A.name} errou e perdeu o embalo da ${A.abil.name}.`});}
         return;
       }
@@ -631,7 +665,8 @@
       if(!fx.doubleIf.some(c=>c.cond==="consecutive"))aS.fury=0;
       // vários acertos
       let hits=1;
-      if(fx.hits)hits=A.abil.maxHits?fx.hits.max:fx.hits.min+Math.floor(rand()*(fx.hits.max-fx.hits.min+1));
+      if(fx.hits&&myItem?.loaded&&!A.abil.maxHits)heldSay(b,s,events,"garantiu o máximo de acertos");
+      if(fx.hits)hits=A.abil.maxHits||myItem?.loaded?fx.hits.max:fx.hits.min+Math.floor(rand()*(fx.hits.max-fx.hits.min+1));
       const hit={k:"hit",side:tSide,crit};
       let amount=0;
       if(b.damage==="matrix")amount=matrixDamage(b,s,move,hit,{crit,critKind:ev.critKind,power,hits});
@@ -653,13 +688,21 @@
       events.push(hit);
       afterHit(b,s,move,events,hit,amount,ctx);
     }
+    function blunder(b,s,events){
+      const it=itemOf(b,s);if(!it?.blunder||activeState(b,s).fainted)return;
+      useUpItem(b,s,events,"ativou depois do erro");addStage(b,s,"spe",it.blunder,events,{src:it.name});
+    }
+    function throatSpray(b,s,events){
+      const it=itemOf(b,s);if(!it?.throatSpray||activeState(b,s).fainted)return;
+      useUpItem(b,s,events,"ativou com o golpe de som");addStage(b,s,"spa",it.throatSpray,events,{src:it.name});
+    }
     function accuracyFor(b,s,move,ctx){
       const base=Math.max(1,Math.min(100,Number(move.accuracy)||100));
       const net=Math.max(-6,Math.min(6,stageTotal(activeState(b,s),"acc")-stageTotal(activeState(b,other(s)),"eva")));
       const acc=Math.max(1,Math.min(90,Math.floor(base*stageMult("acc",net))));
       const ev=ctx?.evade?.[other(s)]||0;
       const mine=itemOf(b,s),theirs=itemOf(b,other(s));
-      let bonus=(mine?.acc||0)+(mine?.accLate&&ctx?.acted?.has(other(s))?mine.accLate:0)-(theirs?.foeAcc||0);
+      let bonus=(activeState(b,s).nextAcc||0)+(mine?.acc||0)+(mine?.accLate&&ctx?.acted?.has(other(s))?mine.accLate:0)-(theirs?.foeAcc||0);
       const out=acc+bonus;
       return Math.max(1,Math.min(bonus>0?100:acc,out)-ev);
     }
@@ -672,6 +715,8 @@
       if(p.consume!==false)useUpItem(b,s,events,"foi comido");else heldSay(b,s,events,"ativou");
       if(p.healFrac)heal(b,s,Math.max(1,Math.floor(ms.maxHp*p.healFrac)),events,it.name);
       if(p.healFlat)heal(b,s,p.healFlat,events,it.name);
+      if(p.nextAcc)ms.nextAcc=p.nextAcc;
+      if(p.nextFirst)ms.nextFirst=true;
       if(p.stage){const st=p.stage.stat==="random"?["atk","def","spa","spd","spe"][d(5)-1]:p.stage.stat;addStage(b,s,st,p.stage.n,events,{src:it.name});}
     }
     function afterHit(b,s,move,events,hit,amount,ctx){
@@ -684,7 +729,7 @@
       // dreno e recuo
       if(fx.drain&&amount>0){
         if(abil(b,tSide).immune.drain)events.push({k:"info",text:`${T.name} não pode ser drenado (${abil(b,tSide).name}).`});
-        else heal(b,s,Math.max(1,Math.floor(amount*fx.drain/100)),events,move.name);
+        else heal(b,s,Math.max(1,Math.floor(amount*fx.drain/100*(itemOf(b,s)?.bigRoot||1))),events,move.name);
       }
       const fainted=checkFaint(b,tSide,events);
       if(fx.recoil&&amount>0)hurt(b,s,Math.max(1,Math.floor(amount*fx.recoil/100)),events,"recoil");
@@ -692,7 +737,7 @@
       let flinched=false;
       if(!fainted){
         applySecondary(b,s,move,events,{hit:true});
-        if(fx.flinch&&!ctx.acted.has(tSide)&&!abil(b,tSide).immune.flinch&&chance(fx.flinch)){tS.flinch=true;flinched=true;}
+        if(fx.flinch&&!itemOf(b,tSide)?.cloak&&!ctx.acted.has(tSide)&&!abil(b,tSide).immune.flinch&&chance(fx.flinch)){tS.flinch=true;flinched=true;}
         lowHpCheck(b,tSide,events);
       }
       // ability do atacante ao acertar
@@ -720,7 +765,7 @@
       // ---- itens segurados depois do golpe
       const aIt=itemOf(b,s),dIt=itemOf(b,tSide);
       if(amount>0&&aIt?.drain&&!aS.fainted)heal(b,s,Math.max(1,Math.floor(amount*aIt.drain)),events,aIt.name);
-      if(amount>0&&aIt?.flinch&&!fx.flinch&&!fainted&&!ctx.acted.has(tSide)&&!abil(b,tSide).immune.flinch&&chance(aIt.flinch))tS.flinch=true;
+      if(amount>0&&aIt?.flinch&&!fx.flinch&&!fainted&&!dIt?.cloak&&!ctx.acted.has(tSide)&&!abil(b,tSide).immune.flinch&&chance(aIt.flinch))tS.flinch=true;
       if(amount>0&&dIt&&!tS.fainted){
         if(dIt.groundImmune)useUpItem(b,tSide,events,"estourou");
         else if(dIt.weakPolicy&&hit.mult>=2){useUpItem(b,tSide,events,"ativou");addStage(b,tSide,"atk",dIt.weakPolicy,events,{src:dIt.name});addStage(b,tSide,"spa",dIt.weakPolicy,events,{src:dIt.name});}
@@ -729,14 +774,24 @@
         else if(dIt.hitRecoil&&dIt.hitRecoil.cat===cat&&!aS.fainted){useUpItem(b,tSide,events,"machucou o atacante");hurt(b,s,Math.max(1,Math.floor(aS.maxHp*dIt.hitRecoil.frac)),events,dIt.name);}
         itemPinch(b,tSide,events);
       }
-      if(amount>0&&physical&&dIt?.contactHurt&&!aS.fainted){heldSay(b,tSide,events,"machucou quem encostou");hurt(b,s,Math.max(1,Math.floor(aS.maxHp*dIt.contactHurt)),events,dIt.name);}
+      const contact=physical&&!aIt?.pads&&!(aIt?.punch&&isPunch(move));
+      if(amount>0&&contact&&dIt?.contactHurt&&!aS.fainted){heldSay(b,tSide,events,"machucou quem encostou");hurt(b,s,Math.max(1,Math.floor(aS.maxHp*dIt.contactHurt)),events,dIt.name);}
       if(amount>0&&aIt?.recoil&&!aS.fainted){heldSay(b,s,events,"cobrou o preço");hurt(b,s,Math.max(1,Math.floor(aS.maxHp*aIt.recoil)),events,aIt.name);}
       if(!aS.fainted)itemPinch(b,s,events);
       // contato contra ability do alvo (Static, Toxic Shell…)
-      if(physical&&amount>0&&!aS.fainted){
+      if(contact&&amount>0&&!aS.fainted){
         for(const o of abil(b,tSide).onHurtContact){
           if(chance(o.chance)){events.push({k:"ability",side:tSide,mon:T.name,name:abil(b,tSide).name});giveStatus(b,s,o.st,events,abil(b,tSide).name);}
         }
+      }
+      if(isSound(move))throatSpray(b,s,events);
+      // Eject Button: quem levou o golpe sai no fim do turno
+      if(amount>0&&!tS.fainted&&itemOf(b,tSide)?.ejectButton&&canEject(b,tSide)){useUpItem(b,tSide,events,"tirou o Pokémon de campo");tS.eject=true;}
+      // Red Card: o atacante é trocado por um aleatório
+      else if(amount>0&&!tS.fainted&&!aS.fainted&&itemOf(b,tSide)?.redCard&&canEject(b,s)){
+        useUpItem(b,tSide,events,`mostrou o cartão para ${A.name}`);
+        const opts=b.sides[s].team.map((t,i)=>i).filter(i=>!b.sides[s].team[i].fainted&&i!==b.sides[s].active);
+        applySwitch(b,s,opts[Math.floor(rand()*opts.length)],events);ctx.forced=ctx.forced||new Set();ctx.forced.add(s);
       }
     }
     /* estágios e status do texto do golpe */
@@ -744,12 +799,15 @@
       const fx=move.fx,tSide=other(s);
       const rollFor=new Map();// mesma chance = mesma rolagem (ex.: "10% de reduzir Sp.Def")
       const happens=c=>{if(c>=100)return true;if(!rollFor.has(c))rollFor.set(c,d(100)<=c);return rollFor.get(c);};
+      const cloak=itemOf(b,tSide)?.cloak&&move.category&&String(move.category).toLowerCase()!=="status";
       for(const st of fx.stages){
+        if(cloak&&st.who==="foe")continue;
         if(!happens(st.chance??100))continue;
         if(st.who==="foe"){if(!activeState(b,tSide).fainted)addStage(b,tSide,st.stat,st.n,events,{src:move.name,fromFoe:true,cap:st.cap});}
         else addStage(b,s,st.stat,st.n,events,{src:move.name,cap:st.cap});
       }
       for(const st of fx.status){
+        if(cloak&&st.who!=="self")continue;
         if(!happens(st.chance??100))continue;
         const target=st.who==="self"?s:tSide;
         if(!activeState(b,target).fainted)giveStatus(b,target,st.st,events,move.name);
@@ -787,8 +845,9 @@
         // clima
         if(b.weather){
           const t=typesOf(b,s);
-          if(b.weather.kind==="sand"&&!t.some(x=>["Rock","Ground","Steel"].includes(x)))hurt(b,s,sum(roll(1)),events,"sand");
-          if(b.weather.kind==="hail"&&!t.includes("Ice"))hurt(b,s,sum(roll(1)),events,"hail");
+          if(itemOf(b,s)?.goggles){}
+          else if(b.weather.kind==="sand"&&!t.some(x=>["Rock","Ground","Steel"].includes(x)))hurt(b,s,sum(roll(1)),events,"sand");
+          else if(b.weather.kind==="hail"&&!t.includes("Ice"))hurt(b,s,sum(roll(1)),events,"hail");
         }
         if(ms.fainted)continue;
         // item segurado no fim da rodada
@@ -863,12 +922,16 @@
       for(const s of ["p1","p2"]){const ms=activeState(b,s);if(!ms.evadedThisTurn)ms.evadeStreak=0;}
       const order=["p1","p2"].filter(s=>P[s]?.kind==="move").map(s=>{
         const mon=activeMon(b,s),mv=mon.moves[P[s].idx]||{};
-        const qc=itemOf(b,s)?.quick;const quick=qc&&d(10000)<=qc*100;
-        if(quick)heldSay(b,s,events,"agiu primeiro");
-        return {s,prio:movePriority(mv)+(quick?.5:0),spe:effSpeed(b,s),tie:ties[s]};
+        const ms=activeState(b,s);
+        const qc=itemOf(b,s)?.quick;const quick=(qc&&d(10000)<=qc*100)||ms.nextFirst;
+        if(ms.nextFirst){ms.nextFirst=false;events.push({k:"info",text:`${mon.name} agiu primeiro pela Custap Berry.`});}
+        else if(quick)heldSay(b,s,events,"agiu primeiro");
+        const slow=!quick&&itemOf(b,s)?.slow;
+        return {s,prio:movePriority(mv)+(quick?.5:slow?-.5:0),spe:effSpeed(b,s),tie:ties[s]};
       }).sort((x,y)=>y.prio-x.prio||y.spe-x.spe||y.tie-x.tie);
       for(const o of order){
         if(b.phase==="end")break;
+        if(activeState(b,o.s).eject||ctx.forced?.has(o.s))continue;
         useMove(b,o.s,P[o.s].idx,events,ctx);
         ctx.acted.add(o.s);
       }
@@ -877,7 +940,11 @@
         endTurn(b,events);
         if(!finish(b,events)){
           let needs=false;
-          for(const s of ["p1","p2"])if(activeState(b,s).fainted){b.sides[s].needSwitch=true;needs=true;}
+          for(const s of ["p1","p2"]){
+            const ms=activeState(b,s);
+            if(ms.fainted){b.sides[s].needSwitch=true;needs=true;}
+            else if(ms.eject){ms.eject=false;if(canEject(b,s)){b.sides[s].needSwitch=true;needs=true;events.push({k:"info",text:`${activeMon(b,s).name} vai sair de campo: escolha quem entra.`});}}
+          }
           b.phase=needs?"switch":"choose";
           b.turn+=1;
         }

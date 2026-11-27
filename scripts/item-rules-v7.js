@@ -100,6 +100,37 @@
     if((m=/(Hail|Sandstorm|Sunny Day|Rain Dance)[^.]*dura 8 rodadas/i.exec(d))){battle.weatherTurns=8;tag("🌦",`${m[1]} dura 8 rodadas`,"field");}
     if(/Z-Move/i.test(d)&&(m=new RegExp("golpes "+TYPE_RX,"i").exec(d))){battle.zType=m[1];tag("Ⓩ",`Z-Move ${m[1]}`,"gimmick");}
     if((m=/permite que (.+?) Mega Evolua em (.+?)\./i.exec(d))){battle.megaStone={species:m[1],mega:m[2]};tag("◆",`Mega: ${m[2]}`,"gimmick");}
+    // ---- held items de efeito especial (Arena)
+    if(/próximo golpe do usuário ganha \+(\d+) de Precisão/i.test(d)&&battle.pinch===undefined){battle.pinch={at:.25,consume:true,nextAcc:num(RegExp.$1)};tag("🍒",`HP ≤ 1/4: próximo golpe +${RegExp.$1} de Precisão`,"acc");}
+    if(/próximo golpe do usuário age primeiro/i.test(d)&&battle.pinch===undefined){battle.pinch={at:.25,consume:true,nextFirst:true};tag("🍒","HP ≤ 1/4: próximo golpe age primeiro","speed");}
+    if(/age por último na sua faixa de prioridade/i.test(d)){battle.slow=true;tag("🐌","Age por último na prioridade","speed");}
+    if(/curar Atração, Taunt[^.]*Confusão/i.test(d)){battle.mentalHerb=true;tag("🌿","Cura Confusão e efeitos de mente (1 vez)","cure");}
+    if(/curas de golpes de dreno[^.]*\+(\d+)%/i.test(d)){battle.bigRoot=1+num(RegExp.$1)/100;tag("🌱",`Dreno cura +${RegExp.$1}%`,"heal");}
+    if(/o atacante é trocado por outro Pokémon aleatório/i.test(d)){battle.redCard=true;tag("🟥","Levou dano: o atacante é trocado (1 vez)","def");}
+    if(/anula as imunidades de tipo do usuário/i.test(d)){battle.ringTarget=true;tag("🎯","Perde as imunidades de tipo","hurt");}
+    if(/leva dano de um golpe; ele sai de campo/i.test(d)){battle.ejectButton=true;tag("⏏","Levou dano: sai de campo (1 vez)","def");}
+    if(/estágio do usuário é reduzido; ele sai de campo/i.test(d)){battle.ejectPack=true;tag("🎒","Estágio reduzido: sai de campo (1 vez)","def");}
+    if(/imune a golpes de pó[^.]*Hail e Sandstorm/i.test(d)){battle.goggles=true;tag("🥽","Imune a pó, Hail e Sandstorm","def");}
+    if(/afetado por Intimidate; \+(\d+) estágio de Speed/i.test(d)){battle.adrenaline=num(RegExp.$1);tag("💉","Intimidate: +1 Speed (1 vez)","stage");}
+    if(/não sofre efeitos de contato ao atacar/i.test(d)){battle.pads=true;tag("🧤","Sem efeitos de contato ao atacar","def");}
+    if(/golpe de som; \+(\d+) estágio de Sp\.Atk/i.test(d)){battle.throatSpray=num(RegExp.$1);tag("🎤","Golpe de som: +1 Sp.Atk (1 vez)","stage");}
+    if(/ignora os perigos de entrada/i.test(d)){battle.boots=true;tag("🥾","Ignora perigos de entrada","def");}
+    if(/erra um golpe por Precisão; \+(\d+) estágios de Speed/i.test(d)){battle.blunder=num(RegExp.$1);tag("📋","Errou: +2 Speed (1 vez)","stage");}
+    if(/Sol e Chuva não mudam o dano/i.test(d)){battle.umbrella=true;tag("☂","Ignora Sol e Chuva no dano","def");}
+    if(/ativa Protosynthesis ou Quark Drive/i.test(d)){battle.booster=true;tag("⚡","Ao entrar: +1 no maior atributo (1 vez)","stage");}
+    if(/inimigos não conseguem reduzir os estágios do usuário/i.test(d)){battle.clearAmulet=true;tag("📿","Inimigos não reduzem estágios","def");}
+    if(/inimigo sobe um estágio; o usuário copia/i.test(d)){battle.mirrorHerb=true;tag("🪞","Copia o aumento de estágio do inimigo (1 vez)","stage");}
+    if(/golpes de soco causam \+(\d+) dados? da QD/i.test(d)){battle.punch=num(RegExp.$1);tag("🥊",`Socos +${battle.punch} dado da QD, sem contato`,"dmg");}
+    if(/ignora os efeitos secundários dos golpes inimigos/i.test(d)){battle.cloak=true;tag("🧥","Imune a efeitos secundários","def");}
+    if(/vários acertos acertam o número máximo/i.test(d)){battle.loaded=true;tag("🎲","Vários acertos: sempre o máximo","dmg");}
+    if((m=new RegExp("vira tipo "+TYPE_RX+" e Multi-Attack vira","i").exec(d))){battle.form={type:m[1],move:"Multi-Attack",setTypes:true};tag("💾",`Vira tipo ${m[1]}`,"gimmick");}
+    if((m=new RegExp("Techno Blast vira "+TYPE_RX,"i").exec(d))){battle.form={type:m[1],move:"Techno Blast"};tag("💽",`Techno Blast vira ${m[1]}`,"gimmick");}
+    if((m=new RegExp("Judgment para "+TYPE_RX,"i").exec(d))){battle.form={type:m[1],move:"Judgment",setTypes:true};}
+    if((m=/Z-Move exclusivo — (.+?) vira (.+?) \(/.exec(d))){battle.zSig={base:m[1],z:m[2]};tag("Ⓩ",`Z-Move: ${m[2]}`,"gimmick");}
+    if(/Judgment assume o tipo mais eficaz/i.test(d))tag("✦","Judgment do tipo mais eficaz (Mestre)","gimmick");
+    if(/assume a (?:Forma|Máscara)/i.test(d))tag("✦","Muda a forma do Pokémon","gimmick");
+    if(/Fora de batalha|Na Arena não há PP|Concursos:|esforço de|Felicidade ganha|dinheiro ganho|encontros com selvagens|fugir de batalhas|experiência nas batalhas/i.test(d))tag("📜",/Concursos:/.test(d)?"Só concursos":"Efeito fora da batalha","none");
+    if(/^Segurado:/.test(d)&&!Object.keys(battle).length&&/Light Screen|Terreno|Terrain|Trick Room|Atraído|prender|peso|trocar de Pokémon|Ability do usuário|dois turnos/i.test(d))tag("📜","Efeito de campo/regras (combine com o Mestre)","none");
     if(/Tenta capturar|Captura|Taxa de sucesso/i.test(d)&&/ball/i.test(String(it.apiName||name))){const r=/(\d+(?:,\d+)?)×/.exec(d);tag("◓",r?`Captura ${r[1]}×`:"Poké Ball","ball");}
     if(/^Ensina /i.test(d))tag("💿","Ensina um golpe","tm");
     if(/^Evolução:/i.test(d)||/\bevolui (?:em|\w+ em)/i.test(d))tag("🧬","Evolução","evo");
