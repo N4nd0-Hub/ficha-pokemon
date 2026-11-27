@@ -322,7 +322,7 @@
   async function track(){
     if(!lobby)return;
     lastTrackedName=me.name;
-    try{await lobby.track({id:me.id,name:me.name,team:teamPreview(),at:Date.now(),...myStatus(),names:B?.names||null});}catch(e){}
+    try{await lobby.track({id:me.id,name:me.name,team:teamPreview(),at:Date.now(),...myStatus(),names:B?.names||null,ver:window.hhBuild||""});}catch(e){}
   }
   const send=(ch,event,payload)=>ch?.send({type:"broadcast",event,payload});
 
@@ -771,6 +771,8 @@
     const list=Object.values(people).sort((a,b)=>(a.id===me.id?-1:b.id===me.id?1:a.name.localeCompare(b.name)));
     const others=list.filter(p=>p.id!==me.id);
     const battles={};
+    // descidas de quem está numa versão antiga da ficha (não dá para assistir)
+    const oldRuns=list.filter(p=>p.status==="survival"&&!p.battle&&p.id!==me.id);
     list.filter(p=>(p.status==="battle"||p.status==="survival")&&p.battle&&p.id!==me.id).forEach(p=>{battles[p.battle]=battles[p.battle]||{id:p.battle,players:[],names:p.names,solo:p.status==="survival",region:p.region,wave:p.wave};battles[p.battle].players.push(p.name);});
     const myTeam=teamPreview();
     const lead=myTeam[0];const leadMon=teamSource()[0];const leadImg=leadMon?localImg(leadMon):"";
@@ -812,7 +814,7 @@
     </section>
     ${citiesView(myTeam)}
     <nav class="ar8-tabs" role="tablist" aria-label="Seções da arena">${TABS.filter(([k])=>!(wide&&k==="chat")).map(([k,ico,label,sub,col])=>`<button type="button" role="tab" aria-selected="${curTab===k}" class="ar8-tab${curTab===k?" on":""}" data-ar="tab" data-v="${k}" style="--nb:${col}"><span class="ar8-tab-ico">${PX(ico,22)}</span><span class="ar8-tab-txt"><b>${label}</b><small>${sub}</small></span>${counts[k]?`<i class="ar8-count">${counts[k]}</i>`:""}</button>`).join("")}</nav>
-    <section class="ar8-panel" role="tabpanel">${curTab==="sala"?roomTab(others,battles,myTeam):curTab==="time"?`<div class="ar8-sec"><h3>${PX("ball",22)} Seu time na arena</h3><p class="ar8-sub">Quem vai para as batalhas e para o Desafio Sem Fim. O primeiro começa a luta.</p>${teamEditor()}</div>`:curTab==="ranking"?rankTab():curTab==="chat"?chatTab():settingsTab()}</section>
+    <section class="ar8-panel" role="tabpanel">${curTab==="sala"?roomTab(others,battles,myTeam,oldRuns):curTab==="time"?`<div class="ar8-sec"><h3>${PX("ball",22)} Seu time na arena</h3><p class="ar8-sub">Quem vai para as batalhas e para o Desafio Sem Fim. O primeiro começa a luta.</p>${teamEditor()}</div>`:curTab==="ranking"?rankTab():curTab==="chat"?chatTab():settingsTab()}</section>
     </div>
     ${wide?`<aside class="ar8-side">${sideOnline(others)}${chatTab()}</aside>`:""}
     </div>`;
@@ -837,7 +839,7 @@
     return `<div class="ar8-sec ar8-online"><h3>${PX("people",22)} Online agora <small>${others.length+1}</small></h3>
       <ul>${[{name:me.name,status:"me",team:teamPreview()},...others].map(p=>{const l=(p.team||[])[0];return `<li><span class="ar8-avatar xs" style="--t:${typeColor(l?.t?.[0])}">${l?.img?`<img src="${esc(l.img)}" alt="">`:PX("ball",18)}</span><b>${esc(p.name)}${p.status==="me"?" <small>(você)</small>":""}</b><i class="ar8-dot ${esc(p.status)}" title="${esc(p.status)}"></i></li>`;}).join("")}</ul></div>`;
   }
-  function roomTab(others,battles,myTeam){
+  function roomTab(others,battles,myTeam,oldRuns=[]){
     const watchers={};Object.values(people).filter(p=>p.status==="watch").forEach(p=>{watchers[p.battle]=(watchers[p.battle]||0)+1;});
     const badge=p=>p.status==="battle"?`⚔ em batalha${p.vs?` com ${esc(p.vs)}`:""}`:p.status==="watch"?"👁 assistindo":p.status==="survival"?(p.region&&REG(p.region)?`⛰ ${esc(REG(p.region).area)} · andar ${Number(p.wave)||1}`:`🗼 Desafio Sem Fim · onda ${Number(p.wave)||1}`):"● disponível";
     return `<div class="ar8-sec">
@@ -854,7 +856,9 @@
     <div class="ar8-sec">
       <h3>${PX("eye",24)} Batalhas ao vivo <small>${Object.keys(battles).length}</small></h3>
       ${Object.keys(battles).length?`<ul class="ar7-battles">${Object.values(battles).map(b=>`<li><span>${b.solo?`${b.region&&REG(b.region)?"⛰":"🗼"} <b>${esc(b.players[0]||"?")}</b> <small>${b.region&&REG(b.region)?`${esc(REG(b.region).area)} · andar ${Number(b.wave)||1}`:`Desafio Sem Fim · onda ${Number(b.wave)||1}`}</small>`:`<b>${esc(b.names?.p1||b.players[0]||"?")}</b> <i class="ar8-vs">VS</i> <b>${esc(b.names?.p2||b.players[1]||"?")}</b>`}${watchers[b.id]?` <small>👁 ${watchers[b.id]}</small>`:""}</span>
-        <button type="button" class="ar7-btn" data-ar="watch" data-id="${esc(b.id)}" data-p1="${esc(b.names?.p1||"")}" data-p2="${esc(b.names?.p2||"")}">👁 Assistir</button></li>`).join("")}</ul>`:`<p class="ar7-empty-text">Nenhuma batalha agora. Quando alguém lutar, aparece aqui para assistir.</p>`}
+        <button type="button" class="ar7-btn" data-ar="watch" data-id="${esc(b.id)}" data-p1="${esc(b.names?.p1||"")}" data-p2="${esc(b.names?.p2||"")}">👁 Assistir</button></li>`).join("")}</ul>`:oldRuns.length?"":`<p class="ar7-empty-text">Nenhuma batalha agora. Quando alguém lutar, aparece aqui para assistir.</p>`}
+      ${oldRuns.length?`<ul class="ar7-battles ar9-oldruns">${oldRuns.map(p=>`<li><span>${p.region&&REG(p.region)?"⛰":"🗼"} <b>${esc(p.name)}</b> <small>${p.region&&REG(p.region)?`${esc(REG(p.region).area)} · andar ${Number(p.wave)||1}`:`Desafio Sem Fim · onda ${Number(p.wave)||1}`}</small></span>
+        <small class="ar9-oldtag">versão antiga da ficha: peça para atualizar a página (depois da corrida) para poder assistir</small></li>`).join("")}</ul>`:""}
     </div>`;
   }
   function rankTab(){

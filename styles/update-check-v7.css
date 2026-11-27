@@ -1,0 +1,5 @@
+.upd7-bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:10050;display:flex;align-items:center;gap:8px;max-width:calc(100% - 24px);
+  padding:8px 8px 8px 14px;border-radius:12px;border:3px solid #181a24;background:#ffd23f;color:#1b1d2a;box-shadow:0 5px 0 #181a24;font-weight:800;font-size:13px}
+.upd7-bar[hidden]{display:none}
+.upd7-bar button{border:2px solid #181a24;border-radius:8px;background:#fff;color:#1b1d2a;font-weight:900;font-size:12px;padding:6px 10px;cursor:pointer}
+.upd7-bar button[data-upd="go"]{background:#1b1d2a;color:#ffd23f}

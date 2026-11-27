@@ -4,7 +4,7 @@
      então servem da cópia guardada e atualizam em segundo plano.
    • Fontes do Google: guardadas depois do primeiro uso.
    Os dados das fichas ficam no save local do navegador, não aqui. */
-const CACHE="ficha-v7-20261126t9";
+const CACHE="ficha-v7-20261126u1";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/icons/icon-192.png"];
 
 self.addEventListener("install",event=>{
@@ -38,6 +38,8 @@ self.addEventListener("fetch",event=>{
   const request=event.request;
   if(request.method!=="GET")return;
   const url=new URL(request.url);
+  // checagem de versão nova: sempre da rede, sem guardar
+  if(url.searchParams.has("hhvc"))return;
   if(request.mode==="navigate"&&url.origin===location.origin){event.respondWith(networkFirst(request));return;}
   if(url.origin===location.origin){event.respondWith(staleWhileRevalidate(request));return;}
   if(url.hostname==="fonts.googleapis.com"||url.hostname==="fonts.gstatic.com"){event.respondWith(staleWhileRevalidate(request));return;}
