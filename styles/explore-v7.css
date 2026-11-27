@@ -278,3 +278,5 @@ body.ex7-open{overflow:hidden}
 .ex7-gmopt input{width:18px;height:18px;accent-color:#7a3aa8}
 .ex7-gmopt span{display:grid}.ex7-gmopt b{font-size:13px}.ex7-gmopt small{font-size:11px;color:#6a5a30}
 .ex7-gmacts{display:flex;flex-wrap:wrap;gap:6px}
+/* o aviso "Salvo às…" fica no canto inferior direito: some enquanto a Exploração está aberta */
+body.ex7-open #hhLocalSaveButton{display:none!important}
