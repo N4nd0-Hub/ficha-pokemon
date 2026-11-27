@@ -82,7 +82,7 @@
     {key:"potion",name:"Poção",icon:"🧴",category:"consumables",price:300,usable:true,desc:"Restaura 10 HP."},
     {key:"antidote",name:"Antídoto",icon:"💉",category:"consumables",price:100,usable:true,desc:"Remove Poison."},
     {key:"berry",name:"Berry",icon:"🍒",category:"consumables",price:100,usable:true,desc:"Pequenos efeitos: cura 5 HP ou 1 status leve."},
-    {key:"food",name:"Comida Comum",icon:"🥪",category:"consumables",price:50,usable:true,desc:"Para o treinador. Evita desgaste em viagens longas."},
+    {key:"food",name:"Comida Comum",icon:"🥪",category:"consumables",price:50,usable:true,desc:"Para o treinador. Evita desgaste em viagens longas.\nNa Exploração: recupera 30% da Vida (1 refeição por hora)."},
     {key:"pokefood",name:"Comida Pokémon Pré-preparada",icon:"🥫",category:"consumables",price:200,usable:true,desc:"Recupera 5 HP e melhora a Felicidade em +5."},
     {key:"runningshoes",name:"Sapatos de Corrida",icon:"px:shoe",category:"trainer",price:5000,desc:"+25 em Testes de Corpo para viagens longas ou correr.\nCusta 5 de Vida/Esforço por uso contínuo."},
     {key:"bicycle",name:"Bicicleta",icon:"🚲",category:"trainer",price:10000,desc:"+50 em Testes de Corpo para viagens longas.\nNão consome Vida/Esforço."},
