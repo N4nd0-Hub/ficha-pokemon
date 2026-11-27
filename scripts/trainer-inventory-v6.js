@@ -41,6 +41,7 @@
     "mart":["................",".oooooooooooooo.",".obbbbbbbbbbbbo.","obcbbbbbbbbbbbBo","oBBBBBBBBBBBBBBo","oooooooooooooooo",".owwwwwwwwwwwwo.",".owoooowwoooowo.",".owoqcowwocqowo.",".owoccowwoccowo.",".owoooowwoooowo.",".owwwwoooowwwwo.",".owwwwobbowwwwo.",".owwwwobbowwwwo.","oooooooooooooooo","................"],
     "plus":["................","................","......oooo......","......ohho......","......ohho......","......ohho......","..ooooohhooooo..","..ohhhhhhhhhho..","..ohhhhhhhhhho..","..ooooohhooooo..","......ohho......","......ohho......","......ohho......","......oooo......","................","................"]};
   const pxCache=new Map();
+  window.hhInvPx=(name,cls)=>px(name,cls);
   function px(name,cls="inv-px"){
     const rows=PX[name];
     if(!rows)return "";

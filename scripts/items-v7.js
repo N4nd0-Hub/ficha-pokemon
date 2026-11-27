@@ -27,6 +27,30 @@
   const officialOf=name=>{try{const o=officialItemByQuery(name);return o?.apiName?CAT().get(o.apiName)||o:null;}catch(e){return null;}};
   const inv=()=>{try{const t=ensureTrainerData();t.inventory=t.inventory||{};t.inventory.items=Array.isArray(t.inventory.items)?t.inventory.items:[];return t.inventory;}catch(e){return {items:[]};}};
 
+  /* ---------- Ícones em pixel art (16×16) ----------
+     Os da Mochila são desenhados aqui; os outros vêm do inventário do
+     treinador (window.hhInvPx: poção, gema, Poké Ball, carrinho…). */
+  const PAL={o:"#1b1d2a",R:"#e0393e",r:"#a8222a",Y:"#ffd23f",y:"#d9961a",W:"#fff6dc",G:"#7a5a3a",B:"#3b6fd8",b:"#234a9e",P:"#f4efe0",p:"#cfc6a8",S:"#dfe5f0",s:"#8a93a8",H:"#a0703a",L:"#43c17a",l:"#2d8a4a"};
+  const ICONS={
+    bag:["................",".....oooooo.....","....oGGGGGGo....","....oGo..oGo....","..oooooooooooo..",".oRWRRRRRRRRRro.",".oWRRRRRRRRRRro.",".oRRRRRRRRRRRro.",".oooooooooooooo.",".oRRoYYYYYYoRro.",".oRRoYWWyyYoRro.",".oRRoYyyyyYoRro.",".oRRooooooooRro.",".orRRRRRRRRRRro.","..orrrrrrrrrro..","...oooooooooo..."],
+    book:["................","...ooooooooooo..","..oBBBBBBBBBBpo.","..oBWBBBBBBBBpo.","..oBBBYYYYBBBpo.","..oBBBYooYBBBpo.","..oBBBYYYYBBBpo.","..oBBBBBBBBBBpo.","..oBBBBBBBBBBpo.","..oBBBBBBBBBBpo.","..obbbbbbbbbbpo.","..oPPPPPPPPPPPo.","..opppppppppppo.","...ooooooooooo..","................","................"],
+    sword:["................","............oo..","...........oSso.","..........oSso..",".........oSso...","........oSso....",".......oSso.....","......oSso......","..oo.oSso.......","..oYoSso........","...oYso.........","...oHYYo........","..oHo.oYo.......",".oHo...oo.......",".oo.............","................"],
+    spark:["................",".......o........","......oYo.......","......oYo.......",".....oYWYo......","..oooYWWWYooo...",".oYYYWWWWWYYYo..","..oooYWWWYooo...",".....oYWYo......","......oYo.......","......oYo.......",".......o........","................","................","................","................"],
+    berry:["................",".......oo.oo....","......oLLoLLo...",".......oLLlo....",".....oooooooo...","....oRRRRRRRRo..","...oRWWRRRRRRro.","...oRWRRRRRRRro.","...oRRRRRRRRRro.","...oRRRRRRRRRro.","...oRRRRRRRRrro.","....oRRRRRRrro..",".....orrrrrro...","......oooooo....","................","................"]
+  };
+  const icoCache=new Map();
+  function ico(name,cls="it7-px"){
+    const k=name+"|"+cls;if(icoCache.has(k))return icoCache.get(k);
+    const rows=ICONS[name];let out="";
+    if(rows){
+      let rects="";rows.forEach((row,y)=>{let x=0;while(x<16){const ch=row[x];if(!PAL[ch]){x++;continue;}let w=1;while(x+w<16&&row[x+w]===ch)w++;rects+=`<rect x="${x}" y="${y}" width="${w}" height="1" fill="${PAL[ch]}"/>`;x+=w;}});
+      out=`<svg class="${cls}" viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true" focusable="false">${rects}</svg>`;
+    }else if(typeof window.hhInvPx==="function")out=window.hhInvPx(name,cls)||"";
+    if(out)icoCache.set(k,out);
+    return out||`<i class="${cls}">📦</i>`;
+  }
+  const GROUP_ICO={all:"bag",heal:"potion",status:"spark",battle:"sword",held:"gem",berry:"berry",ball:"ball",evo:"shard",other:"box"};
+
   /* ---------- Categorias ---------- */
   const GROUPS=[["all","Tudo","🎒"],["heal","Cura","🧪"],["status","Status","✨"],["battle","Batalha","⚔"],["held","Segurados","💎"],["berry","Bagas","🍒"],["ball","Poké Balls","◓"],["evo","Evolução e TMs","🧬"],["other","Outros","📦"]];
   function groupOf(it){
@@ -203,7 +227,8 @@
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ui.open)close();});
 
   function tagChips(r,max=6){return r.tags.slice(0,max).map(t=>`<span class="it7-tag ${esc(t.kind)}">${esc(t.icon)} ${esc(t.label)}</span>`).join("");}
-  function face(e,size=40){return e.img?`<img src="${esc(e.img)}" alt="" width="${size}" height="${size}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('i'),{textContent:'📦'}))">`:`<i>${esc(/^px:|^ball:/.test(e.icon||"")?"📦":(e.icon||"📦"))}</i>`;}
+  function fallbackIco(e){const m=/^px:(\w+)/.exec(e.icon||"");if(m&&typeof window.hhInvPx==="function"&&window.hhInvPx(m[1]))return ico(m[1]);if(/^ball:/.test(e.icon||""))return ico("ball");return ico(GROUP_ICO[e.src?groupOf(e):"held"]||"box");}
+  function face(e,size=40){const fb=fallbackIco(e);return e.img?`<img src="${esc(e.img)}" alt="" width="${size}" height="${size}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="it7-fb" hidden>${fb}</span>`:`<span class="it7-fb">${fb}</span>`;}
 
   function listData(){
     if(ui.tab==="bag")return owned();
@@ -218,17 +243,22 @@
   function render(){
     ensure();
     const p=cur();
-    const tabs=[["bag","🎒","Bolsa","O que você tem"],["team","💎","Equipe","Itens segurados"],["shop","🛒","Loja","Altamuralha"],["dex","📖","Itemdex","Todos os itens"]];
+    const tabs=[["bag","bag","Bolsa","O que você tem"],["team","gem","Equipe","Itens segurados"],["shop","cart","Loja","Altamuralha"],["dex","book","Itemdex","Todos os itens"]];
+    const all=ui.tab==="team"?[]:listData();
+    const count=k=>k==="all"?all.length:all.filter(e=>groupOf(e)===k).length;
     box.innerHTML=`<div class="it7-win">
       <header class="it7-head">
-        <div class="it7-title"><b>🎒 Mochila</b><small>${p?`Usar em <b>${esc(p.name)}</b> · `:""}Carteira: <b>${fmtMoney(money())}</b></small></div>
+        <span class="it7-logo">${ico("bag")}</span>
+        <div class="it7-title"><b>Mochila</b><small>${p?`Usando em <b>${esc(p.name)}</b>`:"Itens do treinador"}</small></div>
+        <span class="it7-wallet" title="Carteira">${ico("coin")}<b>${fmtMoney(money())}</b></span>
         <button type="button" class="it7-x" data-it="close" aria-label="Fechar">✕</button>
       </header>
-      <nav class="it7-tabs" role="tablist">${tabs.map(([k,i,l,s])=>`<button type="button" role="tab" aria-selected="${ui.tab===k}" class="${ui.tab===k?"on":""}" data-it="tab" data-v="${k}"><i>${i}</i><b>${l}</b><small>${s}</small></button>`).join("")}</nav>
+      <nav class="it7-tabs" role="tablist">${tabs.map(([k,i,l,s])=>`<button type="button" role="tab" aria-selected="${ui.tab===k}" class="${ui.tab===k?"on":""}" data-it="tab" data-v="${k}">${ico(i)}<b>${l}</b><small>${s}</small></button>`).join("")}</nav>
       <div class="it7-body" data-tab="${ui.tab}">${ui.tab==="team"?teamView():`
+        <nav class="it7-pockets" aria-label="Bolsos">${GROUPS.map(([k,l])=>{const n=count(k);return `<button type="button" class="${ui.group===k?"on":""}${n?"":" empty"}" data-it="group" data-v="${k}">${ico(GROUP_ICO[k])}<span>${l}</span><em>${n}</em></button>`;}).join("")}</nav>
         <div class="it7-listcol">
-          <div class="it7-tools">${ui.tab==="shop"?`<div class="it7-city"><b>🏔 Loja de Altamuralha</b><small>A Grande Cidade na montanha, lar do Rochedo Eterno. · ${shopItems().length} itens à venda</small></div>`:""}<input class="it7-q" data-it="q" type="search" placeholder="Buscar item ou efeito (ex.: Fire, cura, crítico)…" value="${esc(ui.q)}" aria-label="Buscar item">
-            <div class="it7-groups">${GROUPS.map(([k,l,i])=>`<button type="button" class="${ui.group===k?"on":""}" data-it="group" data-v="${k}">${i} ${l}</button>`).join("")}</div></div>
+          <div class="it7-tools">${ui.tab==="shop"?`<div class="it7-city">${ico("mart")}<div><b>Loja de Altamuralha</b><small>A Grande Cidade na montanha, lar do Rochedo Eterno. · ${shopItems().length} itens à venda</small></div></div>`:""}
+            <label class="it7-search"><span>⌕</span><input class="it7-q" data-it="q" type="search" placeholder="Buscar item ou efeito (Fire, cura, crítico…)" value="${esc(ui.q)}" aria-label="Buscar item"></label></div>
           <div class="it7-list" role="list"></div>
         </div>
         <aside class="it7-detail" aria-live="polite"></aside>`}</div>
@@ -243,19 +273,21 @@
       <span class="it7-face">${face(e)}</span>
       <span class="it7-info"><b>${esc(e.name)}</b><small>${r.tags[0]?`${esc(r.tags[0].icon)} ${esc(r.tags[0].label)}`:esc(String(e.description||"").slice(0,60))}</small></span>
       <span class="it7-qty">${e.src==="shop"?fmtMoney(e.cost):e.qty?`×${e.qty}`:""}</span></button>`;}).join("")+(all.length>shown.length?`<button type="button" class="it7-more" data-it="more">Mostrar mais (${all.length-shown.length})</button>`:"")
-      :`<p class="it7-empty">${ui.tab==="bag"?"Nada aqui ainda. Compre na aba 🛒 Loja.":"Nenhum item encontrado."}</p>`;
+      :`<p class="it7-empty">${ico(GROUP_ICO[ui.group]||"bag","it7-px big")}<span>${ui.tab==="bag"?"Nenhum item neste bolso. Compre na aba Loja.":"Nenhum item encontrado."}</span></p>`;
   }
   function findEntry(id){return listData().find(e=>e.id===id)||null;}
   function renderDetail(){
     const el=box?.querySelector(".it7-detail");if(!el)return;
     const e=ui.sel&&findEntry(ui.sel);
-    if(!e){el.innerHTML=`<div class="it7-hint"><span>🎒</span><p>Escolha um item para ver o que ele faz${ui.tab==="bag"?", usar ou dar para um Pokémon segurar":ui.tab==="shop"?" e comprar":""}.</p></div>`;return;}
+    if(!e){el.innerHTML=`<div class="it7-hint">${ico("bag","it7-px big")}<p>Escolha um item para ver o que ele faz${ui.tab==="bag"?", usar ou dar para um Pokémon segurar":ui.tab==="shop"?" e comprar":""}.</p></div>`;return;}
     const r=read(e),p=cur(),g=groupOf(e);
     const usable=(e.src==="bag"||e.src==="inv")&&e.apiName&&typeof BAG_CONSUMABLE_BY_SLUG!=="undefined"&&BAG_CONSUMABLE_BY_SLUG.has(e.apiName)&&g!=="ball";
     const holdable=(e.src==="bag"||e.src==="inv")&&canHold(e);
     const have=e.src==="shop"||e.src==="dex"?owned().filter(o=>o.apiName===e.apiName||o.name===e.name).reduce((a,o)=>a+o.qty,0):e.qty;
     const team=(state.pokemon||[]).filter(x=>(x.storageGroup||"team")==="team").slice(0,6);
-    el.innerHTML=`<div class="it7-big">${face(e,72)}<div><b>${esc(e.name)}</b><small>${esc(GROUPS.find(x=>x[0]===g)?.[1]||"Item")}${e.src==="inv"?" · Inventário do Treinador":e.src==="bag"?" · Bolsa":""}${have?` · você tem ${have}`:""}</small></div></div>
+    el.innerHTML=`<div class="it7-stage"><span class="it7-pedestal">${face(e,72)}</span>
+        <b class="it7-name">${esc(e.name)}</b>
+        <small class="it7-sub">${ico(GROUP_ICO[g]||"box","it7-px sm")}${esc(GROUPS.find(x=>x[0]===g)?.[1]||"Item")}${e.src==="inv"?" · Inventário":e.src==="bag"?" · Bolsa":""}${have?` · <b>você tem ${have}</b>`:""}</small></div>
       ${r.tags.length?`<div class="it7-tags">${tagChips(r,10)}</div>`:""}
       <p class="it7-desc">${esc(e.description||"Sem descrição.")}</p>
       ${r.usableInBattle&&r.held?`<p class="it7-note">⚔ Funciona sozinho nas batalhas da Arena quando o Pokémon segura o item.</p>`:""}
@@ -275,7 +307,7 @@
       const r=it?read({...it,name:x.heldItem}):null;
       return `<article class="it7-slot"><span class="it7-mon">${im?`<img src="${esc(im)}" alt="">`:"◓"}</span>
         <div class="it7-slot-txt"><b>${esc(x.name)}</b><small>Lv ${Number(x.level||1)}</small>
-          ${it?`<p class="it7-held">${face({img:sprite(it.apiName),icon:"💎"},28)} <b>${esc(x.heldItem)}</b></p><div class="it7-tags">${tagChips(r,4)}</div>`:`<p class="it7-held none">Sem item segurado</p>`}</div>
+          ${it?`<p class="it7-held">${face({img:sprite(it.apiName),icon:"px:gem"},28)} <b>${esc(x.heldItem)}</b></p><div class="it7-tags">${tagChips(r,4)}</div>`:`<p class="it7-held none">Sem item segurado</p>`}</div>
         <div class="it7-slot-acts">${it?`<button type="button" class="it7-btn" data-it="take" data-p="${esc(String(x.id))}">Tirar</button>`:""}<button type="button" class="it7-btn" data-it="pickFor" data-p="${esc(String(x.id))}">${it?"Trocar":"Dar item"}</button></div></article>`;}).join("")}</div>`;
   }
   function onClick(e){
@@ -284,7 +316,7 @@
     const a=b.dataset.it;
     if(a==="close")close();
     else if(a==="tab"){ui.tab=b.dataset.v;ui.sel=null;ui.page=1;if(ui.tab!=="bag")ui.group=ui.group==="held"&&ui.tab==="shop"?"held":"all";ui.q="";sfx("select");render();}
-    else if(a==="group"){ui.group=b.dataset.v;ui.page=1;box.querySelectorAll(".it7-groups button").forEach(x=>x.classList.toggle("on",x===b));renderList();}
+    else if(a==="group"){ui.group=b.dataset.v;ui.page=1;box.querySelectorAll(".it7-pockets button").forEach(x=>x.classList.toggle("on",x===b));renderList();sfx("select");}
     else if(a==="sel"){ui.sel=b.dataset.id;box.querySelectorAll(".it7-card").forEach(x=>x.classList.toggle("on",x===b));renderDetail();sfx("select");if(matchMedia("(max-width:760px)").matches)box.querySelector(".it7-detail")?.scrollIntoView({behavior:"smooth",block:"start"});}
     else if(a==="more"){ui.page++;renderList();}
     else if(a==="use"){useOn(findEntry(ui.sel));}
@@ -295,12 +327,22 @@
     else if(a==="toShop"){ui.tab="shop";ui.sel="shop:"+b.dataset.id;ui.group="all";render();}
   }
 
-  /* ---------- Entradas na página 01 ---------- */
-  function mountEntry(){
-    const actions=document.querySelector("#sumScreen .sum-left-actions");
-    if(actions&&!actions.querySelector("[data-it-open]")){
-      actions.insertAdjacentHTML("beforeend",`<button type="button" data-it-open="bag" class="it7-open">🎒 MOCHILA</button>`);
+  /* ---------- Entradas: botão no topo (junto da Arena) e item da INFO ---------- */
+  function mountTop(){
+    let btn=document.getElementById("hhBagBtn");
+    if(!btn){
+      const brand=document.querySelector(".topbar .brand");if(!brand)return;
+      brand.insertAdjacentHTML("afterend",`<button type="button" id="hhBagBtn" class="ar7-open-btn it7-top" data-it-open="bag" aria-label="Mochila: itens, Equipe e Loja" title="Mochila: itens, Equipe e Loja">${ico("bag","it7-px top")}<span class="ar7-open-txt">Mochila</span></button>`);
+      btn=document.getElementById("hhBagBtn");
     }
+    const arena=document.getElementById("hhArenaBtn");
+    if(arena&&arena.nextElementSibling!==btn)arena.after(btn);
+  }
+  // a Arena muda de lugar entre computador e celular: a Mochila vai junto
+  matchMedia("(min-width:901px)").addEventListener?.("change",()=>setTimeout(mountTop,0));
+  let tries=0;const waitArena=setInterval(()=>{mountTop();if(document.getElementById("hhArenaBtn")||++tries>40)clearInterval(waitArena);},250);
+  function mountEntry(){
+    mountTop();
     // aba INFO: o que o item segurado faz + atalho para a Mochila
     const strip=document.querySelector(".general-held-strip");
     if(strip){
