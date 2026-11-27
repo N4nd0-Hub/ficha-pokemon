@@ -135,9 +135,12 @@
       let v=Math.floor(Math.max(0,Number(m.stats?.[stat]||0))*stageMult(stat,stageTotal(ms,stat)));
       const it=m.item&&!m.item.inactive&&!ms.itemGone?m.item:null;
       if(it?.statMult?.[stat])v=Math.floor(v*it.statMult[stat]);
+      // Areia: Rock ganha SP.DEF ×1,5 · Neve: Ice ganha DEF ×1,5
+      if(b.weather?.kind==="sand"&&stat==="spd"&&typesOf(b,s).includes("Rock"))v=Math.floor(v*1.5);
+      if(b.weather?.kind==="snow"&&stat==="def"&&typesOf(b,s).includes("Ice"))v=Math.floor(v*1.5);
       if(stat==="spe"){
         if(ms.status==="par")v=Math.floor(v/2);
-        if(b.weather&&m.abil.weatherSpeed===b.weather.kind)v*=2;
+        if(b.weather&&(m.abil.weatherSpeed===b.weather.kind||(m.abil.weatherSpeed==="hail"&&b.weather.kind==="snow")))v*=2;
         if(b.sides[s].field.tailwind>0)v*=2;
       }
       return v;
@@ -443,7 +446,7 @@
         const w=b.weather.kind;
         if((w==="rain"&&mtype==="Water")||(w==="sun"&&mtype==="Fire")){add+=1;notes.push(RULES.WEATHER_LABEL[w]+" +1d6");}
         if((w==="rain"&&mtype==="Fire")||(w==="sun"&&mtype==="Water")){pen+=1;notes.push(RULES.WEATHER_LABEL[w]+" −1d6");}
-        for(const wb of A.abil.weatherBoost)if(wb.weather===w&&(!wb.types?.length||wb.types.includes(mtype)))q(wb.dice,`${A.abil.name} +${wb.dice} QD`);
+        for(const wb of A.abil.weatherBoost)if((wb.weather===w||(wb.weather==="hail"&&w==="snow"))&&(!wb.types?.length||wb.types.includes(mtype)))q(wb.dice,`${A.abil.name} +${wb.dice} QD`);
       }
       // abilities e efeitos do atacante
       if(A.abil.pinch===mtype&&aS.hp*3<=aS.maxHp)q(1,`${A.abil.name} +1 QD`);
@@ -669,7 +672,13 @@
         if(ctx.protected.has(tSide)&&affectsFoe){events.push({k:"blocked",side:tSide});return;}
         if(fx.mech&&statusMech(b,s,idx,move,M,events,ctx,ev))return;
         applySecondary(b,s,move,events,{hit:true,status:true});
-        if(fx.heal)heal(b,s,Math.ceil(aS.maxHp*fx.heal/100),events,move.name);
+        if(fx.heal){
+          // Synthesis, Moonlight e Morning Sun: 2/3 no Sol, 1/4 em outros climas
+          let pct=fx.heal;const w=b.weather?.kind;
+          if(w&&/^(synthesis|moonlight|morning sun)$/.test(k))pct=w==="sun"?66.7:25;
+          if(w==="sand"&&k==="shore up")pct=66.7;
+          heal(b,s,Math.ceil(aS.maxHp*pct/100),events,move.name);
+        }
         if(fx.rest){aS.status="slp";aS.slp=2;heal(b,s,aS.maxHp,events,move.name);events.push({k:"status",side:s,mon:A.name,st:"slp",src:move.name});}
         if(fx.selfCrit){aS.crit+=fx.selfCrit;events.push({k:"info",text:`${A.name} se concentrou: crítico aumentado em ${fx.selfCrit} estágio${fx.selfCrit>1?"s":""}.`});}
         if(fx.weather)setWeather(b,fx.weather.kind,fx.weather.turns,events,move.name,s);
@@ -694,7 +703,7 @@
       if(tS.fainted){ev.noTarget=true;return;}
       // precisão e crítico
       const r=d(100);
-      const acc=move.accuracy==null||move.alwaysHits||fx.neverMiss?null:accuracyFor(b,s,move,ctx);
+      const acc=move.accuracy==null||move.alwaysHits||fx.neverMiss||weatherSure(b,move)?null:accuracyFor(b,s,move,ctx);
       aS.nextAcc=0;
       ev.roll=r;ev.acc=acc;
       const natural=r<=5;
@@ -725,6 +734,7 @@
       if(M.power==="weather"&&b.weather){power*=2;const wt={sun:"Fire",rain:"Water",sand:"Rock",hail:"Ice",snow:"Ice"}[b.weather.kind];if(wt)move={...move,type:wt};}
       if(M.knockOff&&itemOf(b,tSide))power=Math.floor(power*1.5);
       if(semiMult>1)power*=semiMult;
+      if((k==="solar beam"||k==="solar blade")&&b.weather&&b.weather.kind!=="sun"){power=Math.floor(power/2);}
       if(M.breakScreens){const F=b.sides[tSide].field;if(F.reflect>0||F.light>0||F.veil>0){F.reflect=0;F.light=0;F.veil=0;events.push({k:"info",text:`${A.name} quebrou as barreiras de ${T.name}!`});}}
       // dano fixo, nocaute e golpes que custam a vida
       if(M.fixed||M.ohko||M.gambit||M.endeavor){
@@ -865,6 +875,7 @@
       if(M.swapItems){const ai=A.item&&!aS.itemGone?A.item:null,ti=T.item&&!tS.itemGone?T.item:null;if(!ai&&!ti)return fail("ninguém tem item");
         A.item=ti?{...ti}:null;T.item=ai?{...ai}:null;aS.itemGone=false;tS.itemGone=false;aS.lock=null;tS.lock=null;say(`${A.name} trocou de item com ${T.name}!`);return true;}
       if(M.phaze){if(!forceOut(b,tSide,events,ctx))return fail("o alvo não tem quem entrar");return true;}
+      if(M.growth){const n=b.weather?.kind==="sun"?2:1;addStage(b,s,"atk",n,events,{src:move.name});addStage(b,s,"spa",n,events,{src:move.name});return true;}
       if(M.selfStages&&M.charge){M.selfStages.forEach(x=>addStage(b,s,x.stat,x.n,events,{src:move.name}));return true;}
       if(M.selfKO){
         if(M.foeStages&&!tS.fainted)M.foeStages.forEach(x=>addStage(b,tSide,x.stat,x.n,events,{src:move.name,fromFoe:true}));
@@ -888,8 +899,11 @@
       const it=itemOf(b,s);if(!it?.throatSpray||activeState(b,s).fainted)return;
       useUpItem(b,s,events,"ativou com o golpe de som");addStage(b,s,"spa",it.throatSpray,events,{src:it.name});
     }
+    // Thunder/Hurricane não erram na chuva; Blizzard não erra no granizo/neve
+    const weatherSure=(b,move)=>{const w=b.weather?.kind,k=key(move.name);return (w==="rain"&&(k==="thunder"||k==="hurricane"||k==="bleakwind storm"||k==="wildbolt storm"||k==="sandsear storm"))||((w==="hail"||w==="snow")&&k==="blizzard");};
     function accuracyFor(b,s,move,ctx){
-      const base=Math.max(1,Math.min(100,Number(move.accuracy)||100));
+      const k0=key(move.name);
+      const base=b.weather?.kind==="sun"&&(k0==="thunder"||k0==="hurricane")?50:Math.max(1,Math.min(100,Number(move.accuracy)||100));
       const net=Math.max(-6,Math.min(6,stageTotal(activeState(b,s),"acc")-stageTotal(activeState(b,other(s)),"eva")));
       const acc=Math.max(1,Math.min(90,Math.floor(base*stageMult("acc",net))));
       const ev=ctx?.evade?.[other(s)]||0;

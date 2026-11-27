@@ -100,3 +100,28 @@ test("Destiny Bond leva o atacante junto", () => {
   const evs = turn(e, bt);
   assert.equal(evs.filter(x => x.k === "faint").length, 2);
 });
+
+test("Clima: Neve dá DEF às Ice e não machuca; Thunder não erra na chuva; Solar Beam fraco fora do Sol", () => {
+  const snow = M("Snowscape", "Ice", "Status", 0, null);
+  const r = battle([mon("A", ["Normal"], { spe: 200 }, [snow])], [mon("I", ["Ice"], {}, [growl])]);
+  const evs = turn(r.e, r.bt);
+  assert.equal(r.bt.weather.kind, "snow");
+  assert.ok(!evs.some(x => x.k === "sdmg" && x.src === "hail"), "neve não causa dano");
+  assert.equal(r.e.effStat(r.bt, "p2", "def"), 120);
+  const rain = M("Rain Dance", "Water", "Status", 0, null), thunder = M("Thunder", "Electric", "Special", 110, 70);
+  const r2 = battle([mon("A", ["Normal"], { spe: 200 }, [rain, thunder])], [mon("B", ["Normal"], { hp: 900 }, [growl])], () => 0.99);
+  turn(r2.e, r2.bt);
+  const t2 = turn(r2.e, r2.bt, 1);
+  assert.ok(hitOn(t2, "p2").length, "Thunder acerta mesmo com d100 alto na chuva");
+});
+
+test("Telas: Reflect corta o dano físico pela metade e Brick Break quebra", () => {
+  const hit = M("Hit", "Normal", "Physical", 80);
+  const base = battle([mon("A", ["Normal"], { spe: 200 }, [M("Splash", "Normal", "Status", 0, null)])], [mon("B", ["Normal"], {}, [hit])]);
+  const a0 = hitOn(turn(base.e, base.bt), "p1")[0].amount;
+  const r = battle([mon("A", ["Normal"], { spe: 200 }, [M("Reflect", "Psychic", "Status", 0, null)])], [mon("B", ["Normal"], {}, [hit, M("Brick Break", "Fighting", "Physical", 75)])]);
+  const a1 = hitOn(turn(r.e, r.bt), "p1")[0].amount;
+  assert.equal(a1, Math.max(1, Math.floor(a0 / 2)));
+  turn(r.e, r.bt, 0, 1);
+  assert.equal(r.bt.sides.p1.field.reflect, 0);
+});

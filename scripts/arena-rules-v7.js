@@ -51,10 +51,11 @@
     ["rain",/\bchuva\b|\brain\b|chover|chovendo/i],
     ["sun",/\bsol\b|ensolarad\w*|\bsunny\b|\bsun\b|luz do sol|harsh sunlight/i],
     ["sand",/tempestade de areia|sandstorm|\bareia\b/i],
-    ["hail",/granizo|\bhail\b|\bneve\b|\bsnow\b|nevasca/i]
+    ["hail",/granizo|\bhail\b/i],
+    ["snow",/\bneve\b|\bsnow\b|nevasca|snowscape/i]
   ];
-  const WEATHER_LABEL={rain:"Chuva",sun:"Sol forte",sand:"Tempestade de areia",hail:"Granizo"};
-  const WEATHER_MOVES={"rain dance":"rain","sunny day":"sun","sandstorm":"sand","hail":"hail","snowscape":"hail","chilly reception":"hail"};
+  const WEATHER_LABEL={rain:"Chuva",sun:"Sol forte",sand:"Tempestade de areia",hail:"Granizo",snow:"Neve"};
+  const WEATHER_MOVES={"rain dance":"rain","sunny day":"sun","sandstorm":"sand","hail":"hail","snowscape":"snow","chilly reception":"snow"};
   function weatherKey(s){for(const [k,re] of WEATHER)if(re.test(s))return k;return null;}
 
   const TYPES=["Normal","Fire","Water","Electric","Grass","Ice","Fighting","Poison","Ground","Flying","Psychic","Bug","Rock","Ghost","Dragon","Dark","Steel","Fairy"];
@@ -201,7 +202,7 @@
     "stealth rock":{hazard:"rocks"},"spikes":{hazard:"spikes"},"sticky web":{hazard:"web"},
     "rapid spin":{clearHazards:"self",selfStages:[{stat:"spe",n:1}]},"mortal spin":{clearHazards:"self"},"defog":{clearHazards:"both",clearFoeScreens:true},
     "tidy up":{clearHazards:"both",selfStages:[{stat:"atk",n:1},{stat:"spe",n:1}]},
-    "smack down":{grounds:true},"thousand arrows":{grounds:true}
+    "smack down":{grounds:true},"thousand arrows":{grounds:true},"growth":{growth:true}
   };
 
   function parseMove(move){
@@ -313,7 +314,7 @@
   const OFFICIAL={
     "intimidate":a=>a.onEnter.stages.push({who:"foe",stat:"atk",n:-1}),
     "drizzle":a=>a.onEnter.weather={kind:"rain",turns:5},"drought":a=>a.onEnter.weather={kind:"sun",turns:5},
-    "sand stream":a=>a.onEnter.weather={kind:"sand",turns:5},"snow warning":a=>a.onEnter.weather={kind:"hail",turns:5},
+    "sand stream":a=>a.onEnter.weather={kind:"sand",turns:5},"snow warning":a=>a.onEnter.weather={kind:"snow",turns:5},
     "swift swim":a=>a.weatherSpeed="rain","chlorophyll":a=>a.weatherSpeed="sun","sand rush":a=>a.weatherSpeed="sand","slush rush":a=>a.weatherSpeed="hail",
     "speed boost":a=>a.endTurn.stages.push({who:"self",stat:"spe",n:1}),
     "static":a=>a.onHurtContact.push({st:"par",chance:30}),"poison point":a=>a.onHurtContact.push({st:"psn",chance:30}),"flame body":a=>a.onHurtContact.push({st:"brn",chance:30}),
