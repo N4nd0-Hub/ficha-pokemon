@@ -219,6 +219,47 @@
     return {...info,team};
   }
 
+
+  /* ---------- Modo Exploração: Pokémon selvagem de um bioma ----------
+     Sorteia uma espécie dos tipos da área (sem lendários, até o Base Stat
+     máximo da região) e pesa pela raridade: os comuns aparecem bem mais.
+     Raridade pelo total de Base Stats: até 330 Comum, até 420 Incomum,
+     até 480 Raro, acima disso Muito Raro. */
+  const NO_WILD=new Set([144,145,146,150,151,243,244,245,249,250,251,377,378,379,380,381,382,383,384,385,386,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,638,639,640,641,642,643,644,645,646,647,648,649,716,717,718,719,720,721,772,773,785,786,787,788,789,790,791,792,800,801,802,807,808,809,888,889,890,891,892,893,894,895,896,897,898,905,1001,1002,1003,1004,1007,1008,1014,1015,1016,1017,1024,1025]);
+  function rarityOf(bst){return bst<=330?"common":bst<=420?"uncommon":bst<=480?"rare":"veryrare";}
+  const RAR_W={common:1,uncommon:.6,rare:.28,veryrare:.12};
+  async function makeWild({types,level,bstCap=530,bonus=0,prefer=""}){
+    const lists=await Promise.all((types||["Normal"]).map(t=>typePool(t).catch(()=>[])));
+    let pool=[];const seen=new Set();
+    lists.forEach((l,i)=>l.forEach(x=>{if(seen.has(x.id)||NO_WILD.has(x.id)||/-(gmax|mega|totem|cap|cosplay|rock-star|belle|pop-star|phd|libre)/.test(x.name))return;seen.add(x.id);pool.push({...x,w:prefer&&types[i]===prefer?2:1});}));
+    if(!pool.length)throw new Error("Sem Pokémon para esta área.");
+    const pickW=()=>{const tot=pool.reduce((a,x)=>a+x.w,0);let r=Math.random()*tot;for(const x of pool){r-=x.w;if(r<=0)return x;}return pool[0];};
+    let chosen=null,fallback=null;
+    for(let t=0;t<14&&!chosen;t++){
+      const c=pickW();let p;try{p=await get("pokemon/"+c.id);}catch(e){continue;}
+      const bst=p.stats.reduce((a,s)=>a+s.base_stat,0);
+      if(bst>bstCap){if(!fallback||bst<fallback.bst)fallback={p,bst};continue;}
+      const rar=rarityOf(bst);
+      if(Math.random()<=RAR_W[rar]||t>=11)chosen={p,bst,rar};
+      else if(!fallback||fallback.bst>bstCap)fallback={p,bst};
+    }
+    if(!chosen&&fallback)chosen={...fallback,rar:rarityOf(fallback.bst)};
+    if(!chosen)throw new Error("Não consegui falar com a PokéAPI.");
+    const p=chosen.p;
+    const base={};p.stats.forEach(s=>{base[STAT_KEY[s.stat.name]]=s.base_stat;});
+    const build=pick(Object.keys(BUILDS));
+    const {stats}=distribute(base,level,bonus,build);
+    const abilities=p.abilities.filter(a=>!a.is_hidden).map(a=>a.ability.name);
+    const ability=cap(pick(abilities.length?abilities:p.abilities.map(a=>a.ability.name)));
+    const shiny=Math.random()<1/256;
+    const sp=p.sprites||{};
+    const img=(shiny?(sp.other?.["official-artwork"]?.front_shiny||sp.other?.home?.front_shiny):null)||sp.other?.["official-artwork"]?.front_default||sp.other?.home?.front_default||sp.front_default||"";
+    const sprite=(shiny?sp.front_shiny:sp.front_default)||img;
+    const moves=await buildMoves(p,level);
+    return {name:cap(p.species?.name||p.name),apiName:p.name,level,types:p.types.map(t=>cap(t.type.name)),stats,maxHp:stats.hp,ability,abilityText:"",img,sprite,moves,
+      build:BUILDS[build].label,dex:p.id,bst:chosen.bst,rarity:chosen.rar,shiny};
+  }
+
   /* ---------- IA do oponente ----------
      Estima o dano de cada golpe (Power, STAB, efetividade, Attack/Sp.Atk
      efetivos contra a defesa) e escolhe com um pouco de sorte. Usa golpes
@@ -267,5 +308,5 @@
     return extra({kind:"move",idx:0});
   }
 
-  root.hhArenaSurvival={makeWave,waveInfo,distribute,describe,choose,BUILDS,REGIONS,regionInfo,makeRegionWave,typePool};
+  root.hhArenaSurvival={makeWave,waveInfo,distribute,describe,choose,BUILDS,REGIONS,regionInfo,makeRegionWave,typePool,makeWild,rarityOf};
 })(window);
