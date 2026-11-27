@@ -604,8 +604,8 @@
   const ST_SHORT={psn:"PSN",tox:"TOX",brn:"BRN",dbrn:"BRN+",par:"PAR",slp:"SLP",frz:"FRZ",cnf:"CNF"};
   const STAT_PT={atk:"Attack",def:"Defense",spa:"Sp.Atk",spd:"Sp.Def",spe:"Speed",acc:"Precisão",eva:"Evasão"};
   const STAT_SHORT={atk:"ATK",def:"DEF",spa:"SPA",spd:"SPD",spe:"SPE",acc:"PRE",eva:"EVA"};
-  const W_LABEL={rain:"Chuva",sun:"Sol forte",sand:"Tempestade de areia",hail:"Granizo"};
-  const W_ICON={rain:"🌧",sun:"☀",sand:"🌪",hail:"❄"};
+  const W_LABEL={rain:"Chuva",sun:"Sol forte",sand:"Tempestade de areia",hail:"Granizo",snow:"Neve"};
+  const W_ICON={rain:"🌧",sun:"☀",sand:"🌪",hail:"🧊",snow:"❄"};
   const SRC_LABEL={evade:"o cansaço de tanto esquivar",psn:"o veneno",tox:"o veneno (Toxic)",brn:"a queimadura",dbrn:"a queimadura profunda",sand:"a tempestade de areia",hail:"o granizo",cnf:"a confusão",recoil:"o recuo"};
   const CANT={slp:"está dormindo.",frz:"está congelado!",par:"está paralisado e não conseguiu se mover!",flinch:"hesitou e não atacou!",cnf:"está confuso e se feriu!",powder:"é imune a golpes de pó.",recharge:"precisa recarregar!"};
   function pushLog(events){
