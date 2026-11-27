@@ -915,3 +915,8 @@ html[data-theme-skin] .ar7{background:var(--sk-body,var(--bg,#121316))}
 .ar9-runorder li button{width:28px;height:28px;border-radius:7px;border:2px solid var(--cl-ink,#181a24);background:var(--cl-card,#fff);color:var(--cl-text,#222);font-weight:900;cursor:pointer}
 .ar9-runorder li.out{opacity:.55}
 .ar9-order .ar7-pick-list{grid-template-columns:1fr!important}
+/* corrida pausada enquanto o jogador está na ficha */
+.ar7-open-btn.ar9-running{position:relative;animation:ar9-pulse 1.4s ease-in-out infinite}
+.ar7-open-btn.ar9-running::after{content:"⏸";position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
+  font-size:10px;background:#ffd23f;color:#1b1d2a;border:2px solid #1b1d2a}
+.ar9-item-ico{grid-row:1/3;font-style:normal;font-size:22px;width:30px;text-align:center}

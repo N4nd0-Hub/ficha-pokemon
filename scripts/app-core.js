@@ -5771,6 +5771,9 @@ const BAG_CONSUMABLE_ITEMS=POKEAPI_ITEM_CATALOG
       :(BAG_CONSUMABLE_CATEGORY_MAP[item.category]||"other")
   }));
 
+/* Todos os itens da PokéAPI por slug (a tela de captura usa para as Poké Balls) */
+const POKEAPI_ITEM_BY_SLUG=new Map(POKEAPI_ITEM_CATALOG.map(item=>[item.apiName,item]));
+
 const BAG_CONSUMABLE_BY_SLUG=new Map(
   BAG_CONSUMABLE_ITEMS.map(item=>[item.apiName,item])
 );
@@ -5861,15 +5864,16 @@ function setBagQuantity(slug,value,{render=true,save=true}={}){
   if(amount)state.combatBag[slug]=amount;
   else delete state.combatBag[slug];
 
+  // salva antes de redesenhar: um erro em uma das telas não pode perder a compra
+  if(save)debouncedSave();
+
   if(render){
-    updateDrawerPocketSummary();
-    renderDrawerBag();
-    renderCombatBag();
-    renderTrainerBag();
-    updateCaptureModal();
+    for(const fn of [updateDrawerPocketSummary,renderDrawerBag,renderCombatBag,renderTrainerBag,updateCaptureModal]){
+      try{fn();}catch(err){console.error(err);}
+    }
+    try{document.dispatchEvent(new CustomEvent("hh:render"));}catch(err){}
   }
 
-  if(save)debouncedSave();
   return amount;
 }
 
