@@ -1,0 +1,46 @@
+/* V7 — Gráfico de status interativo (SVG) */
+.radar-box.sc7-on>canvas{display:none!important}
+.radar-box.sc7-on{display:block;padding:10px;min-height:0;background:
+  radial-gradient(circle at 50% 45%,rgba(76,133,220,.22),transparent 62%),linear-gradient(180deg,#121b2c,#0b111d);color:#eaf2ff}
+.sc7{display:grid;gap:8px}
+.sc7-bar{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.sc7-bar button{padding:5px 10px;border-radius:99px;border:2px solid rgba(150,200,255,.35);background:rgba(10,18,32,.6);color:#bcd4f5;font:700 10px var(--cl-pixel,"Silkscreen",monospace);letter-spacing:.04em;cursor:pointer;transition:background .15s,color .15s}
+.sc7-bar button[aria-pressed="true"]{background:#63d0ff;color:#06121f;border-color:#bfeaff}
+.sc7-stage{position:relative;width:100%;max-width:560px;margin:0 auto;aspect-ratio:560/500}
+.sc7-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.sc7-web{fill:rgba(10,18,32,.35);stroke:rgba(130,180,255,.14);stroke-width:1}
+.sc7-web.odd{fill:rgba(110,170,255,.06)}
+.sc7-web.out{stroke:rgba(150,200,255,.45);stroke-width:2}
+.sc7-band{fill:none;stroke:rgba(255,214,90,.38);stroke-width:1.2;stroke-dasharray:3 5}
+.sc7-qtxt{font:9px "Silkscreen",monospace;fill:rgba(255,220,130,.75)}
+.sc7-base{fill:rgba(255,255,255,.06);stroke:rgba(255,255,255,.75);stroke-width:1.6;stroke-dasharray:6 5}
+.sc7-shape{stroke:rgba(235,248,255,.95);stroke-width:2.6;stroke-linejoin:round}
+.sc7-dot{cursor:pointer;outline:none;transition:transform .15s}
+.sc7-dot:focus-visible circle:nth-child(2){stroke:#fff;stroke-width:3.5}
+.sc7-center circle{fill:rgba(7,12,20,.94);stroke:#63d0ff;stroke-width:2.5}
+.sc7-ctop{font:8px "Press Start 2P","Silkscreen",monospace;fill:rgba(190,214,255,.75);text-anchor:middle}
+.sc7-cval{font:13px "Press Start 2P","Silkscreen",monospace;fill:#fff;text-anchor:middle}
+.sc7-cbst{font:8px "Silkscreen",monospace;fill:rgba(190,214,255,.6);text-anchor:middle}
+.sc7-labels{position:absolute;inset:0;pointer-events:none}
+.sc7-chip{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:6px;align-items:center;justify-items:center;
+  padding:5px 9px;border-radius:10px;background:rgba(8,14,22,.86);border:2px solid color-mix(in srgb,var(--c) 60%,transparent);color:#f4f9ff;cursor:pointer;
+  box-shadow:0 3px 0 rgba(0,0,0,.35);transition:transform .15s,background .15s,border-color .15s}
+.sc7-chip span{grid-column:1/-1;font:9px "Press Start 2P","Silkscreen",monospace;color:var(--c);white-space:nowrap}
+.sc7-chip span i{font-style:normal;margin-left:3px}.sc7-chip span i.up{color:#ff8a8a}.sc7-chip span i.down{color:#7fb4ff}
+.sc7-chip b{font:14px "Press Start 2P","Silkscreen",monospace}
+.sc7-chip em{font:700 9px "Silkscreen",monospace;font-style:normal;padding:1px 5px;border-radius:6px;background:color-mix(in srgb,var(--c) 30%,transparent);color:#fff}
+.sc7-chip:hover,.sc7-chip.on{transform:translate(-50%,-50%) scale(1.08);background:color-mix(in srgb,var(--c) 22%,#08101a);border-color:var(--c)}
+.sc7-card{--c:#63d0ff;display:grid;gap:6px;padding:10px 12px;border-radius:12px;background:rgba(8,14,22,.75);border:2px solid color-mix(in srgb,var(--c) 55%,transparent);min-height:64px;transition:border-color .2s}
+.sc7-tip{margin:0;font-size:12px;color:#a9bfdf;text-align:center}
+.sc7-tip b{color:#ffd65a}
+.sc7-card-head{display:flex;align-items:center;gap:8px}
+.sc7-card-head b{flex:1;font:11px "Press Start 2P","Silkscreen",monospace;color:var(--c)}
+.sc7-card-head strong{font:16px "Press Start 2P","Silkscreen",monospace;color:#fff}
+.sc7-q{font:700 11px "Silkscreen",monospace;padding:2px 8px;border-radius:8px;background:var(--c);color:#07111d}
+.sc7-meter{height:8px;border-radius:5px;background:#05090f;overflow:hidden}
+.sc7-meter i{display:block;height:100%;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 60%,#fff),var(--c));transition:width .4s}
+.sc7-meta{font-size:11.5px;color:#a9bfdf}.sc7-meta b{color:#fff}
+.sc7-card p{margin:0;font-size:12.5px;line-height:1.45;color:#dbe7f7}.sc7-card p b{color:#ffd65a}
+@media (max-width:560px){
+  .sc7-chip{padding:3px 6px}.sc7-chip span{font-size:7px}.sc7-chip b{font-size:11px}
+}
