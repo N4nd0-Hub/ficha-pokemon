@@ -277,7 +277,7 @@
     room=next;ls.set("hh_arena_room",room);disconnect();chat=[];await connect();
   }
   function myStatus(){
-    if(RUN)return {status:"survival",wave:RUN.wave,region:RUN.region?.id||""};
+    if(RUN)return {status:"survival",wave:RUN.wave,region:RUN.region?.id||"",battle:RUN.ch?RUN.id:""};
     if(!B)return {status:"idle"};
     if(B.role==="spec")return {status:"watch",battle:B.id};
     return {status:"battle",battle:B.id,vs:B.names?.[B.role==="p1"?"p2":"p1"]||""};
@@ -329,7 +329,12 @@
     battleCh.on("broadcast",{event:"team"},({payload})=>{if(B?.host)hostTeam(payload);});
     battleCh.on("broadcast",{event:"action"},({payload})=>{if(B?.host)hostAction(payload.side,payload.action,payload.turn);});
     battleCh.on("broadcast",{event:"sync"},()=>{if(B?.host&&B.state)send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena,dmg:B.dmg});});
-    battleCh.on("broadcast",{event:"start"},({payload})=>{if(!B||B.host)return;if(!B.teams){B.teams=payload.teams;B.names=payload.names;B.format=payload.format;}if(sceneOk(payload.arena))B.arena=payload.arena;if(payload.dmg)B.dmg=payload.dmg;applyState(payload.state,true);});
+    battleCh.on("broadcast",{event:"start"},({payload})=>{if(!B||B.host)return;
+      // descida do Abismo / Sem Fim: cada andar chega como um "start" novo
+      if(payload.fresh&&B.teams&&payload.state?.id!==B.view?.id){B.view=null;B.log=[];B.queue=[];B.playing=false;B.teams=null;for(const k in lastHp)delete lastHp[k];}
+      if(!B.teams){B.teams=payload.teams;B.names=payload.names;B.format=payload.format;}
+      B.sub=payload.sub||"";if(sceneOk(payload.arena))B.arena=payload.arena;if(payload.dmg)B.dmg=payload.dmg;applyState(payload.state,true);});
+    battleCh.on("broadcast",{event:"runend"},({payload})=>{if(!B||B.host)return;pushLog([{k:"info",text:payload.text||"A corrida acabou."}]);if(B.view)B.view.phase="end";render(true);});
     battleCh.on("broadcast",{event:"state"},({payload})=>{if(!B||B.host)return;applyState(payload,false);});
     battleCh.on("broadcast",{event:"emote"},({payload})=>showEmote(payload));
     await new Promise(ok=>battleCh.subscribe(st=>{if(st==="SUBSCRIBED")ok();}));
@@ -371,7 +376,7 @@
     if(!B)return;
     if(B.solo){
       if(RUN&&B.state&&B.state.phase!=="end")endRun("desistiu");
-      B=null;RUN=null;track();if(!silent)render();return;
+      closeRunCh();B=null;RUN=null;track();if(!silent)render();return;
     }
     if(B.role!=="spec"&&B.state&&B.state.phase!=="end"){
       if(B.host){engine.walkover(B.state,"p1");broadcastState();}
@@ -659,6 +664,7 @@
       <div class="ar7-body">${B?battleView():lobbyView()}</div>
       <p class="ar7-toast" role="status" hidden></p>
       ${incoming?challengeDialog():""}
+      ${orderAsk&&!B?orderDialog():""}
     </div>`;
     if(keptScroll){const n=root.querySelector(".ar7-scenes");if(n)n.scrollLeft=keptScroll;}
     Object.entries(kept).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v;});
@@ -686,7 +692,7 @@
     const list=Object.values(people).sort((a,b)=>(a.id===me.id?-1:b.id===me.id?1:a.name.localeCompare(b.name)));
     const others=list.filter(p=>p.id!==me.id);
     const battles={};
-    list.filter(p=>p.status==="battle"&&p.battle).forEach(p=>{battles[p.battle]=battles[p.battle]||{id:p.battle,players:[],names:p.names};battles[p.battle].players.push(p.name);});
+    list.filter(p=>(p.status==="battle"||p.status==="survival")&&p.battle&&p.id!==me.id).forEach(p=>{battles[p.battle]=battles[p.battle]||{id:p.battle,players:[],names:p.names,solo:p.status==="survival",region:p.region,wave:p.wave};battles[p.battle].players.push(p.name);});
     const myTeam=teamPreview();
     const lead=myTeam[0];const leadMon=teamSource()[0];const leadImg=leadMon?localImg(leadMon):"";
     const bg=scene==="random"?"standard":scene;
@@ -768,7 +774,7 @@
     </div>
     <div class="ar8-sec">
       <h3>${PX("eye",24)} Batalhas ao vivo <small>${Object.keys(battles).length}</small></h3>
-      ${Object.keys(battles).length?`<ul class="ar7-battles">${Object.values(battles).map(b=>`<li><span><b>${esc(b.names?.p1||b.players[0]||"?")}</b> <i class="ar8-vs">VS</i> <b>${esc(b.names?.p2||b.players[1]||"?")}</b>${watchers[b.id]?` <small>👁 ${watchers[b.id]}</small>`:""}</span>
+      ${Object.keys(battles).length?`<ul class="ar7-battles">${Object.values(battles).map(b=>`<li><span>${b.solo?`${b.region&&REG(b.region)?"⛰":"🗼"} <b>${esc(b.players[0]||"?")}</b> <small>${b.region&&REG(b.region)?`${esc(REG(b.region).area)} · andar ${Number(b.wave)||1}`:`Desafio Sem Fim · onda ${Number(b.wave)||1}`}</small>`:`<b>${esc(b.names?.p1||b.players[0]||"?")}</b> <i class="ar8-vs">VS</i> <b>${esc(b.names?.p2||b.players[1]||"?")}</b>`}${watchers[b.id]?` <small>👁 ${watchers[b.id]}</small>`:""}</span>
         <button type="button" class="ar7-btn" data-ar="watch" data-id="${esc(b.id)}" data-p1="${esc(b.names?.p1||"")}" data-p2="${esc(b.names?.p2||"")}">👁 Assistir</button></li>`).join("")}</ul>`:`<p class="ar7-empty-text">Nenhuma batalha agora. Quando alguém lutar, aparece aqui para assistir.</p>`}
     </div>`;
   }
@@ -869,10 +875,36 @@
     if(!team.length){toast("Monte um time primeiro.");return;}
     RUN={wave:0,team,hp:team.map(m=>({hp:Math.max(1,Number(m.maxHp||1)),maxHp:Math.max(1,Number(m.maxHp||1)),fainted:false})),train:0,dmg:dmgMode,cleared:0,done:false,
       region,mode:region?region.id:"endless",ppg:{},lastGains:[]};
+    RUN.id="run-"+uidShort();openRunCh();
     state.arenaAttempts=state.arenaAttempts||{};
     state.arenaAttempts[RUN.mode]=myAttempts(RUN.mode)+1;RUN.attempt=state.arenaAttempts[RUN.mode];
     try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
     nextWave();
+  }
+  /* ---------- Corrida ao vivo: quem está na sala pode assistir ---------- */
+  function runSubtitle(){
+    if(!RUN)return "";
+    return RUN.region?`⛰ ${RUN.region.area} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · ${RUN.attempt||1}ª tentativa`
+      :`🗼 Desafio Sem Fim · Onda ${RUN.wave} · ${RUN.attempt||1}ª tentativa`;
+  }
+  function runStartPayload(){
+    return {teams:B.teams,state:pub(B.state),names:B.names,format:6,arena:B.arena,dmg:B.dmg,fresh:true,sub:runSubtitle()};
+  }
+  function openRunCh(){
+    if(!sb||!RUN)return;
+    try{
+      const ch=sb.channel("hh-arena-b:"+RUN.id,{config:{presence:{key:me.id},broadcast:{self:false}}});
+      ch.on("broadcast",{event:"sync"},()=>{if(B?.solo&&B.state&&RUN?.ch===ch)send(ch,"start",runStartPayload());});
+      ch.on("broadcast",{event:"emote"},({payload})=>showEmote(payload));
+      ch.on("presence",{event:"sync"},()=>{if(B?.solo){B.specs=Object.fromEntries(Object.values(ch.presenceState()).map(a=>a[a.length-1]).filter(x=>x.role==="spec").map(x=>[x.id,x.name]));if(!B.playing)render();}});
+      ch.subscribe(st=>{if(st==="SUBSCRIBED"){ch.track({id:me.id,name:me.name,role:"p1"});track();}});
+      RUN.ch=ch;battleCh=ch;
+    }catch(e){}
+  }
+  function closeRunCh(){
+    const ch=RUN?.ch;if(!ch)return;
+    RUN.ch=null;if(battleCh===ch)battleCh=null;
+    setTimeout(()=>{try{sb?.removeChannel(ch);}catch(e){}},800);
   }
   async function nextWave(){
     RUN.wave++;RUN.done=false;RUN.error="";RUN.lastGains=[];
@@ -896,7 +928,9 @@
     // HP que sobrou das ondas anteriores e o treino acumulado
     alive.forEach((ri,j)=>{const st=B.state.sides.p1.team[j];st.hp=Math.min(st.maxHp,RUN.hp[ri].hp);if(RUN.train){st.persist.atk=(st.persist.atk||0)+RUN.train;st.persist.spa=(st.persist.spa||0)+RUN.train;}});
     B.teams=B.state.teams;B.names={p1:me.name,p2:B.state.sides.p2.name};B.started=true;
-    applyState(pub(B.state),true);B.state.events=[];track();
+    applyState(pub(B.state),true);
+    if(RUN.ch){battleCh=RUN.ch;send(RUN.ch,"start",runStartPayload());}
+    B.state.events=[];track();
   }
   const saveNow=()=>{try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}};
   /* PPg (regra 17): quem lutou no andar ganha 1 (selvagem), 2 (Montanhista)
@@ -907,11 +941,11 @@
     RUN.alive.forEach((ri,j)=>{
       const t=st.sides.p1.team[j];if(!t?.part)return;
       const m=RUN.team[ri];
-      if(Number(m.level||1)-info.level>=10){gains.push({ri,n:0,why:"nível bem acima do rival"});return;}
+      if(Number(m.level||1)-info.level>=10){gains.push({ri,m:{name:m.name,img:m.img},n:0,why:"nível bem acima do rival"});return;}
       const p=state.pokemon.find(x=>String(x.id)===String(m.fid));if(!p)return;
       const before=Math.max(0,Number(p.currentPpg||0)),after=Math.min(15,before+info.ppg);
-      p.currentPpg=after;RUN.ppg[ri]=(RUN.ppg[ri]||0)+(after-before);
-      gains.push({ri,n:after-before,total:after,max:after>=15});
+      p.currentPpg=after;RUN.ppg[m.fid]=(RUN.ppg[m.fid]||0)+(after-before);
+      gains.push({ri,m:{name:m.name,img:m.img},n:after-before,total:after,max:after>=15});
     });
     RUN.lastGains=gains;
     saveNow();
@@ -939,6 +973,7 @@
   function endRun(reason){
     if(!RUN||RUN.recorded)return;
     RUN.recorded=true;RUN.over=true;
+    if(RUN.ch)send(RUN.ch,"runend",{text:`${me.name} terminou a corrida: ${RUN.cleared} ${RUN.region?"andar(es)":"onda(s)"} vencido(s).`});
     const foe=B?.teams?.p2?.[B?.state?.sides?.p2?.active||0]?.name||"";
     if(!RUN.region&&RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;}
     saveNow();
@@ -959,7 +994,10 @@
     const dmg=run.dmg==="matrix"?"matrix":"classic";
     try{
       await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
-      const {error}=await sb.from("arena_survival_ranking").insert({player:String(me.name||"Treinador").slice(0,24),player_key:playerKey().slice(0,64),waves,team,damage_mode:dmg,last_foe:String(foe||"").slice(0,40)||null,mode:run.mode||"endless"});
+      const row={player:String(me.name||"Treinador").slice(0,24)||"Treinador",player_key:playerKey().slice(0,64),waves:Math.max(0,Math.min(999,Number(waves)||0)),team,damage_mode:dmg,last_foe:String(foe||"").slice(0,40)||null,mode:run.mode||"endless"};
+      let {error}=await sb.from("arena_survival_ranking").insert(row);
+      // se o banco recusar (ex.: fotos grandes demais), tenta de novo só com os links
+      if(error){row.team=team.map(t=>({...t,img:/^https?:/.test(t.img||"")?t.img:""}));({error}=await sb.from("arena_survival_ranking").insert(row));}
       if(error)throw error;
       if(!quiet)toast("Corrida registrada no ranking!");RANK.at=0;if(RANK.mode===(run.mode||"endless"))loadRank(true);
     }catch(e){if(!quiet)toast("Não consegui salvar no ranking.");}
@@ -1030,9 +1068,10 @@
       const gains=RUN.lastGains||[];
       return `<div class="ar7-result win ar9-floor">
         <b>⛰ Andar ${RUN.wave} vencido! <small>${RUN.waveInfo?.depth||0} m · ${esc(RUN.waveInfo?.zone||"")}</small></b>
-        ${gains.length?`<ul class="ar9-ppg">${gains.map(g=>{const m=RUN.team[g.ri];return `<li class="${g.n?"":"none"}">${m.img?`<img src="${esc(m.img)}" alt="" width="26" height="26">`:""}<b>${esc(m.name)}</b>${g.n?`<i>+${g.n} PPg</i><small>${g.total}/15${g.max?" · máximo":""}</small>`:`<small>${g.why?esc(g.why):"já está no máximo (15)"}</small>`}</li>`;}).join("")}</ul>`:""}
+        ${gains.length?`<ul class="ar9-ppg">${gains.map(g=>{const m=g.m||RUN.team[g.ri];return `<li class="${g.n?"":"none"}">${m.img?`<img src="${esc(m.img)}" alt="" width="26" height="26">`:""}<b>${esc(m.name)}</b>${g.n?`<i>+${g.n} PPg</i><small>${g.total}/15${g.max?" · máximo":""}</small>`:`<small>${g.why?esc(g.why):"já está no máximo (15)"}</small>`}</li>`;}).join("")}</ul>`:""}
         <small>Sem cura grátis no abismo: use a Mochila antes de descer. Próximo: <b>Andar ${RUN.wave+1}</b>${next?` · Lv. ${next.level} · ${next.depth} m${next.boss?" · <b>GUARDIÃO</b>":next.elite?" · Montanhista":""}`:""}.</small>
         ${hpRow}
+        ${runOrderRow()}
         ${bagPanel(true)}
         <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="region-stop">Subir e encerrar</button><button type="button" class="ar7-btn primary" data-ar="surv-reward" data-v="next">⬇ Descer ao andar ${RUN.wave+1}</button></div>
       </div>`;
@@ -1056,12 +1095,47 @@
           <button type="button" class="ar7-reward" data-ar="surv-reward" data-v="train" ${RUN.train>=3?"disabled":""}><span>💪</span><b>Treinar</b><small>+1 Attack e Sp.Atk para o time (${RUN.train}/3)</small></button>
         </div>
         <div class="ar7-surv-hp">${RUN.team.map((m,i)=>{const h=RUN.hp[i];const pc=Math.round(100*h.hp/h.maxHp);return `<span class="${h.fainted?"out":""}" title="${esc(m.name)}">${m.img?`<img src="${esc(m.img)}" alt="" width="28" height="28">`:""}<i style="--p:${h.fainted?0:pc}%"></i></span>`;}).join("")}</div>
+        ${runOrderRow()}
       </div>`;
     }
     const best=Number(state.arenaSurvivalBest||0);
     return `<div class="ar7-result lose"><b>Fim da corrida!</b>
       <small>Você venceu <b>${RUN?.cleared||0}</b> onda${(RUN?.cleared||0)===1?"":"s"}. Seu recorde: <b>${best}</b>. Esta foi a sua <b>${RUN?.attempt||myAttempts("endless")}ª tentativa</b>.${(RUN?.cleared||0)>=1?" A corrida foi para o ranking.":""}</small>
       <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button><button type="button" class="ar7-btn primary" data-ar="surv-again">Jogar de novo</button></div></div>`;
+  }
+  /* ---------- Ordem do time antes de começar ---------- */
+  let orderAsk=null;
+  function askOrder(id){if(B)return;if(!teamSource().length){toast("Monte um time primeiro.");return;}orderAsk={id};sfx("select");render();}
+  function orderDialog(){
+    const team=teamSource(),R0=orderAsk.id?REG(orderAsk.id):null;
+    const face=p=>{const img=localImg(p);return img?`<img src="${esc(img)}" alt="" width="44" height="44">`:`<i>${esc((p.name||"?").slice(0,1))}</i>`;};
+    return `<div class="ar7-modal" role="dialog" aria-modal="true" aria-labelledby="ar9OrdTitle"><div class="ar7-modal-box ar9-order">
+      <span class="ar7-modal-ico" aria-hidden="true">${R0?PX("abyss",44):PX("tower",44)}</span>
+      <h3 id="ar9OrdTitle">${R0?`Descer no ${esc(R0.area)}`:"Desafio Sem Fim"}</h3>
+      <p>Escolha a ordem: o 1º começa a luta e os outros entram nessa ordem quando alguém desmaia.</p>
+      <ol class="ar7-pick-list">${team.map((p,i)=>`<li class="${i===0?"lead":""}" style="--t:${typeColor(p.type1)}">
+        <span class="ar7-pick-face">${face(p)}</span>
+        <span class="ar7-pick-name"><b>${esc(p.name)}</b><small>${i===0?"Começa a luta":`${i+1}º`} · Lv${Number(p.level||1)}</small></span>
+        <span class="ar7-pick-acts">
+          ${i>0?`<button type="button" data-ar="pick-lead" data-id="${esc(String(p.id))}" title="Começar com ${esc(p.name)}" aria-label="Começar com ${esc(p.name)}">★</button><button type="button" data-ar="pick-left" data-id="${esc(String(p.id))}" aria-label="Subir ${esc(p.name)}">▲</button>`:""}
+          ${i<team.length-1?`<button type="button" data-ar="pick-down" data-id="${esc(String(p.id))}" aria-label="Descer ${esc(p.name)}">▼</button>`:""}
+        </span></li>`).join("")}</ol>
+      <p class="ar7-hint">A ordem fica salva para as próximas vezes. Para trocar quem vai, use a aba <b>Meu time</b>.</p>
+      <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="order-cancel">Cancelar</button><button type="button" class="ar7-btn primary" data-ar="order-go">${R0?"⬇ Descer":"▶ Começar"}</button></div>
+    </div></div>`;
+  }
+  /* Entre andares: muda quem começa o próximo */
+  function runMove(i,lead){
+    if(!RUN||RUN.over)return;
+    const j=lead?0:i-1;if(i<=0||j<0||i>=RUN.team.length)return;
+    const mv=(arr)=>{const x=arr.splice(i,1)[0];arr.splice(j,0,x);};
+    mv(RUN.team);mv(RUN.hp);
+    sfx("select");render(true);
+  }
+  function runOrderRow(){
+    return `<div class="ar9-runorder"><p class="ar9-bag-title">🔀 Ordem para o próximo ${RUN.region?"andar":"onda"} <small>o 1º de pé começa</small></p>
+      <ol>${RUN.team.map((m,i)=>{const h=RUN.hp[i];return `<li class="${h.fainted?"out":""}">${m.img?`<img src="${esc(m.img)}" alt="" width="30" height="30">`:""}<b>${esc(m.name)}</b><small>${h.fainted?"desmaiado":`${h.hp}/${h.maxHp}`}</small>
+        ${i>0?`<span><button type="button" data-ar="run-lead" data-i="${i}" title="Começar com ${esc(m.name)}" aria-label="Começar com ${esc(m.name)}">★</button><button type="button" data-ar="run-up" data-i="${i}" aria-label="Subir ${esc(m.name)}">▲</button></span>`:"<em>1º</em>"}</li>`;}).join("")}</ol></div>`;
   }
   function challengeDialog(){
     const p=incoming;
@@ -1154,7 +1228,7 @@
       }
     }
     return `<section class="ar7-battle">
-      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.solo&&RUN?.attempt?`🔁 ${RUN.attempt}ª tentativa · `:""}${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
+      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.role==="spec"&&B.sub?`${esc(B.sub)} · `:""}${B.solo&&RUN?.attempt?`🔁 ${RUN.attempt}ª tentativa · `:""}${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
       <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
@@ -1206,19 +1280,23 @@
     }
     else if(a==="bag-between"){B.betweenItem=B.betweenItem===b.dataset.slug?"":b.dataset.slug;render(true);}
     else if(a==="bag-use-between")useItemBetween(b.dataset.slug,Number(b.dataset.idx));
-    else if(a==="region-start")startRun(b.dataset.v||"altamuralha");
-    else if(a==="region-stop"){if(confirm("Subir agora encerra a descida e guarda o resultado no ranking. Encerrar?")){endRun("subiu");render();B=null;RUN=null;track();render();}}
-    else if(a==="region-again"){const id=RUN?.region?.id||"altamuralha";B=null;RUN=null;startRun(id);}
+    else if(a==="region-start")askOrder(b.dataset.v||"altamuralha");
+    else if(a==="order-go"){const id=orderAsk?.id||"";orderAsk=null;startRun(id||undefined);}
+    else if(a==="order-cancel"){orderAsk=null;render();}
+    else if(a==="pick-down")editPick(ids=>{const i=ids.indexOf(b.dataset.id);if(i>=0&&i<ids.length-1)[ids[i+1],ids[i]]=[ids[i],ids[i+1]];return ids;});
+    else if(a==="run-up"||a==="run-lead"){runMove(Number(b.dataset.i),a==="run-lead");}
+    else if(a==="region-stop"){if(confirm("Subir agora encerra a descida e guarda o resultado no ranking. Encerrar?")){endRun("subiu");render();closeRunCh();B=null;RUN=null;track();render();}}
+    else if(a==="region-again"){const id=RUN?.region?.id||"altamuralha";closeRunCh();B=null;RUN=null;askOrder(id);}
     else if(a==="rank-mode-open"){tab="ranking";ls.set("hh_arena_tab",tab);RANK.mode=b.dataset.v;RANK.list=null;RANK.at=0;render();loadRank(true);root.querySelector(".ar8-tabs")?.scrollIntoView({block:"nearest",behavior:"smooth"});}
     else if(a==="rank-mode"){RANK.mode=b.dataset.v;RANK.list=null;RANK.at=0;render();loadRank(true);}
     else if(a==="switch")act({kind:"switch",idx:Number(b.dataset.idx)});
     else if(a==="forfeit"){if(confirm("Desistir da batalha?"))act({kind:"forfeit"});}
     else if(a==="emote")emote(b.dataset.e);
     else if(a==="tab"){tab=b.dataset.v;ls.set("hh_arena_tab",tab);if(tab==="ranking")loadRank();sfx("select");render();root.querySelector(".ar8-tabs")?.scrollIntoView({block:"nearest",behavior:"smooth"});}
-    else if(a==="surv-start")startRun();
+    else if(a==="surv-start")askOrder("");
     else if(a==="surv-retry"){if(RUN){RUN.error="";RUN.wave--;nextWave();}}
     else if(a==="surv-reward")applyReward(b.dataset.v);
-    else if(a==="surv-again"){B=null;RUN=null;startRun();}
+    else if(a==="surv-again"){closeRunCh();B=null;RUN=null;askOrder("");}
     else if(a==="rank-reload")loadRank(true);
     else if(a==="dmg"){dmgMode=b.dataset.v==="matrix"?"matrix":"classic";ls.set("hh_arena_dmg",dmgMode);sfx("select");render();}
     else if(a==="pick-add")editPick(ids=>ids.length<6&&!ids.includes(b.dataset.id)?[...ids,b.dataset.id]:ids);
@@ -1244,6 +1322,7 @@
   });
   root.addEventListener("keydown",e=>{
     if(e.key==="Enter"&&e.target.id==="ar7Room"){e.preventDefault();switchRoom(e.target.value);}
+    if(e.key==="Escape"&&orderAsk){orderAsk=null;render();return;}
     if(e.key==="Escape"&&!incoming&&!B)close();
   });
   window.addEventListener("beforeunload",()=>{if(B)leaveBattle(true);});
