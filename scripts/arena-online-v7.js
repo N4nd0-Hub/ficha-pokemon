@@ -102,15 +102,28 @@
     try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
     ls.set("hh_arena_pick",JSON.stringify(pickMem));
   }
+  /* Quem vai é a escolha da arena; a ORDEM é sempre a da ficha (a mesma do
+     Trainer Card, da faixa da equipe e do PC). Mudar a ordem aqui muda lá. */
   function teamSource(){
     const ids=pickIds();
     if(!ids.length)return fichaTeam();
-    const by=new Map(state.pokemon.map(p=>[String(p.id),p]));
-    return ids.map(id=>by.get(id)).filter(Boolean);
+    const set=new Set(ids);
+    return state.pokemon.filter(p=>set.has(String(p.id))).slice(0,6);
+  }
+  function applyOrder(ids){
+    const set=new Set(ids),by=new Map(state.pokemon.map(p=>[String(p.id),p]));
+    const slots=[];state.pokemon.forEach((p,i)=>{if(set.has(String(p.id)))slots.push(i);});
+    const next=state.pokemon.slice();
+    ids.map(id=>by.get(id)).filter(Boolean).forEach((p,k)=>{if(slots[k]!=null)next[slots[k]]=p;});
+    state.pokemon=next;
   }
   function editPick(fn){
-    let ids=pickIds();if(!ids.length)ids=fichaTeam().map(p=>String(p.id));
-    ids=fn(ids)||ids;savePick(ids);track();render();
+    let ids=teamSource().map(p=>String(p.id));
+    const before=ids.join("|");
+    ids=fn(ids.slice())||ids;
+    const sameSet=ids.length===before.split("|").filter(Boolean).length&&ids.every(id=>before.split("|").includes(id));
+    if(sameSet&&ids.join("|")!==before){applyOrder(ids);ignoreRender=true;try{if(typeof renderAll==="function")renderAll();}catch(e){}ignoreRender=false;}
+    savePick(ids);track();render();
   }
   function localImg(p){try{return displayPokemonImage(p)||"";}catch(e){return "";}}
   function teamPreview(){
@@ -219,15 +232,39 @@
   document.body.appendChild(root);
   function open(){
     root.hidden=false;document.body.classList.add("ar7-open");sfx("page");
-    connect();render();ensureThumbs();
+    document.getElementById("hhArenaBtn")?.classList.remove("ar9-running");
+    connect();render(true);ensureThumbs();
   }
   function close(){
+    // Desafio Sem Fim / Abismo: voltar para a ficha só pausa a corrida
+    // (dá para comprar itens, mudar a ordem etc. e voltar)
+    if(B?.solo&&RUN&&!RUN.over){
+      root.hidden=true;document.body.classList.remove("ar7-open");
+      document.getElementById("hhArenaBtn")?.classList.add("ar9-running");
+      if(typeof showToast==="function")showToast(`${RUN.region?"A descida":"A corrida"} continua pausada: volte pelo botão ⚔ Arena.`);
+      return;
+    }
     if(B&&B.role!=="spec"&&B.state&&B.state.phase!=="end"&&!confirm("Sair da arena desiste da batalha atual. Sair mesmo?"))return;
     if(B)leaveBattle(true);
     root.hidden=true;document.body.classList.remove("ar7-open");
     disconnect();
   }
-  document.addEventListener("hh:render",()=>{if(lobby&&!B&&me.name!==lastTrackedName)track();});
+  /* A arena acompanha a ficha: ordem da equipe, Bolsa, nome, níveis… */
+  let ignoreRender=false,syncT=0;
+  const onFichaChange=()=>{
+    if(ignoreRender)return;
+    clearTimeout(syncT);
+    syncT=setTimeout(()=>{
+      if(lobby&&(!B||RUN))track();
+      if(root.hidden)return;
+      // não redesenha no meio de uma animação nem com campo de texto em uso
+      if(B&&(B.playing||B.intro))return;
+      const typing=document.activeElement&&root.contains(document.activeElement)&&/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+      if(!typing)render(true);
+    },120);
+  };
+  document.addEventListener("hh:render",onFichaChange);
+  document.addEventListener("hh:pokemonchange",onFichaChange);
   window.hhArena={open,close,get battle(){return B;},get rank(){return RANK;}};
 
   /* Botão ⚔ Arena no topo (computador e celular) */
@@ -1023,14 +1060,48 @@
         const item=BAG_CONSUMABLE_BY_SLUG.get(slug);if(!item)continue;
         const spec=bagItemUseSpec(item);if(!spec||!ITEM_KINDS.has(spec.kind))continue;
         if(between&&!/^(heal|full|revive)/.test(spec.kind))continue;
-        out.push({slug,name:item.name,qty,spec,desc:String(item.description||"").slice(0,140),revive:/^revive/.test(spec.kind)});
+        out.push({slug,name:item.name,qty,spec,desc:String(item.description||"").slice(0,140),revive:/^revive/.test(spec.kind),src:"Bolsa"});
+      }
+    }catch(e){}
+    // itens comprados na Loja do Treinador (inventário do treinador)
+    try{
+      const items=ensureTrainerData().inventory?.items||[];
+      for(const i of items){
+        if(!(Number(i.qty)>0)||!(i.usable||i.category==="consumables"))continue;
+        const spec=invItemSpec(i);if(!spec||!ITEM_KINDS.has(spec.kind))continue;
+        if(between&&!/^(heal|full|revive)/.test(spec.kind))continue;
+        let hit=null;try{hit=officialItemByQuery(i.name);}catch(e){}
+        out.push({slug:"inv:"+i.id,name:i.name,qty:Number(i.qty),spec,desc:String(i.desc||"").slice(0,140),revive:/^revive/.test(spec.kind),src:"Inventário",
+          img:hit?.apiName?itemImg(hit.apiName):"",icon:i.icon||"🧪"});
       }
     }catch(e){}
     const order={reviveFull:0,reviveFraction:1,fullRestore:2,healFull:3,healFraction:4,healFlat:5};
     return out.sort((a,b)=>(order[a.spec.kind]??9)-(order[b.spec.kind]??9)||a.name.localeCompare(b.name));
   }
+  /* Efeito de um item do inventário do treinador: o texto da loja manda
+     ("Cura 50 HP", "Cura totalmente"); senão, o item oficial de mesmo nome. */
+  function invItemSpec(i){
+    const d=String(i.desc||"");
+    let m=/(?:cura|restaura|recupera)\s+(\d+)\s*(?:de\s+)?HP/i.exec(d);
+    if(/revive|reviver|reanima/i.test(i.name+" "+d)){
+      if(/totalmente|todo o HP|max/i.test(i.name+" "+d))return {kind:"reviveFull"};
+      return {kind:"reviveFraction",num:1,den:2};
+    }
+    if(m)return {kind:"healFlat",amount:Number(m[1])};
+    if(/cura totalmente|restaura todo|HP (?:total|cheio)|todo o HP/i.test(d))return /status|condi/i.test(d)?{kind:"fullRestore"}:{kind:"healFull"};
+    try{const hit=officialItemByQuery(i.name);const item=hit&&BAG_CONSUMABLE_BY_SLUG.get(hit.apiName);if(item)return bagItemUseSpec(item);}catch(e){}
+    if(/cura (?:todos os )?status|cura todas as condi/i.test(d))return {kind:"cureAll"};
+    return null;
+  }
   function spendItem(slug){
-    try{const q=bagQuantity(slug);if(q<=0)return false;setBagQuantity(slug,q-1,{render:false,save:true});saveNow();return true;}catch(e){return false;}
+    try{
+      if(String(slug).startsWith("inv:")){
+        const it=(ensureTrainerData().inventory?.items||[]).find(x=>"inv:"+x.id===slug);
+        if(!it||!(it.qty>0))return false;
+        it.qty-=1;saveNow();try{document.dispatchEvent(new CustomEvent("hh:render"));}catch(e){}return true;
+      }
+      const q=bagQuantity(slug);if(q<=0)return false;setBagQuantity(slug,q-1,{render:false,save:true});saveNow();return true;
+    }catch(e){return false;}
   }
   const itemImg=slug=>{try{return pokeApiItemSpriteUrl(slug);}catch(e){return "";}};
   /* Entre andares: a cura vem só da Mochila */
@@ -1053,7 +1124,7 @@
     const hpOf=i=>between?RUN.hp[i]:B.view.sides[mySide()].team[i];
     return `<div class="ar9-bag">
       <p class="ar9-bag-title">🎒 Mochila <small>itens reais da Bolsa da ficha · cada uso gasta 1</small></p>
-      ${list.length?`<div class="ar9-bag-items">${list.map(x=>`<button type="button" class="ar9-item${x.slug===sel?" on":""}" data-ar="${between?"bag-between":"bag-pick"}" data-slug="${esc(x.slug)}" title="${esc(x.desc)}"><img src="${esc(itemImg(x.slug))}" alt="" width="30" height="30" loading="lazy"><b>${esc(x.name)}</b><small>×${x.qty}</small></button>`).join("")}</div>`
+      ${list.length?`<div class="ar9-bag-items">${list.map(x=>`<button type="button" class="ar9-item${x.slug===sel?" on":""}" data-ar="${between?"bag-between":"bag-pick"}" data-slug="${esc(x.slug)}" title="${esc(x.desc)}">${x.img||!x.slug.startsWith("inv:")?`<img src="${esc(x.img||itemImg(x.slug))}" alt="" width="30" height="30" loading="lazy">`:`<i class="ar9-item-ico">${esc(x.icon||"🧪")}</i>`}<b>${esc(x.name)}</b><small>×${x.qty}</small></button>`).join("")}</div>`
         :`<p class="ar7-empty-text">Nenhum item de cura na Bolsa. Compre ou ganhe itens na ficha (aba Bolsa).</p>`}
       ${it?`<p class="ar9-bag-title">Usar <b>${esc(it.name)}</b> em:</p><div class="ar7-party">${team.map((m,i)=>{const st=hpOf(i);const dis=it.revive!==!!st.fainted;return `<button type="button" class="ar7-switch" data-ar="${between?"bag-use-between":"bag-use"}" data-slug="${esc(it.slug)}" data-idx="${i}" ${dis?"disabled":""}>
         ${m.img?`<img src="${esc(m.img)}" alt="" width="34" height="34">`:`<i>${esc(m.name.slice(0,1))}</i>`}<span><b>${esc(m.name)}</b><small class="${hpClass(hpPct(st))}">${st.fainted?"desmaiado":`${st.hp}/${st.maxHp}`}</small></span></button>`;}).join("")}</div>`:""}
@@ -1120,7 +1191,7 @@
           ${i>0?`<button type="button" data-ar="pick-lead" data-id="${esc(String(p.id))}" title="Começar com ${esc(p.name)}" aria-label="Começar com ${esc(p.name)}">★</button><button type="button" data-ar="pick-left" data-id="${esc(String(p.id))}" aria-label="Subir ${esc(p.name)}">▲</button>`:""}
           ${i<team.length-1?`<button type="button" data-ar="pick-down" data-id="${esc(String(p.id))}" aria-label="Descer ${esc(p.name)}">▼</button>`:""}
         </span></li>`).join("")}</ol>
-      <p class="ar7-hint">A ordem fica salva para as próximas vezes. Para trocar quem vai, use a aba <b>Meu time</b>.</p>
+      <p class="ar7-hint">É a mesma ordem do Trainer Card e da Equipe da ficha: mudando aqui, muda lá. Para trocar quem vai, use a aba <b>Meu time</b>.</p>
       <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="order-cancel">Cancelar</button><button type="button" class="ar7-btn primary" data-ar="order-go">${R0?"⬇ Descer":"▶ Começar"}</button></div>
     </div></div>`;
   }
