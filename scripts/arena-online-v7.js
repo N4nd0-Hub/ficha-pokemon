@@ -50,6 +50,9 @@
   let RUN=null,RANK={list:null,loading:false,error:"",mode:"endless"};
   const REG=id=>window.hhArenaSurvival?.REGIONS?.[id]||null;
   const regionBest=id=>Number(state.arenaRegionBest?.[id]||0);
+  /* Tentativas: as suas ficam na ficha; as de todos vêm do banco */
+  const myAttempts=mode=>Number(state.arenaAttempts?.[mode]||0);
+  const triesTxt=n=>`${n} tentativa${n===1?"":"s"}`;
   const SURV=()=>window.hhArenaSurvival;
   const aiRules={typeMultiplier:(t,d)=>defensiveMultiplier(t,d),normalizeType:t=>normalizeTypeName(t)};
   function playerKey(){
@@ -718,7 +721,7 @@
       <article class="ar8-mode endless ar8-frame">
         <span class="ar8-mode-ico tower">${PX("tower",64)}</span>
         <div class="ar8-mode-txt"><small>Solo · ondas infinitas</small><h3>Desafio Sem Fim</h3>
-          <p>Recorde: <b>${best}</b> onda${best===1?"":"s"}${top?` · Líder: <b>${esc(top.player)}</b> (${top.waves})`:""}</p></div>
+          <p>Recorde: <b>${best}</b> onda${best===1?"":"s"} · 🔁 <b>${myAttempts("endless")}</b>${top?` · Líder: <b>${esc(top.player)}</b> (${top.waves})`:""}</p></div>
         <div class="ar8-mode-act"><button type="button" class="ar7-btn primary" data-ar="surv-start" ${myTeam.length?"":"disabled"}>▶ Começar</button><button type="button" class="ar7-btn" data-ar="tab" data-v="ranking">🏆</button></div>
       </article>
     </section>
@@ -740,7 +743,7 @@
         <div class="ar9-city-txt"><small>Cidade de <b>${esc(r.city)}</b> · tipo ${esc(r.typePt)}</small><h3>${esc(r.area)}</h3>
           <p>Lv ${r.minLv} → ${r.maxLv} · cada andar mais fundo e mais perigoso · Guardião no andar ${r.floors}</p>
           <ul class="ar9-rules"><li>⭐ Rende <b>PPg</b> para quem lutar</li><li>🎒 Cura só com os itens da sua Bolsa</li><li>💔 Golpes de cura rendem metade</li></ul>
-          <p class="ar9-best">Seu recorde: <b>${best}</b> andar${best===1?"":"es"}${best?` (${best*40} m)`:""}</p></div>
+          <p class="ar9-best">Seu recorde: <b>${best}</b> andar${best===1?"":"es"}${best?` (${best*40} m)`:""} · 🔁 Tentativas: <b>${myAttempts(r.id)}</b></p></div>
         <div class="ar8-mode-act"><button type="button" class="ar7-btn primary" data-ar="region-start" data-v="${esc(r.id)}" ${myTeam.length?"":"disabled"}>⬇ Descer</button><button type="button" class="ar7-btn" data-ar="rank-mode-open" data-v="${esc(r.id)}" title="Ranking de ${esc(r.city)}">🏆</button></div>
       </article>`;}).join("")}
     </section>`;
@@ -778,16 +781,16 @@
     const card=(r,i)=>`<div class="ar8-pod p${i+1}${r.player_key===me_?" me":""}">
       ${i===0?`<span class="ar8-crown">${PX("crown",30)}</span>`:""}
       <span class="ar8-avatar" style="--t:#ffd23f">${(()=>{const im=(r.team||[]).find(t=>t.img)?.img;return im?`<img src="${esc(im)}" alt="">`:PX("ball",34);})()}</span>
-      <b>${esc(r.player)}</b><strong>${r.waves}<small> ${unit(r.waves)}</small></strong><i class="ar8-step">${i+1}</i></div>`;
+      <b>${esc(r.player)}</b><strong>${r.waves}<small> ${unit(r.waves)}</small></strong>${RANK.tries?.get(r.player_key)?`<em class="ar9-tries">🔁 ${triesTxt(RANK.tries.get(r.player_key))}</em>`:""}<i class="ar8-step">${i+1}</i></div>`;
     const regions=Object.values(window.hhArenaSurvival?.REGIONS||{});
     return `<div class="ar8-sec ar8-rank">
       <div class="ar8-rank-top"><h3>${PX("trophy",24)} Ranking ${reg?`do ${esc(reg.area)}`:"do Desafio Sem Fim"}</h3><button type="button" class="ar7-link" data-ar="rank-reload">atualizar</button></div>
       <div class="ar9-rank-modes" role="tablist" aria-label="Modo do ranking"><button type="button" role="tab" aria-selected="${!reg}" class="${!reg?"on":""}" data-ar="rank-mode" data-v="endless">${PX("tower",18)} Sem Fim</button>${regions.map(x=>`<button type="button" role="tab" aria-selected="${reg?.id===x.id}" class="${reg?.id===x.id?"on":""}" data-ar="rank-mode" data-v="${esc(x.id)}">${PX(x.icon,18)} ${esc(x.city)}</button>`).join("")}</div>
-      <p class="ar8-sub">Melhor ${reg?"descida":"corrida"} de cada treinador. Seu recorde: <b>${best}</b> ${unit(best)}.</p>
+      <p class="ar8-sub">Melhor ${reg?"descida":"corrida"} de cada treinador. Seu recorde: <b>${best}</b> ${unit(best)} · 🔁 <b>${triesTxt(Math.max(myAttempts(RANK.mode),RANK.tries?.get(me_)||0))}</b>.</p>
       ${RANK.loading&&!list?`<p class="ar7-empty-text">Carregando…</p>`:RANK.error&&!list?`<p class="ar7-empty-text">${esc(RANK.error)}</p>`:!list||!list.length?`<div class="ar8-empty">${PX("tower",40)}<p>Ninguém no ranking ainda. Seja o primeiro!</p></div>`:`
       <div class="ar8-podium">${[1,0,2].filter(i=>pod[i]).map(i=>card(pod[i],i)).join("")}</div>
       ${list.length>3?`<ol class="ar7-rank-list" start="4">${list.slice(3).map((r,i)=>`<li class="${r.player_key===me_?"me":""}"><span class="ar7-rank-pos">${i+4}</span>
-        <span class="ar7-rank-name"><b>${esc(r.player)}</b><small>${(r.team||[]).map(t=>esc(t.n)).join(", ")}${r.damage_mode==="matrix"?" · 🧪":""}${r.last_foe?` · caiu para ${esc(r.last_foe)}`:""}</small></span>
+        <span class="ar7-rank-name"><b>${esc(r.player)}</b><small>${(r.team||[]).map(t=>esc(t.n)).join(", ")}${r.damage_mode==="matrix"?" · 🧪":""}${r.last_foe?` · caiu para ${esc(r.last_foe)}`:""}${RANK.tries?.get(r.player_key)?` · 🔁 ${triesTxt(RANK.tries.get(r.player_key))}`:""}</small></span>
         <span class="ar7-rank-minis">${teamMinis((r.team||[]).map(t=>({n:t.n,lv:t.lv,t:[],img:t.img||""})),24)}</span>
         <b class="ar7-rank-score">${r.waves}<small>${unit(r.waves)}</small></b></li>`).join("")}</ol>`:""}`}
     </div>`;
@@ -845,9 +848,12 @@
     try{
       await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
       const mode=RANK.mode;
-      const {data,error}=await sb.from("arena_survival_ranking").select("player,player_key,waves,team,damage_mode,last_foe,created_at,mode").eq("mode",mode).order("waves",{ascending:false}).order("created_at",{ascending:true}).limit(300);
+      const [{data,error},stats]=await Promise.all([
+        sb.from("arena_survival_ranking").select("player,player_key,waves,team,damage_mode,last_foe,created_at,mode").eq("mode",mode).gt("waves",0).order("waves",{ascending:false}).order("created_at",{ascending:true}).limit(300),
+        sb.from("arena_survival_stats").select("player_key,attempts").eq("mode",mode).limit(1000)]);
       if(error)throw error;
       if(mode!==RANK.mode){RANK.loading=false;return;}
+      RANK.tries=new Map((stats?.data||[]).map(x=>[x.player_key,Number(x.attempts||0)]));
       const seen=new Set(),out=[];
       for(const r of data||[]){if(seen.has(r.player_key))continue;seen.add(r.player_key);out.push(r);if(out.length>=20)break;}
       RANK.list=out;RANK.at=Date.now();
@@ -863,6 +869,9 @@
     if(!team.length){toast("Monte um time primeiro.");return;}
     RUN={wave:0,team,hp:team.map(m=>({hp:Math.max(1,Number(m.maxHp||1)),maxHp:Math.max(1,Number(m.maxHp||1)),fainted:false})),train:0,dmg:dmgMode,cleared:0,done:false,
       region,mode:region?region.id:"endless",ppg:{},lastGains:[]};
+    state.arenaAttempts=state.arenaAttempts||{};
+    state.arenaAttempts[RUN.mode]=myAttempts(RUN.mode)+1;RUN.attempt=state.arenaAttempts[RUN.mode];
+    try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
     nextWave();
   }
   async function nextWave(){
@@ -933,9 +942,10 @@
     const foe=B?.teams?.p2?.[B?.state?.sides?.p2?.active||0]?.name||"";
     if(!RUN.region&&RUN.cleared>Number(state.arenaSurvivalBest||0)){state.arenaSurvivalBest=RUN.cleared;}
     saveNow();
-    if(RUN.cleared>=1)saveRank({waves:RUN.cleared,foe:reason?"":foe});
+    // toda corrida conta como tentativa no banco (as de 0 não aparecem no pódio)
+    saveRank({waves:RUN.cleared,foe:reason?"":foe,quiet:RUN.cleared<1});
   }
-  async function saveRank({waves,foe}){
+  async function saveRank({waves,foe,quiet}){
     const run=RUN;if(!run)return;
     // artes enviadas na ficha (imagem embutida) viram uma miniatura de 56px
     const team=[];
@@ -951,8 +961,8 @@
       await loadSb();sb=sb||window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
       const {error}=await sb.from("arena_survival_ranking").insert({player:String(me.name||"Treinador").slice(0,24),player_key:playerKey().slice(0,64),waves,team,damage_mode:dmg,last_foe:String(foe||"").slice(0,40)||null,mode:run.mode||"endless"});
       if(error)throw error;
-      toast("Corrida registrada no ranking!");RANK.at=0;if(RANK.mode===(run.mode||"endless"))loadRank(true);
-    }catch(e){toast("Não consegui salvar no ranking.");}
+      if(!quiet)toast("Corrida registrada no ranking!");RANK.at=0;if(RANK.mode===(run.mode||"endless"))loadRank(true);
+    }catch(e){if(!quiet)toast("Não consegui salvar no ranking.");}
   }
   function applyReward(kind){
     if(!RUN||RUN.over)return;
@@ -1029,7 +1039,7 @@
     }
     const best=regionBest(R0.id);
     return `<div class="ar7-result lose"><b>${RUN.cleared>=R0.floors?"🏔 Você voltou do Coração do Abismo!":"O abismo venceu desta vez…"}</b>
-      <small>Andares vencidos: <b>${RUN.cleared}</b> (${RUN.cleared*40} m). Recorde em ${esc(R0.city)}: <b>${best}</b>. PPg ganhos nesta descida: <b>${totalPpg}</b>.${RUN.cleared>=1?" A descida foi para o ranking.":""}</small>
+      <small>Andares vencidos: <b>${RUN.cleared}</b> (${RUN.cleared*40} m). Recorde em ${esc(R0.city)}: <b>${best}</b>. PPg ganhos nesta descida: <b>${totalPpg}</b>. Esta foi a sua <b>${RUN.attempt||myAttempts(R0.id)}ª tentativa</b>.${RUN.cleared>=1?" A descida foi para o ranking.":""}</small>
       <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button><button type="button" class="ar7-btn primary" data-ar="region-again">Descer de novo</button></div></div>`;
   }
   function survivalPanel(v){
@@ -1050,7 +1060,7 @@
     }
     const best=Number(state.arenaSurvivalBest||0);
     return `<div class="ar7-result lose"><b>Fim da corrida!</b>
-      <small>Você venceu <b>${RUN?.cleared||0}</b> onda${(RUN?.cleared||0)===1?"":"s"}. Seu recorde: <b>${best}</b>.${(RUN?.cleared||0)>=1?" A corrida foi para o ranking.":""}</small>
+      <small>Você venceu <b>${RUN?.cleared||0}</b> onda${(RUN?.cleared||0)===1?"":"s"}. Seu recorde: <b>${best}</b>. Esta foi a sua <b>${RUN?.attempt||myAttempts("endless")}ª tentativa</b>.${(RUN?.cleared||0)>=1?" A corrida foi para o ranking.":""}</small>
       <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="leave">Voltar ao lobby</button><button type="button" class="ar7-btn primary" data-ar="surv-again">Jogar de novo</button></div></div>`;
   }
   function challengeDialog(){
@@ -1144,7 +1154,7 @@
       }
     }
     return `<section class="ar7-battle">
-      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
+      <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.solo&&RUN?.attempt?`🔁 ${RUN.attempt}ª tentativa · `:""}${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""} · ${B.dmg==="matrix"?"🧪 Dano experimental":"Dano da ficha"}</small></div>
       <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
         ${monCard(foe,"foe")}${monCard(mine,"me")}
