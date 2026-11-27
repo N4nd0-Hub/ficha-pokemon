@@ -692,7 +692,7 @@
     const focus=document.activeElement?.id;
     const keptScroll=root.querySelector(".ar7-scenes")?.scrollLeft;
     const kept={};["ar7Chat","ar7Room","ar7Name"].forEach(id=>{const el=document.getElementById(id);if(el)kept[id]=el.value;});
-    root.innerHTML=`<div class="ar7-shell">
+    morph(root,`<div class="ar7-shell">
       <header class="ar7-top">
         <button type="button" class="ar7-back" data-ar="close" aria-label="Voltar para a ficha">← Ficha</button>
         <div class="ar7-title"><b>⚔ Arena Online</b><small>${B?(B.role==="spec"?"Assistindo batalha":"Batalha"):`Sala <code>${esc(room)}</code> · ${statusText()}`}</small></div>
@@ -702,7 +702,7 @@
       <p class="ar7-toast" role="status" hidden></p>
       ${incoming?challengeDialog():""}
       ${orderAsk&&!B?orderDialog():""}
-    </div>`;
+    </div>`);
     if(keptScroll){const n=root.querySelector(".ar7-scenes");if(n)n.scrollLeft=keptScroll;}
     Object.entries(kept).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v;});
     if(focus){const el=document.getElementById(focus);if(el&&el.tagName==="INPUT"){el.focus();try{el.setSelectionRange(el.value.length,el.value.length);}catch(e){}}}
@@ -711,6 +711,48 @@
       root.querySelectorAll(".ar7-spot").forEach(sp=>{const i=sp.querySelector(".ar7-hp i[data-to]");if(i)lastHp[sp.classList.contains("me")?"me":"foe"]=Number(i.dataset.to);});}
     const log=root.querySelector(".ar7-log");if(log)log.scrollTop=log.scrollHeight;
     const chatBox=root.querySelector(".ar7-chat-list");if(chatBox)chatBox.scrollTop=chatBox.scrollHeight;
+  }
+  /* Redesenho sem piscar: em vez de trocar o HTML inteiro, compara com o
+     novo e muda só o que mudou. Imagens, animações e efeitos em andamento
+     continuam no lugar (antes tudo era recriado a cada mensagem/presença). */
+  const TRANSIENT=/(?:^|\s)(?:ar7-emote|ar7-dmg|ar7-turnban|ar7-fxl|ar7-p)(?:\s|$)/;
+  const isTransient=n=>n.nodeType===1&&TRANSIENT.test(n.getAttribute("class")||"");
+  function morph(parent,html){
+    const tpl=document.createElement("template");tpl.innerHTML=html;
+    syncChildren(parent,tpl.content);
+  }
+  function sameKind(a,b){
+    if(a.nodeType!==b.nodeType)return false;
+    if(a.nodeType!==1)return true;
+    if(a.tagName!==b.tagName)return false;
+    // cartas diferentes (outro Pokémon/outra pessoa) são trocadas inteiras
+    const ka=a.getAttribute("data-id")||a.getAttribute("data-idx")||"",kb=b.getAttribute("data-id")||b.getAttribute("data-idx")||"";
+    return ka===kb;
+  }
+  function syncChildren(a,b){
+    const an=[...a.childNodes].filter(n=>!isTransient(n)),bn=[...b.childNodes];
+    for(let i=0;i<bn.length;i++){
+      const x=an[i],y=bn[i];
+      if(!x){a.appendChild(y);continue;}
+      if(sameKind(x,y))syncNode(x,y);else a.replaceChild(y,x);
+    }
+    for(let i=an.length-1;i>=bn.length;i--)an[i].remove();
+  }
+  function syncNode(x,y){
+    if(x.nodeType===3||x.nodeType===8){if(x.nodeValue!==y.nodeValue)x.nodeValue=y.nodeValue;return;}
+    if(x.nodeType!==1)return;
+    // a mensagem flutuante (toast) é controlada por toast(); não mexe
+    if(x.classList.contains("ar7-toast"))return;
+    for(const at of [...x.attributes])if(!y.hasAttribute(at.name))x.removeAttribute(at.name);
+    for(const at of [...y.attributes])if(x.getAttribute(at.name)!==at.value)x.setAttribute(at.name,at.value);
+    const tag=x.tagName;
+    if(tag==="INPUT"||tag==="TEXTAREA"){
+      if(document.activeElement!==x&&y.hasAttribute("value")&&x.value!==y.getAttribute("value"))x.value=y.getAttribute("value");
+      if(tag==="TEXTAREA")return;
+    }
+    if(tag==="DETAILS"&&!y.hasAttribute("open")&&x.open&&!x.hasAttribute("open")){}
+    syncChildren(x,y);
+    if(tag==="SELECT"){const sel=[...y.options].find(o=>o.selected);if(sel&&document.activeElement!==x)x.value=sel.value;}
   }
   function statusText(){return status==="on"?`${Object.keys(people).length} online`:status==="connecting"?"conectando…":status==="error"?"sem conexão":"desconectado";}
 
