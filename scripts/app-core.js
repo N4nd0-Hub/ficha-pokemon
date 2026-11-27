@@ -3687,7 +3687,7 @@ function renderOfficialMoveSuggestions(){
   list.innerHTML=names.slice().sort((a,b)=>a.localeCompare(b))
     .map(n=>`<option value="${escAttr(n)}"></option>`).join("");
 }
-async function searchPokemonFromApi(queryOverride=null){
+async function searchPokemonFromApi(queryOverride=null,opts={}){
   clearTemporaryGimmicksForSpeciesChange();
   const input=document.getElementById("pokeApiSearch");
   const status=document.getElementById("pokeApiStatus");
@@ -3709,7 +3709,10 @@ async function searchPokemonFromApi(queryOverride=null){
   btn.disabled=true;
   btn.textContent="Buscando...";
 
-  const integratedSpecies=findIntegratedCustomSpecies(query);
+  /* evolução/captura de espécie oficial: não deixa um Fakemon ou forma do
+     sistema com o mesmo número da Pokédex (ex.: forma de Kirlia com dex 281)
+     tomar o lugar da espécie oficial */
+  const integratedSpecies=opts&&opts.official?null:findIntegratedCustomSpecies(query);
   if(integratedSpecies){
     try{
       status.textContent=`Carregando ${integratedSpecies.name} do Banco do Sistema...`;
@@ -4033,7 +4036,7 @@ async function openEvolutionModal(){
           document.getElementById("preserveInvestedStats").checked=true;
           document.getElementById("syncCurrentStats").checked=false;
           modal.classList.remove("open");
-          await searchPokemonFromApi(opt.apiName);
+          await searchPokemonFromApi(opt.apiName,{official:true});
         }else if(opt.source==="integrated"){
           modal.classList.remove("open");
           applyIntegratedCustomSpecies(opt.species,{

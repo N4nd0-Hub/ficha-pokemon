@@ -373,7 +373,7 @@
       if(o.source==="official"){
         const a=document.getElementById("preserveInvestedStats"),b=document.getElementById("syncCurrentStats");
         if(a)a.checked=true;if(b)b.checked=false;
-        await searchPokemonFromApi(String(o.speciesId||o.apiName));
+        await searchPokemonFromApi(String(o.speciesId||o.apiName),{official:true});
       }else if(o.source==="integrated"){
         applyIntegratedCustomSpecies(o.species,{preserveInvested:true,syncCurrent:false,fromEvolution:true});
       }else applyLocalEvolution(o.template);
