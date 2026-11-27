@@ -116,16 +116,24 @@
      e, se couber, no navegador. Antes ficava só no navegador: quando o
      armazenamento estava cheio (fichas com muitas artes), o clique não fazia nada. */
   let pickMem=null;
+  /* A Equipe da ficha manda: uma escolha própria da Arena só vale enquanto a
+     Equipe da ficha continuar a mesma de quando ela foi feita. Se alguém sai
+     ou entra pela ficha/PC, a Arena volta a seguir a Equipe. */
+  const teamSig=()=>fichaTeam().map(p=>String(p.id)).sort().join("|");
   function pickIds(){
     let ids=pickMem;
     if(!ids&&Array.isArray(state.arenaPick))ids=state.arenaPick;
     if(!ids){try{ids=JSON.parse(ls.get("hh_arena_pick","[]"))||[];}catch(e){ids=[];}}
+    if(ids.length&&(state.arenaPickBase||"")!==teamSig()){pickMem=[];state.arenaPick=[];state.arenaPickBase="";try{ls.set("hh_arena_pick","[]");}catch(e){}return [];}
     const known=new Set(state.pokemon.map(p=>String(p.id)));
     return ids.map(String).filter(id=>known.has(id)).slice(0,6);
   }
   function savePick(ids){
+    // escolher exatamente a Equipe da ficha não é uma escolha própria
+    if(ids.length&&ids.slice().sort().join("|")===teamSig())ids=[];
     pickMem=ids.slice(0,6);
     state.arenaPick=pickMem.slice();
+    state.arenaPickBase=pickMem.length?teamSig():"";
     try{(typeof debouncedSave==="function"?debouncedSave:saveState)();}catch(e){}
     ls.set("hh_arena_pick",JSON.stringify(pickMem));
   }
