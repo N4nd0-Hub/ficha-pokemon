@@ -173,6 +173,13 @@
     save();try{renderAll();}catch(e){}
     sfx("coin");toast(`🎁 ${x.name} ×${n} entregue de graça.`);
   }
+  function giftIcon(x){
+    const ic=String(x.icon||"");
+    const img=x.img||(/^ball:/.test(ic)?itemSprite(ic.slice(5)+"-ball"):x.shop?.sprite?itemSprite(x.shop.sprite):"");
+    if(img)return `<img src="${esc(img)}" alt="" width="28" height="28" loading="lazy">`;
+    if(/^px:/.test(ic))return window.hhInvPx?.(ic.slice(3),"it7-px")||"📦";
+    return esc(ic||"📦");
+  }
   function giftView(){
     if(false)return `<div class="gift7 locked"><span class="gift7-lock">${ico("gift","it7-px big")}</span><b>Baú do Mestre</b>
       <p>Só o Mestre tem a chave.</p>
@@ -185,7 +192,7 @@
       <section class="gift7-sec"><h4>Procurar item</h4>
         <div class="tm7-row"><input data-gift="q" type="search" placeholder="Nome do item (Potion, Leftovers, Barraca, Ultra Ball…)" value="${esc(gift.q)}" autocomplete="off">
           <span class="gift7-n"><button type="button" data-it="gift-n" data-v="-1">−</button><b>×${gift.n}</b><button type="button" data-it="gift-n" data-v="1">+</button></span></div>
-        <div class="gift7-res">${gift.q.trim()?(res.length?res.map(x=>`<div class="gift7-item"><span class="gift7-ico">${x.img?`<img src="${esc(x.img)}" alt="" width="28" height="28" loading="lazy">`:/^px:/.test(x.icon||"")?(window.hhInvPx?.(x.icon.slice(3),"it7-px")||""):esc(x.icon||"📦")}</span><span><b>${esc(x.name)}</b><small>${esc(x.from)}</small></span><button type="button" class="it7-btn go" data-it="gift-give" data-v="${esc(x.id)}">Dar ×${gift.n}</button></div>`).join(""):`<p class="tm7-empty">Nada com esse nome. Crie o item abaixo.</p>`):`<p class="tm7-empty">Digite para buscar no catálogo e nas lojas.</p>`}</div></section>
+        <div class="gift7-res">${gift.q.trim()?(res.length?res.map(x=>`<div class="gift7-item"><span class="gift7-ico">${giftIcon(x)}</span><span><b>${esc(x.name)}</b><small>${esc(x.from)}</small></span><button type="button" class="it7-btn go" data-it="gift-give" data-v="${esc(x.id)}">Dar ×${gift.n}</button></div>`).join(""):`<p class="tm7-empty">Nada com esse nome. Crie o item abaixo.</p>`):`<p class="tm7-empty">Digite para buscar no catálogo e nas lojas.</p>`}</div></section>
       <section class="gift7-sec"><h4>Item personalizado</h4>
         <form class="gift7-custom" data-gift-form="custom">
           <input data-gift="cName" type="text" maxlength="60" placeholder="Nome do item" value="${esc(gift.cName)}">
