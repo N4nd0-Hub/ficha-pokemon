@@ -599,7 +599,7 @@
       let real=false;
       if(foe.apiName&&typeof searchPokemonFromApi==="function"){
         real=await fetch(`https://pokeapi.co/api/v2/pokemon/${encodeURIComponent(foe.apiName)}`).then(r=>r.ok).catch(()=>false);
-        if(real)await searchPokemonFromApi(foe.apiName);
+        if(real)await searchPokemonFromApi(foe.apiName,{official:true});
       }
       if(!real)p.name=foe.name;
       p.storageGroup="box";

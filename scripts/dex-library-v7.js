@@ -171,7 +171,7 @@
       const teamCount=state.pokemon.filter(x=>(x.storageGroup||"team")==="team").length;
       createBlankPokemon();
       const fresh=current;
-      await searchPokemonFromApi(p.gm?p.species.id:p.name);
+      await searchPokemonFromApi(p.gm?p.species.id:p.name,p.gm||p.fakemon?{}:{official:true});
       if(current!==fresh)throw new Error("A ficha mudou durante a importação.");
       fresh.storageGroup=teamCount<6?"team":"box";
       if(useShiny)fresh.shiny=true;
