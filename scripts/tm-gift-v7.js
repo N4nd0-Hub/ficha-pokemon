@@ -174,13 +174,13 @@
     sfx("coin");toast(`🎁 ${x.name} ×${n} entregue de graça.`);
   }
   function giftView(){
-    if(!gmOn())return `<div class="gift7 locked"><span class="gift7-lock">${ico("gift","it7-px big")}</span><b>Baú do Mestre</b>
+    if(false)return `<div class="gift7 locked"><span class="gift7-lock">${ico("gift","it7-px big")}</span><b>Baú do Mestre</b>
       <p>Só o Mestre tem a chave.</p>
       <form class="tm7-row" data-gift-form="pwd"><input data-gift="pwd" type="password" placeholder="Senha do Mestre" autocomplete="off"><button type="submit" class="it7-btn go">Abrir</button></form>
       ${gift.msg?`<p class="tm7-err">${esc(gift.msg)}</p>`:""}</div>`;
     const res=results();
     return `<div class="gift7">
-      <header class="gift7-head">${ico("gift")}<div><b>Baú do Mestre</b><small>Pra repor o que se perdeu pelo caminho.</small></div><button type="button" class="it7-btn" data-it="gift-lock">🔒 Trancar</button></header>
+      <header class="gift7-head">${ico("gift")}<div><b>Baú do Mestre</b><small>Pra repor o que se perdeu pelo caminho.</small></div></header>
       <section class="gift7-sec"><h4>Dinheiro</h4><form class="tm7-row" data-gift-form="money"><input data-gift="money" type="number" min="1" max="9999999" placeholder="Quantia em ₽"><button type="submit" class="it7-btn go">Dar ₽</button></form></section>
       <section class="gift7-sec"><h4>Procurar item</h4>
         <div class="tm7-row"><input data-gift="q" type="search" placeholder="Nome do item (Potion, Leftovers, Barraca, Ultra Ball…)" value="${esc(gift.q)}" autocomplete="off">
@@ -210,7 +210,7 @@
   });
   // selects disparam "change", não "input" em alguns navegadores
   document.addEventListener("change",e=>{const s=e.target.closest?.(".it7 [data-tm=ov]");if(!s)return;const k=s.dataset.k;if(s.value==="")override.delete(k);else override.set(k,s.value==="1");UI()?.render();});
-  window.hhItemsTabs.push({key:"gift",icon:"gift",label:"Baú",sub:"do Mestre",view:giftView,
+  window.hhItemsTabs.push({key:"gift",icon:"gift",label:"Baú",sub:"Itens de graça",view:giftView,
     after(box){if(gift.focus){const el=box.querySelector(`[data-gift=${gift.focus}]`);if(el){el.focus();const v=el.value;try{el.setSelectionRange(v.length,v.length);}catch(e){}}gift.focus=null;}},
     onClick(a,b){
       if(a==="gift-lock"){window.hhGm?.lock?.();UI().render();return true;}
@@ -222,7 +222,6 @@
     async onSubmit(e){
       const f=e.target.closest("[data-gift-form]");if(!f)return;const kind=f.dataset.giftForm;
       if(kind==="pwd"){const ok=await window.hhGm?.unlock?.(f.querySelector("[data-gift=pwd]").value||"");gift.msg=ok?"":"Senha errada.";if(ok)sfx("level");UI().render();return;}
-      if(!gmOn())return;
       if(kind==="money"){const n=Math.floor(Number(f.querySelector("[data-gift=money]").value||0));if(n>0){const t=ensureTrainerData();t.money=Number(t.money||0)+n;save();try{renderAll();}catch(err){}sfx("coin");toast(`🎁 ₽ ${n.toLocaleString("pt-BR")} entregues.`);UI().render();}return;}
       if(kind==="custom"){const name=(f.querySelector("[data-gift=cName]").value||"").trim();if(!name){toast("Dê um nome ao item.");return;}
         gift.cCat=f.querySelector("[data-gift=cCat]").value;
