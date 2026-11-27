@@ -132,3 +132,19 @@ test("Ability tipo Sword of Ruin escrita na ficha reduz a Defesa do rival", () =
   assert.equal(e.effStat(bt, "p2", "def"), 75);
   assert.equal(e.effStat(bt, "p1", "def"), 80, "o próprio dono não é afetado");
 });
+
+test("Brute Chaos: Protosynthesis no Sol troca de forma e liga os bônus", () => {
+  const txt = "A energia primitiva desperta sob calor intenso. Enquanto estiver sob Sol Forte (ou com Booster Energy), o seu maior atributo (Attack) é supercarregado: ×1,3. Durante esse tempo, golpes físicos Ground e Fighting recebem +1QD de dano extra. Ganha ainda +20 de Speed para fins de iniciativa. Na primeira vez em cada batalha que Protosynthesis ativa, Brute Chaos reduz em −1QD o dano físico recebido até o fim daquele turno.";
+  const bc = mon("Brute Chaos", ["Ground", "Fighting"], { atk: 194, spe: 105 }, [M("Sunny Day", "Fire", "Status", 0, null), M("High Horsepower", "Ground", "Physical", 95)],
+    { ability: "Protosynthesis", abilityText: txt, img: "base.png", trigForm: { name: "Brute Chaos (Forma Despertada)", img: "desperto.png", types: ["Ground", "Fighting"], trigger: { weather: ["sun"], items: ["Booster Energy"], ability: true } } });
+  const { e, bt } = battle([bc], [mon("B", ["Normal"], { hp: 900, spe: 10 }, [M("Splash", "Normal", "Status", 0, null)])]);
+  const evs = turn(e, bt);
+  const form = evs.find(x => x.k === "gimmick" && x.kind === "form");
+  assert.ok(form, "trocou de forma");
+  assert.equal(e.activeMon(bt, "p1").img, "desperto.png");
+  assert.equal(e.effStat(bt, "p1", "atk"), Math.floor(194 * 1.3));
+  assert.equal(e.effStat(bt, "p1", "spe"), 125);
+  const t2 = turn(e, bt, 1);
+  const hit = hitOn(t2, "p2")[0];
+  assert.ok(hit.notes.some(n => /Protosynthesis \+1 QD/.test(n)), "golpe Ground ganhou +1 QD");
+});

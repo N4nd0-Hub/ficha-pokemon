@@ -330,10 +330,27 @@
     "blaze":a=>a.pinch="Fire","torrent":a=>a.pinch="Water","overgrow":a=>a.pinch="Grass","swarm":a=>a.pinch="Bug"
   };
 
+  /* Protosynthesis / Quark Drive (oficial + texto da ficha):
+     maior atributo ×1,3 (Speed ×1,5) no Sol (ou Electric Terrain) ou com Booster Energy,
+     e bônus escritos: "+1QD em golpes físicos Ground e Fighting", "+20 de Speed",
+     "na primeira vez … reduz em −1QD o dano físico recebido até o fim do turno". */
+  function parseParadox(a,nm,T){
+    a.proto={weather:nm==="protosynthesis"?"sun":null,mult:1.3,speMult:1.5,boost:null,speedFlat:0,firstGuard:null};
+    for(const s of sentences(T)){
+      const b=/golpes\s+(f[íi]sicos|especiais)?\s*([^.]*?)\s+(?:recebem|ganham|causam)\s*\+\s*(\d)\s*(?:QD|dados? da QD)/i.exec(s);
+      if(b){a.proto.boost={cat:b[1]?(/f[íi]s/i.test(b[1])?"physical":"special"):null,types:typesIn(b[2]),dice:Number(b[3])};continue;}
+      const sp=/\+\s*(\d+)\s*de\s*(?:Speed|Velocidade)/i.exec(s);if(sp){a.proto.speedFlat=Number(sp[1]);continue;}
+      const g=/primeira vez[^.]*?(?:reduz|diminui)[^.]*?[−–-]\s*(\d)\s*QD[^.]*?(f[íi]sico|especial)?/i.exec(s);
+      if(g){a.proto.firstGuard={dice:Number(g[1]),cat:g[2]?(/f[íi]s/i.test(g[2])?"physical":"special"):null};continue;}
+      const m=/×\s*(\d+[.,]\d+)/.exec(s);if(m&&/maior atributo|highest stat/i.test(s))a.proto.mult=Number(m[1].replace(",","."));
+    }
+    return a;
+  }
   function parseAbility(name,text){
     const a=emptyAbility(name);
     const nm=key(name);
     const T=String(text||"");
+    if(nm==="protosynthesis"||nm==="quark drive")return parseParadox(a,nm,T);
     for(const s of sentences(T)){
       const low=s.toLowerCase();
       // fora de combate: ignora

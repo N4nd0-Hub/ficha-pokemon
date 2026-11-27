@@ -234,6 +234,13 @@
     const full=off?.apiName&&typeof POKEAPI_ITEM_BY_SLUG!=="undefined"?POKEAPI_ITEM_BY_SLUG.get(off.apiName):null;
     return {name:rec?.name||full?.name||name,apiName:rec?.apiName||full?.apiName||"",description:String(full?.description||rec?.description||"").slice(0,600),automation:full?.automation||rec?.automation||null};
   }
+  // forma por gatilho (Pokédex GM): a Arena troca sozinha quando o gatilho acontece
+  async function trigFormOf(p0){
+    const f=(p0.triggerForms||[])[0];if(!f)return null;
+    let img="";try{img=await compactImage(f.image||"");}catch(e){img=f.image||"";}
+    const T=f.trigger||{};
+    return {name:f.name,img,types:(f.types||[]).map(normalizeTypeName).filter(Boolean),trigger:{weather:T.weather||[],items:T.items||[],ability:!!T.ability,hpBelow:T.hpBelow||null}};
+  }
   async function buildTeam(limit){
     const list=teamSource().slice(0,limit);
     const out=[];
@@ -255,7 +262,8 @@
           accuracy:m.alwaysHits||m.accuracy==null||m.accuracy===""?null:Number(m.accuracy),alwaysHits:!!m.alwaysHits,desc:String(m.description||"").slice(0,420)}));
       out.push({name:p.name||"Pokémon",level:Number(p.level||1),types:[normalizeTypeName(p.type1),normalizeTypeName(p.type2)].filter(Boolean),
         stats:{hp:Number(p.stats?.hp||0),atk:Number(p.stats?.atk||0),def:Number(p.stats?.def||0),spa:Number(p.stats?.spa||0),spd:Number(p.stats?.spd||0),spe:Number(p.stats?.spe||0)},
-        maxHp:Math.max(1,Number(p.maxHp||p.stats?.hp||1)),ability:p.abilityName||"",abilityText:String(p.abilityText||"").slice(0,900),img:await compactImage(p===p0?displayPokemonImage(p):(p.imageUrl||displayPokemonImage(p0))),
+        maxHp:Math.max(1,Number(p.maxHp||p.stats?.hp||1)),ability:p.abilityName||"",abilityText:String(p.abilityText||"").slice(0,900),img:await compactImage(p===p0?displayPokemonImage(p,{form:false}):(p.imageUrl||displayPokemonImage(p0,{form:false}))),
+        trigForm:await trigFormOf(p0),
         fid:String(p0.id),gimmick,item:heldItemOf(p0),species:String(p0.apiData?.speciesName||p0.apiData?.pokemonName||""),
         moves:moves.length?moves:[{name:"Struggle",type:"Normal",category:"Physical",power:50,accuracy:null,desc:"Sem golpes ativos na ficha."}]});
     }
@@ -592,7 +600,7 @@
       sd.gim=sd.gim||{mega:null,tera:null,z:false};
       sd.gim[ev.kind]=ev.idx;
       const m=B.teams?.[ev.side]?.[ev.idx];
-      if(m&&!B.host){if(ev.kind==="mega")Object.assign(m,{name:ev.to,img:ev.img||m.img,types:ev.types,ability:ev.ability,mega:true});else Object.assign(m,{types:ev.types,tera:ev.type});}
+      if(m&&!B.host){if(ev.kind==="mega")Object.assign(m,{name:ev.to,img:ev.img||m.img,types:ev.types,ability:ev.ability,mega:true});else if(ev.kind==="form"||ev.kind==="unform")Object.assign(m,{name:ev.to,img:ev.img||m.img,types:ev.types});else Object.assign(m,{types:ev.types,tera:ev.type});}
       const st=sd.team[ev.idx];if(st&&ev.maxHp){st.maxHp=ev.maxHp;st.hp=ev.hp;}
     }
     if(ev.k==="move"&&ev.z&&sd){sd.gim=sd.gim||{};sd.gim.z=true;}
@@ -632,7 +640,7 @@
         if(ev.notes?.length)line+=` <span class="ar7-dice">${ev.notes.map(esc).join(" · ")}</span>`;
         if(ev.hits>1)line+=` <i>(${ev.hits} acertos)</i>`;
       }else if(ev.k==="gimmick"){
-        line=ev.kind==="mega"?`◆ <b>${esc(ev.mon)}</b> Mega Evoluiu para <b class="ar9-mega">${esc(ev.to)}</b>!`:`✦ <b>${esc(ev.mon)}</b> Terastalizou: agora é <b class="ar7-mv" style="--t:${typeColor(ev.type)}">${esc(ev.type)}</b> (STAB +2d6)!`;cls="gimmick";
+        line=ev.kind==="form"?`✦ <b>${esc(ev.mon)}</b> mudou de forma: <b class="ar9-mega">${esc(ev.to)}</b>!`:ev.kind==="unform"?`↺ <b>${esc(ev.mon)}</b> voltou para <b>${esc(ev.to)}</b>.`:ev.kind==="mega"?`◆ <b>${esc(ev.mon)}</b> Mega Evoluiu para <b class="ar9-mega">${esc(ev.to)}</b>!`:`✦ <b>${esc(ev.mon)}</b> Terastalizou: agora é <b class="ar7-mv" style="--t:${typeColor(ev.type)}">${esc(ev.type)}</b> (STAB +2d6)!`;cls="gimmick";
       }else if(ev.k==="evade"){
         if(ev.fail)line=`${esc(ev.mon)} não consegue esquivar (${ev.why==="frz"?"congelado":"dormindo"}).`;
         else line=`↯ <b>${esc(ev.mon)}</b> ${ev.kind==="active"?"se concentra em esquivar":"fica pronto para esquivar"} <span class="ar7-dice">Precisão do rival −${ev.pen} · ${ev.streak}ª seguida${ev.tired?" · cansado!":""}</span>`;

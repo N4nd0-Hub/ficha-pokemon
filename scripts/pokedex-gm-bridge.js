@@ -189,6 +189,7 @@
       baseStats:stats(d.baseStats),ability:aa[0] || {name:'',description:''},
       abilities:aa,image:{dataUrl:art(d.artUrl || d.thumbUrl || '')},
       specialRules:d.specialRules ? [String(d.specialRules)] : [],
+      trigger:d.trigger && typeof d.trigger==='object' ? d.trigger : null,
       revision:Number(record.revision || d.revision || 1),
       createdAt:record.created_at || d.createdAt || '',
       publishedAt:record.published_at || d.publishedAt || ''};
@@ -534,6 +535,14 @@
     }
     try {
       applyIntegratedCustomSpecies(selected,{preserveInvested:mode==='current',syncCurrent:mode!=='current'});
+      // formas por gatilho (mudam sozinhas na Arena; botão ✦ FORMA na ficha)
+      if(current){
+        var trig=(species.forms||[]).filter(function(f){return f.formType==='trigger';}).map(function(f){
+          return {id:f.id,name:f.name,types:f.types,baseStats:f.baseStats,image:(f.image&&f.image.dataUrl)||'',trigger:f.trigger||{},specialRules:f.specialRules||[]};
+        });
+        current.triggerForms=trig;
+        if(!trig.length){current.formActive=null;current.formBaseTypes=null;}
+      }
       if(current && current.apiData) {
         current.apiData.gmCatalogId=species.gmId;
         current.apiData.gmCatalogRevision=species.revision;
@@ -586,7 +595,7 @@
     var s=entry.species,f=entry.form;
     var bst=Object.values(f.baseStats).reduce(function(a,b){return a+Number(b||0);},0);
     var image=art(f.image.dataUrl || s.image.dataUrl);
-    var label={mega:'Mega',alternate:'Forma alternativa',regional:'Forma regional',shiny:'Shiny',primal:'Primal',gigantamax:'Gigantamax',other:'Outra forma'}[f.formType] || f.formType;
+    var label={mega:'Mega',alternate:'Forma alternativa',regional:'Forma regional',shiny:'Shiny',primal:'Primal',gigantamax:'Gigantamax',trigger:'Forma por gatilho',other:'Outra forma'}[f.formType] || f.formType;
     return '<article class="hh-gm-entry" data-species-id="'+esc(s.gmId)+'" data-form-id="'+esc(f.id)+'">'
       +'<div class="hh-gm-art"><span class="hh-gm-stage">'+esc(label)+'</span>'
       +(image?'<img loading="lazy" src="'+esc(image)+'" alt="'+esc(f.name)+'">':'<div class="hh-gm-placeholder" aria-hidden="true">◓</div>')+'</div>'
@@ -595,8 +604,9 @@
       +'<div class="hh-gm-types">'+f.types.map(function(t){return '<span class="hh-gm-type">'+esc(t)+'</span>';}).join('')+'</div>'
       +(f.ability.name?'<div class="hh-gm-sub">Ability: '+esc(f.ability.name)+'</div>':'')
       +(f.formType==='mega'?'<div class="hh-gm-sub">Disponível em Gimmicks na ficha de '+esc(s.name)+'.</div>':'')
+      +(f.formType==='trigger'?'<div class="hh-gm-sub">Muda sozinho na Arena'+(f.trigger&&f.trigger.text?' ('+esc(f.trigger.text)+')':'')+'. Vem junto ao criar a ficha de '+esc(s.name)+'.</div>':'')
       +'<div class="hh-gm-buttons">'
-      +(f.formType==='mega'
+      +(f.formType==='trigger'?'':f.formType==='mega'
         ? (currentMatch(s)?'<button type="button" data-gm-mega="'+esc(s.gmId)+'">Registrar Mega</button>':'')
         : '<button type="button" data-gm-form="'+esc(s.gmId)+'" data-form-id="'+esc(f.id)+'">＋ Nova ficha</button>')
       +'</div></div></article>';
