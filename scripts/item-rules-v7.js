@@ -127,6 +127,7 @@
     if((m=new RegExp("Techno Blast vira "+TYPE_RX,"i").exec(d))){battle.form={type:m[1],move:"Techno Blast"};tag("💽",`Techno Blast vira ${m[1]}`,"gimmick");}
     if((m=new RegExp("Judgment para "+TYPE_RX,"i").exec(d))){battle.form={type:m[1],move:"Judgment",setTypes:true};}
     if((m=/Z-Move exclusivo — (.+?) vira (.+?) \(/.exec(d))){battle.zSig={base:m[1],z:m[2]};tag("Ⓩ",`Z-Move: ${m[2]}`,"gimmick");}
+    if(/ganha PPg, quem segura recebe metade/i.test(d))tag("🔗","Recebe metade dos PPg da Equipe","exp");
     if(/Judgment assume o tipo mais eficaz/i.test(d))tag("✦","Judgment do tipo mais eficaz (Mestre)","gimmick");
     if(/assume a (?:Forma|Máscara)/i.test(d))tag("✦","Muda a forma do Pokémon","gimmick");
     if(/Fora de batalha|Na Arena não há PP|Concursos:|esforço de|Felicidade ganha|dinheiro ganho|encontros com selvagens|fugir de batalhas|experiência nas batalhas/i.test(d))tag("📜",/Concursos:/.test(d)?"Só concursos":"Efeito fora da batalha","none");

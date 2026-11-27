@@ -127,14 +127,29 @@
     card?.classList.remove("ppg7-pop");void card?.offsetWidth;card?.classList.add("ppg7-pop");
   }
 
+  /* Exp. Share: quem segura (outro Pokémon da Equipe) recebe metade dos PPg
+     que o Pokémon atual ganhar. Meio PPg fica guardado e soma no próximo. */
+  const isShare=x=>/^exp\.?\s*share$/i.test(String(x?.heldItem||"").trim());
+  function expShare(gainer,n){
+    const team=(state.pokemon||[]).filter(x=>(x.storageGroup||"team")==="team"&&x!==gainer&&isShare(x));
+    const got=[];
+    for(const h of team){
+      const half=Math.max(0,Number(h.ppgShareHalf||0))+n;// em meios PPg
+      const add=Math.floor(half/2);h.ppgShareHalf=half%2;
+      const before=Math.max(0,Number(h.currentPpg||0));
+      h.currentPpg=Math.min(MAX,before+add);
+      got.push(`${h.name} +${h.currentPpg-before}${h.ppgShareHalf?" (+½ guardado)":""}`);
+    }
+    return got.length?`🔗 Exp. Share: ${got.join(" · ")}`:"";
+  }
   document.addEventListener("click",e=>{
     const b=e.target.closest("#ppg7Card [data-ppg]");if(!b||b.tagName==="SELECT")return;
     const p=cur();if(!p)return;
     const a=b.dataset.ppg,v=Number(p.currentPpg||0);
     if(a==="plus")setPpg(v+1);
     else if(a==="minus")setPpg(v-1);
-    else if(a==="gain"){const n=Number(b.dataset.n||1);const room=MAX-v;setPpg(v+n);sfx("select");if(room<n)toast(`A reserva de PPg está cheia (${MAX}).`);
-      else{const k=costOf(cur());if(v<k.cost&&v+n>=k.cost)toast(`⭐ ${p.name} já pode subir de nível! Use o botão no card Progresso.`);}}
+    else if(a==="gain"){const n=Number(b.dataset.n||1);const room=MAX-v;const shared=expShare(p,n);setPpg(v+n);sfx("select");if(room<n)toast(`A reserva de PPg está cheia (${MAX}).`);
+      else{const k=costOf(cur());if(v<k.cost&&v+n>=k.cost)toast(`⭐ ${p.name} já pode subir de nível! Use o botão no card Progresso.`);else if(shared)toast(shared);}}
     else if(a==="levelup")levelUp();
   });
   document.addEventListener("change",e=>{
@@ -151,6 +166,6 @@
     window.updatePpgDisplay=function(){const r=orig.apply(this,arguments);try{const p=cur();const k=costOf(p);label.textContent=`/ ${MAX} PPg · próximo nível: ${k.cost}`;}catch(e){}return r;};
     window.updatePpgDisplay.__ppg7=true;
   }
-  window.hhPpg={costOf,profileOf,levelUp,render};
+  window.hhPpg={costOf,profileOf,levelUp,render,expShare};
   if(document.readyState!=="loading")setTimeout(render,0);
 })();
