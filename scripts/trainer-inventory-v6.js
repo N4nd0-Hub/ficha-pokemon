@@ -606,6 +606,6 @@
     const original=window.renderTrainerPage;
     window.renderTrainerPage=function(){const r=original.apply(this,arguments);render();return r;};
   }
-  window.hhTrainerInventory={render,shops:SHOPS,data};
+  window.hhTrainerInventory={render,shops:SHOPS,data,add:(src,qty)=>{const it=addToInventory(src,qty);try{saveState();}catch(e){}return it;}};
   render();
 })();

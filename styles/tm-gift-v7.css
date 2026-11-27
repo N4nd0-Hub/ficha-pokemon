@@ -1,0 +1,57 @@
+/* ============================================================
+   V7 — Mochila: Criador de TM e Baú do Mestre
+   ============================================================ */
+.it7-ext{grid-column:1/-1;min-height:0;overflow:auto;padding:12px}
+.tm7{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:14px;align-items:start}
+@media (max-width:900px){.tm7{grid-template-columns:1fr}}
+.tm7 section,.gift7-sec{padding:12px;border:3px solid #181a24;border-radius:14px;background:#fffdf3;box-shadow:0 4px 0 #181a24;color:#222}
+.tm7 h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:16px}
+.tm7 h3 small{font-size:11px;font-weight:600;color:#6a5a30}
+.tm7-sub{margin:0 0 10px;font-size:12px;color:#6a5a30;line-height:1.4}
+.tm7-types{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:10px}
+@media (max-width:520px){.tm7-types{grid-template-columns:repeat(3,1fr)}}
+.tm7-types button{padding:6px 2px;border:2px solid #181a24;border-radius:8px;background:color-mix(in srgb,var(--t) 22%,#fff);color:#181a24;font-weight:800;font-size:11px;cursor:pointer}
+.tm7-types button.on{background:var(--t);color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.45);box-shadow:0 0 0 3px #ffd23f}
+.tm7-row{display:flex;gap:6px;align-items:center;width:100%}
+.tm7-row input,.gift7-custom input,.gift7-custom select,.gift7-custom textarea{flex:1;min-width:0;padding:8px 10px;border:2px solid #181a24;border-radius:9px;font:inherit;font-size:13px;background:#fff;color:#222}
+.tm7-err{margin:8px 0 0;font-size:12px;font-weight:700;color:#b0362c}
+.tm7-draft{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:start;margin-top:10px;padding:10px;border:3px solid var(--t);border-radius:12px;background:color-mix(in srgb,var(--t) 10%,#fff)}
+.tm7-draft>div{display:grid;gap:3px}
+.tm7-draft b{font-size:15px}.tm7-draft small{font-size:11px;color:#5a4a20}
+.tm7-draft p{margin:2px 0 0;font-size:12px;line-height:1.35}
+.tm7-draft>.it7-btn{grid-column:1/-1}
+.tm7-custom{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:12px}
+.tm7-custom button{padding:4px 8px;border:2px solid #181a24;border-radius:7px;background:#fff;cursor:pointer;font-weight:700;font-size:11px}
+.tm7-custom button.on{background:#181a24;color:#fff}
+.tm7-custom input{width:64px;padding:4px 6px;border:2px solid #181a24;border-radius:7px}
+.tm7-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-bottom:8px}
+.tm7-card{display:grid;gap:6px;padding:9px;border:3px solid #181a24;border-left:8px solid var(--t);border-radius:12px;background:#fff}
+.tm7-top{display:flex;align-items:center;gap:8px}
+.tm7-top>div{flex:1;display:grid}.tm7-top b{font-size:14px}.tm7-top small{font-size:11px;color:#6a5a30}
+.tm7-qty{font-weight:800;font-size:12px}
+.tm7-v{font-style:normal;font-size:11px;font-weight:800;padding:3px 7px;border-radius:7px;justify-self:start}
+.tm7-v.ok{background:#dcf7e3;color:#1f6e3a}.tm7-v.bad{background:#ffe3df;color:#a2281f}.tm7-v.wait{background:#eee;color:#666}
+.tm7-acts{display:flex;gap:6px}
+.tm7-acts select{flex:1;min-width:0;padding:5px;border:2px solid #181a24;border-radius:8px;font-size:11px;background:#fff}
+.tm7-empty{margin:4px 0;font-size:12px;color:#7a6a40}
+
+.gift7{display:grid;gap:12px;max-width:820px;margin:0 auto;color:#222}
+.gift7.locked{justify-items:center;text-align:center;padding:30px 12px;border:3px solid #181a24;border-radius:14px;background:#fffdf3;box-shadow:0 4px 0 #181a24}
+.gift7.locked b{font-size:18px}.gift7.locked p{margin:0;font-size:13px;color:#5a4a20}
+.gift7.locked .tm7-row{max-width:380px}
+.gift7-head{display:flex;align-items:center;gap:10px;padding:10px 12px;border:3px solid #181a24;border-radius:14px;background:linear-gradient(180deg,#7a3aa8,#3a1a5a);color:#fff;box-shadow:0 4px 0 #181a24}
+.gift7-head>div{flex:1;display:grid}.gift7-head b{font-size:17px}.gift7-head small{font-size:11px;opacity:.9}
+.gift7-sec h4{margin:0 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#6a5a30}
+.gift7-n{display:inline-flex;align-items:center;gap:4px}
+.gift7-n button{width:30px;height:32px;border:2px solid #181a24;border-radius:8px;background:#fff;font-weight:900;cursor:pointer}
+.gift7-n b{min-width:38px;text-align:center}
+.gift7-res{display:grid;gap:5px;margin-top:8px;max-height:320px;overflow:auto}
+.gift7-item{display:flex;align-items:center;gap:8px;padding:5px 8px;border:2px solid #181a24;border-radius:10px;background:#fff}
+.gift7-item>span:nth-child(2){flex:1;display:grid}.gift7-item b{font-size:13px}.gift7-item small{font-size:10px;color:#6a5a30}
+.gift7-ico{display:grid;place-items:center;width:32px;height:32px;font-size:20px}
+.gift7-custom{display:grid;grid-template-columns:1fr 160px;gap:6px}
+.gift7-custom textarea{grid-column:1/-1;resize:vertical}
+.gift7-custom .it7-btn{grid-column:1/-1}
+.it7 .tm7-types button.on{background:var(--t)!important;color:#fff!important}
+.it7 .it7-tabs{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-width:900px){.it7 .it7-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}}

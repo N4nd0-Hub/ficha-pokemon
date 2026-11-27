@@ -10491,7 +10491,7 @@ function renderTrainingMoves(){
             <span class="tag">Acc. ${esc(String(t.accuracyLabel||`${Number(t.accuracy||0)}%`))}</span>
             ${t.source==="Sistema"?'<span class="tag">Exclusivo</span>':""}
             ${Number(t.effectChance||0)>0?`<span class="tag effect-chance-tag combat-detail-tag">Efeito ${Number(t.effectChance||0)}%</span>`:""}
-            <span class="tag">${t.trainingType==="natural"?"Natural":"Ilegal / Ovo / TM Raro"}</span>
+            <span class="tag">${t.trainingType==="natural"?"Natural":t.trainingType==="tm"?"💿 TM · legal":t.trainingType==="tm-illegal"?"💿 TM · ilegal (3 dias)":"Ilegal / Ovo / TM Raro"}</span>
             <span class="tag">${Number(t.successes||0)}/${Number(t.required||5)} sucessos</span>
             ${t.active?'<span class="tag">Treino ativo</span>':""}
             ${done?'<span class="tag">Concluído</span>':""}
