@@ -159,7 +159,10 @@
   }
   function abilities(raw) {
     return Array.isArray(raw) ? raw.filter(function(a){return a && a.name;}).map(function(a){
-      return {name:String(a.name), description:String(a.text || a.description || '')};
+      var desc=String(a.text || a.description || '');
+      /* Sistema de QD: d6 de dano viram dados da QD e curas viram % do HP */
+      if (window.hhQdText) desc=window.hhQdText.convert(desc);
+      return {name:String(a.name), description:desc};
     }) : [];
   }
   function learnLevel(s) {

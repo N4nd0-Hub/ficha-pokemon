@@ -286,7 +286,7 @@
       // bônus em clima: "Durante chuva ..., seus ataques do tipo Water causam +1d6"
       const wk=weatherKey(s);
       if(wk&&/durante|enquanto|while|during|sob|em clima/i.test(s)){
-        const dm=/\+\s*(\d)d6/i.exec(s);const ts=typesIn(s);
+        const dm=/\+\s*(\d)\s*(?:d6|dados?\s+da\s+QD)/i.exec(s);const ts=typesIn(s);
         if(dm)a.weatherBoost.push({weather:wk,types:ts,dice:Number(dm[1])});
         if(/speed|velocidade/i.test(s)&&/(dobra|aument|ganha|double)/i.test(s))a.weatherSpeed=wk;
         if(!dm&&!a.weatherSpeed)a.notes.push(s);
@@ -308,13 +308,13 @@
       if(/derrota|nocaute|derrubar|knocks? out|faints? a|defeats?/i.test(s)){
         parseStages(s,"self").forEach(x=>a.onKO.stages.push({...x,who:"self"}));
         const h=/recupera\s+(\d+)\s*%/i.exec(s);if(h)a.onKO.healPct=Number(h[1]);
-        const nx=/\+\s*(\d)d6[^.]*pr[óo]ximo ataque( f[íi]sico)?/i.exec(s);if(nx)a.onKO.nextPhys=Number(nx[1]);
+        const nx=/\+\s*(\d)\s*(?:d6|dados?\s+da\s+QD)[^.]*pr[óo]ximo ataque( f[íi]sico)?/i.exec(s);if(nx)a.onKO.nextPhys=Number(nx[1]);
         continue;
       }
       // HP baixo
       const hp=/hp[^.]*(?:abaixo de|menos de|cai (?:para|abaixo)|below|at or below)\s*(?:de\s*)?(\d+)\s*%|(?:1\/3|um ter[çc]o) ou menos/i.exec(s);
       if(hp){const pct=hp[1]?Number(hp[1]):34;a.lowHp={pct,stages:parseStages(s,"self").map(x=>({...x,who:"self"})),once:/uma vez|once/i.test(s)};
-        const ts=typesIn(s);if(ts.length&&/(1,5|\+\s*1d6|dano)/i.test(s))a.pinch=ts[0];continue;}
+        const ts=typesIn(s);if(ts.length&&/(1,5|\+\s*1\s*(?:d6|dado da QD)|dano)/i.test(s))a.pinch=ts[0];continue;}
       // ao receber golpe de contato
       if(/(recebe|sofre|[ée] atingid\w*|is hit|takes? damage)[^.]*(f[íi]sico|contato|contact|physical)/i.test(s)||/golpes de contato contra/i.test(s)){
         const sts=statusKeys(s);const ch=chanceIn(s);
@@ -348,7 +348,7 @@
         continue;
       }
       // dano recebido reduzido: "recebe -1d6 de dano Fire"
-      const dt=/recebe\s*[−\-–]\s*(\d)d6\s*de dano\s*(\w+)?/i.exec(s);
+      const dt=/recebe\s*[−\-–]\s*(\d)\s*(?:d6|dados?\s+da\s+QD)\s*de dano\s*(\w+)?/i.exec(s);
       if(dt){const t=TYPES.find(x=>x.toLowerCase()===String(dt[2]||"").toLowerCase());a.dmgTaken.push({type:t||null,dice:-Number(dt[1]),fullHp:/hp cheio|full hp/i.test(s)});continue;}
       // pouco efetivo vira neutro
       if(/pouco efetivos?[^.]*(neutro|normal)|not very effective[^.]*(normal|neutral)/i.test(s)){a.tinted=true;continue;}
