@@ -423,13 +423,32 @@
   const RULES=()=>typeof CAPTURE_BALL_RULES!=="undefined"?CAPTURE_BALL_RULES:{};
   const body=()=>{try{return typeof trainerAttributeValue==="function"?trainerAttributeValue("body"):Number(trainer().attributes?.body||0);}catch(e){return 40;}};
   function hasThrowSkill(){const n=t=>String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();return (trainer().skills||[]).some(s=>/arremesso/.test(n(s.name))&&/pok/.test(n(s.name)));}
+  /* Poké Balls da Bolsa de combate e do Inventário de Viagem (inclusive bolas criadas à mão) */
+  const ICON_RULE={"ball:poke":"poke-ball","ball:great":"great-ball","ball:ultra":"ultra-ball","ball:premier":"premier-ball","ball:master":"master-ball"};
+  const slugOf=n=>norm(n).toLowerCase().replace(/pokebolacomum|pokebola/,"pokeball").replace(/ball$/,"-ball").replace(/^poke-ball$|^pokeball$/,"poke-ball");
   function balls(){
     const out=[];
-    try{BAG_CONSUMABLE_BY_SLUG.forEach((it,slug)=>{if(it?.bagGroup==="balls"){const q=bagQuantity(slug);if(q>0)out.push({slug,name:it.name,qty:q});}});}catch(e){}
-    return out.sort((a,b)=>(RULES()[a.slug]?.base||0)-(RULES()[b.slug]?.base||0));
+    try{BAG_CONSUMABLE_BY_SLUG.forEach((it,slug)=>{if(it?.bagGroup==="balls"){const q=bagQuantity(slug);if(q>0)out.push({id:"bag:"+slug,rule:slug,img:slug,name:it.name,qty:q,src:"bag"});}});}catch(e){}
+    for(const i of invItems()){
+      const q=Math.floor(Number(i.qty||0));if(q<=0)continue;
+      const isBall=i.category==="balls"||/^ball:/.test(String(i.icon||""))||/ball|pok[eé]bola/i.test(String(i.name||""));
+      if(!isBall||/bolsa|case|estojo/i.test(String(i.name||"")))continue;
+      const guess=i.apiName&&RULES()[i.apiName]?i.apiName:RULES()[slugOf(i.name)]?slugOf(i.name):ICON_RULE[i.icon]||"poke-ball";
+      out.push({id:"inv:"+i.id,rule:guess,img:i.apiName||(RULES()[slugOf(i.name)]?slugOf(i.name):guess),name:i.name,qty:q,src:"inv",inv:i,desc:String(i.desc||"")});
+    }
+    return out.sort((a,b)=>(RULES()[a.rule]?.base||0)-(RULES()[b.rule]?.base||0));
   }
-  function ballBonus(slug,C){
-    const r=RULES()[slug];if(!r)return {bonus:0,note:"sem regra própria"};
+  const ballById=id=>balls().find(b=>b.id===id)||null;
+  function spendBall(e){
+    if(e.src==="bag")setBagQuantity(e.rule,bagQuantity(e.rule)-1,{render:false,save:false});
+    else e.inv.qty=Math.max(0,Math.floor(Number(e.inv.qty||0))-1);
+  }
+  function ballBonus(e,C){
+    if(!e)return {bonus:0,note:""};
+    // bola criada à mão com o bônus escrito na descrição ("+20 NAC")
+    const m=e.desc&&e.desc.match(/([+\-−]\s*\d+)\s*(?:de\s*|no\s*)?NAC/i);
+    if(m)return {bonus:Number(m[1].replace(/[−\s]/g,c=>c==="−"?"-":"")),note:e.desc};
+    const r=RULES()[e.rule];if(!r)return {bonus:0,note:"sem regra própria"};
     if(r.auto)return {auto:true,bonus:0,note:"captura automática"};
     let b=Number(r.base||0),note=r.text||"";
     const types=C.foe.types||[];const a=area();
@@ -451,7 +470,7 @@
     return {body:b,skill,st,target,crit:Math.min(target,Math.floor(b/4))};
   }
   function nac(C,slug,crit){
-    const rar=RAR[C.foe.rarity]||RAR.common,bb=ballBonus(slug,C);
+    const e=ballById(slug),rar=RAR[C.foe.rarity]||RAR.common,bb=ballBonus(e,C);
     if(bb.auto)return {auto:true,value:100,parts:[["Master Ball","auto"]]};
     if(C.info.fainted){
       if(C.foe.rarity==="common"||C.foe.rarity==="uncommon")return {auto:true,value:100,parts:[[`Desmaiado · ${rar.label}`,"auto"]]};
@@ -461,7 +480,7 @@
     const pct=Math.round((C.info.pct??1)*100);
     const st=STATUS_CAP[C.info.status];
     const diff=C.foe.level-C.myLevel;
-    const parts=[["Base",30],[`Vida ${pct}%`,lifeMod(pct)],[itemName(slug),bb.bonus],[`Nível (${diff>=0?"+":""}${diff})`,levelMod(diff)],[`Raridade · ${rar.label}`,rar.mod]];
+    const parts=[["Base",30],[`Vida ${pct}%`,lifeMod(pct)],[e?.name||"Poké Ball",bb.bonus],[`Nível (${diff>=0?"+":""}${diff})`,levelMod(diff)],[`Raridade · ${rar.label}`,rar.mod]];
     if(st)parts.push([st.label,st.mod]);
     if(crit)parts.push(["Arremesso crítico",10]);
     const raw=parts.reduce((s,[,v])=>s+v,0);
@@ -472,7 +491,7 @@
     const C={foe,inBattle,cb,info:{pct:1,fainted:false,status:"",turn:1,...(info||{})}};
     C.myLevel=Number(info?.myLevel||lead?.level||1);C.turn=Number(C.info.turn||1);
     const bl=balls();
-    ui.cap={C,ball:bl[0]?.slug||"",phase:"aim",msg:""};
+    ui.cap={C,ball:bl[0]?.id||"",phase:"aim",msg:""};
     ui.ev={kind:"capture"};
     if(root.hidden){root.hidden=false;document.body.classList.add("ex7-open");}
     render();
@@ -487,13 +506,14 @@
   async function doThrow(mode){
     const K=ui.cap;if(!K||K.phase!=="aim")return;
     const C=K.C;
-    if(!K.ball||bagQuantity(K.ball)<=0){toast("Escolha uma Poké Ball da Bolsa.");return;}
+    const be=ballById(K.ball);
+    if(!be){toast("Escolha uma Poké Ball.");return;}
     cancelAnimationFrame(ringRaf);
     const td=throwData(C);
     const roll=mode==="ring"?clamp(Math.round(ringScale()*100)+R(-3,3),1,100):d100();
     const hit=roll<=td.target,crit=hit&&roll<=td.crit;
-    const ballName=itemName(K.ball);
-    setBagQuantity(K.ball,bagQuantity(K.ball)-1,{render:false,save:false});
+    const ballName=be.name;K.img=be.img;K.rule=be.rule;
+    spendBall(be);
     K.phase="fly";K.throwRoll=roll;K.hit=hit;K.crit=crit;K.msg=hit?(crit?"Arremesso CRÍTICO!":"Acertou!"):"A Poké Ball errou o alvo!";
     sfx("throw");render();await wait(650);
     if(!hit){K.phase="fail";log(`${ballName}: arremesso ${roll} > ${td.target}, errou ${C.foe.name}.`,"bad");afterFail(C,ballName);return;}
@@ -507,7 +527,7 @@
     if(caught){
       K.phase="caught";K.msg=`${C.foe.name} foi capturado!`;sfx("caught");render();
       log(`◓ ${C.foe.name} foi capturado com ${ballName}!${n.auto?"":` (${capRoll} ≤ ${n.value})`}`,"good");
-      await register(C.foe,K.ball,C.info);
+      await register(C.foe,K.rule,C.info,ballName);
       const e=exp();if(e)e.caught.push({name:C.foe.name,level:C.foe.level,img:C.foe.sprite||C.foe.img});
       save();
       if(C.inBattle)C.cb?.("caught");
@@ -533,7 +553,7 @@
     if(K.fled||C.info.fainted){ui.ev=null;if(C.info.fainted&&!K.fled)log(`Você deixou ${C.foe.name} ir.`,"none");render();return;}
     ui.ev={kind:"poke",foe:C.foe,round:(C.turn||1)+1,tile:C.foe.terrain};render();
   }
-  async function register(foe,ballSlug,info){
+  async function register(foe,ballSlug,info,ballName){
     if(typeof createBlankPokemon!=="function")return;
     const back=typeof current!=="undefined"?current?.id:null;
     const app=document.getElementById("app");const wasOpen=app?.classList.contains("drawer-open");
@@ -548,7 +568,7 @@
       if(!real)p.name=foe.name;
       p.storageGroup="box";p.level=foe.level;
       if(foe.shiny)p.shiny=true;
-      p.notes=[p.notes,`Capturado com ${itemName(ballSlug)} em ${area()?.name||"exploração"}, ${region().name} (nível ${foe.level}).`].filter(Boolean).join("\n");
+      p.notes=[p.notes,`Capturado com ${ballName||itemName(ballSlug)} em ${area()?.name||"exploração"}, ${region().name} (nível ${foe.level}).`].filter(Boolean).join("\n");
       if(ballSlug==="luxury-ball")p.happiness=Math.max(Number(p.happiness||0),120);
       if(typeof syncLevelDependentData==="function")try{syncLevelDependentData(p);}catch(e){}
       const prev=(state.pokemon||[]).find(x=>x.id===back);
@@ -682,9 +702,9 @@
       inner=`<p class="ex7-evtitle">Um Pokémon selvagem apareceu!</p>${foeCard(ev.foe)}
         <div class="ex7-acts">
           <button type="button" class="ex7-btn primary" data-ex="battle" ${alive?"":"disabled"}>⚔ Batalhar</button>
-          <button type="button" class="ex7-btn" data-ex="ball" ${hasBall?"":"disabled"} title="${hasBall?"Lançar sem batalhar (o Pokémon está com a Vida cheia)":"Sem Poké Balls na Bolsa"}">◓ Poké Ball</button>
+          <button type="button" class="ex7-btn" data-ex="ball" ${hasBall?"":"disabled"} title="${hasBall?"Lançar sem batalhar (o Pokémon está com a Vida cheia)":"Sem Poké Balls na Bolsa nem no Inventário"}">◓ Poké Ball</button>
           <button type="button" class="ex7-btn ghost" data-ex="flee">🏃 Fugir <small>−1 Vida</small></button></div>
-        ${alive?"":`<small class="ex7-warn">Todo o time está desmaiado.</small>`}${hasBall?"":`<small class="ex7-warn">Sem Poké Balls na Bolsa.</small>`}`;
+        ${alive?"":`<small class="ex7-warn">Todo o time está desmaiado.</small>`}${hasBall?"":`<small class="ex7-warn">Sem Poké Balls na Bolsa nem no Inventário de Viagem.</small>`}`;
     }
     else if(ev.kind==="item")inner=`<span class="ex7-big ex7-pop"><img src="${esc(itemSprite(ev.slug))}" alt="" width="64" height="64"></span><b>Você achou ${esc(ev.name)} ×${ev.n}!</b><p>${ev.bag?"Foi para a Bolsa.":"Foi para o Inventário de Viagem."}</p><button type="button" class="ex7-btn primary" data-ex="ok">Continuar</button>`;
     else if(ev.kind==="money")inner=`<span class="ex7-big ex7-pop">${px("chest",56)}</span><b>₽ ${ev.n.toLocaleString("pt-BR")}!</b><p>Dinheiro perdido no caminho.</p><button type="button" class="ex7-btn primary" data-ex="ok">Continuar</button>`;
@@ -700,13 +720,13 @@
     const ph=K.phase;
     const stage=`<div class="ex7-capstage ${ph}">
       <div class="ex7-capfoe">${ph==="shake"||ph==="caught"?"":`<img src="${esc(C.foe.sprite||C.foe.img)}" alt="${esc(C.foe.name)}" class="${fainted?"ko":""}">`}</div>
-      ${ph==="aim"?`<div class="ex7-ringwrap" data-ex="ring" title="Clique quando o anel estiver pequeno"><i class="ex7-zone ok" style="--z:${td.target}"></i><i class="ex7-zone crit" style="--z:${Math.max(4,td.crit)}"></i><img class="ex7-ball" src="${esc(itemSprite(K.ball||"poke-ball"))}" alt=""><i class="ex7-ring"></i></div>`
-        :`<div class="ex7-ballfx ${ph}"><img class="ex7-ball" src="${esc(itemSprite(K.ball||"poke-ball"))}" alt="" style="--s:${K.shakes||0}">${ph==="caught"?`<span class="ex7-stars">✦ ✦ ✦</span>`:""}</div>`}
+      ${ph==="aim"?`<div class="ex7-ringwrap" data-ex="ring" title="Clique quando o anel estiver pequeno"><i class="ex7-zone ok" style="--z:${td.target}"></i><i class="ex7-zone crit" style="--z:${Math.max(4,td.crit)}"></i><img class="ex7-ball" src="${esc(itemSprite(K.img||ballById(K.ball)?.img||"poke-ball"))}" alt=""><i class="ex7-ring"></i></div>`
+        :`<div class="ex7-ballfx ${ph}"><img class="ex7-ball" src="${esc(itemSprite(K.img||ballById(K.ball)?.img||"poke-ball"))}" alt="" style="--s:${K.shakes||0}">${ph==="caught"?`<span class="ex7-stars">✦ ✦ ✦</span>`:""}</div>`}
       ${K.msg?`<b class="ex7-capmsg ${ph}">${esc(K.msg)}</b>`:""}
     </div>`;
     let body="";
     if(ph==="aim"){
-      body=`<div class="ex7-capballs">${bl.length?bl.map(b=>{const bb=ballBonus(b.slug,C);return `<button type="button" class="ex7-capball${b.slug===K.ball?" on":""}" data-ex="pickball" data-v="${esc(b.slug)}" title="${esc(RULES()[b.slug]?.text||"")}"><img src="${esc(itemSprite(b.slug))}" alt="" width="28" height="28"><b>${esc(b.name)}</b><small>${bb.auto?"AUTO":`${bb.bonus>=0?"+":""}${bb.bonus}`} · ×${b.qty}</small></button>`;}).join(""):`<p class="ex7-warn">Sem Poké Balls na Bolsa.</p>`}</div>
+      body=`<div class="ex7-capballs">${bl.length?bl.map(b=>{const bb=ballBonus(b,C);return `<button type="button" class="ex7-capball${b.id===K.ball?" on":""}" data-ex="pickball" data-v="${esc(b.id)}" title="${esc((b.src==="inv"?"Inventário de Viagem · ":"Bolsa · ")+(bb.note||""))}"><img src="${esc(itemSprite(b.img))}" alt="" width="28" height="28"><b>${esc(b.name)}</b><small>${bb.auto?"AUTO":`${bb.bonus>=0?"+":""}${bb.bonus}`} · ×${b.qty}</small></button>`;}).join(""):`<p class="ex7-warn">Sem Poké Balls na Bolsa nem no Inventário de Viagem.</p>`}</div>
         <div class="ex7-capnums"><span><small>ARREMESSO</small><b>${td.target}</b><em>d100 ≤ ${td.target} · crítico ≤ ${td.crit}${td.skill?"":" · sem perícia −15"}${td.st?.throw?` · ${td.st.label} +${td.st.throw}`:""}</em></span>
           <span><small>NAC</small><b>${n?(n.auto?"AUTO":n.value):"—"}</b><em>${n?n.parts.map(([k,v])=>`${esc(k)} ${typeof v==="number"?(v>=0?"+":"")+v:esc(v)}`).join(" · "):""}</em></span></div>
         <div class="ex7-acts"><button type="button" class="ex7-btn primary" data-ex="ring" ${K.ball?"":"disabled"}>🎯 Arremessar (anel)</button><button type="button" class="ex7-btn" data-ex="dice" ${K.ball?"":"disabled"}>🎲 Rolar d100</button><button type="button" class="ex7-btn ghost" data-ex="capback">${C.inBattle?"← Voltar à batalha":fainted?"Deixar ir":"← Voltar"}</button></div>
@@ -757,7 +777,7 @@
     else if(a==="pickball"){if(ui.cap){ui.cap.ball=v;render();}}
     else if(a==="ring")doThrow("ring");
     else if(a==="dice")doThrow("dice");
-    else if(a==="again"){if(ui.cap){ui.cap.phase="aim";ui.cap.msg="";ui.cap.C.turn=(ui.cap.C.turn||1)+1;if(bagQuantity(ui.cap.ball)<=0)ui.cap.ball=balls()[0]?.slug||"";render();}}
+    else if(a==="again"){if(ui.cap){ui.cap.phase="aim";ui.cap.msg="";ui.cap.C.turn=(ui.cap.C.turn||1)+1;if(!ballById(ui.cap.ball))ui.cap.ball=balls()[0]?.id||"";render();}}
     else if(a==="capback")captureBack();
   });
   root.addEventListener("submit",async e=>{
