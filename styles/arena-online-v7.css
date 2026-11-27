@@ -1041,3 +1041,12 @@ html[data-theme-skin] .ar7{background:var(--sk-body,var(--bg,#121316))}
 .ab9-e{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",system-ui,sans-serif!important;font-style:normal;letter-spacing:0}
 .ar9-qd{font-style:normal;font-weight:900;padding:0 5px;border-radius:6px;background:rgba(0,0,0,.28);color:#fff}
 .ar9-qd.se{background:#1f8a4c}.ar9-qd.nve{background:#8a3a2a}
+/* mecânicas de golpes */
+.ar7-stg.semi{background:#3b6fd8;color:#fff}
+.ar7-stg.sub{background:#a0703a;color:#fff}
+.ar7-chip.scr{background:#e8f2ff;color:#1b3a6e;border-color:#4f8de8}
+.ar7-chip.tw{background:#e6fbef;color:#1f6a3f;border-color:#43c17a}
+.ar7-chip.hz{background:#f3ece2;color:#5a3a20;border-color:#a0703a}
+.ar7-chip.trick{background:#f1e8ff;color:#4a2a8a;border-color:#8a5ad0}
+.ar9-forced{display:grid;justify-items:center;gap:8px;padding:10px;border-radius:12px;border:2px dashed var(--cl-ink,#181a24);background:color-mix(in srgb,#ffd23f 16%,var(--cl-paper2,#f3f3f3));text-align:center}
+.ar9-forced p{margin:0;font-size:13px}

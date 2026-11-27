@@ -607,7 +607,7 @@
   const W_LABEL={rain:"Chuva",sun:"Sol forte",sand:"Tempestade de areia",hail:"Granizo"};
   const W_ICON={rain:"🌧",sun:"☀",sand:"🌪",hail:"❄"};
   const SRC_LABEL={evade:"o cansaço de tanto esquivar",psn:"o veneno",tox:"o veneno (Toxic)",brn:"a queimadura",dbrn:"a queimadura profunda",sand:"a tempestade de areia",hail:"o granizo",cnf:"a confusão",recoil:"o recuo"};
-  const CANT={slp:"está dormindo.",frz:"está congelado!",par:"está paralisado e não conseguiu se mover!",flinch:"hesitou e não atacou!",cnf:"está confuso e se feriu!",powder:"é imune a golpes de pó."};
+  const CANT={slp:"está dormindo.",frz:"está congelado!",par:"está paralisado e não conseguiu se mover!",flinch:"hesitou e não atacou!",cnf:"está confuso e se feriu!",powder:"é imune a golpes de pó.",recharge:"precisa recarregar!"};
   function pushLog(events){
     for(const ev of events){
       let line="",cls="";
@@ -1367,12 +1367,32 @@
     for(const [k,v] of Object.entries(s.stg||{}))if(v)h+=`<i class="ar7-stg ${v>0?"up":"down"}" title="${STAT_PT[k]} ${v>0?"+":""}${v}">${STAT_SHORT[k]} ${v>0?"+":""}${v}</i>`;
     if(s.crit)h+=`<i class="ar7-stg up" title="Crítico aumentado">CRIT +${s.crit}</i>`;
     if(s.swagger)h+=`<i class="ar7-stg swag" title="Swagger Mode">SWAGGER</i>`;
+    if(s.semi)h+=`<i class="ar7-stg semi" title="Invulnerável neste turno">${{fly:"🪽 NO AR",dig:"⛏ SUBTERRÂNEO",dive:"🌊 SUBMERSO",phantom:"👻 SUMIDO"}[s.semi]||"OCULTO"}</i>`;
+    if(s.sub)h+=`<i class="ar7-stg sub" title="Substituto com ${s.sub} HP">🧸 SUB ${s.sub}</i>`;
+    if(s.forced==="recharge")h+=`<i class="ar7-stg down" title="Precisa recarregar">RECARGA</i>`;
+    if(s.perish)h+=`<i class="ar7-stg down" title="Perish Song">💀 ${s.perish}</i>`;
+    if(s.cursed)h+=`<i class="ar7-stg down" title="Amaldiçoado: perde 1/4 do HP por turno">MALDIÇÃO</i>`;
+    if(s.seeded)h+=`<i class="ar7-stg down" title="Leech Seed: perde 1/8 do HP por turno">🌱 SEMENTE</i>`;
+    if(s.taunt)h+=`<i class="ar7-stg down" title="Taunt: só pode atacar">TAUNT ${s.taunt}</i>`;
+    if(s.encore!=null)h+=`<i class="ar7-stg down" title="Encore: repete o mesmo golpe">ENCORE</i>`;
+    if(s.disable!=null)h+=`<i class="ar7-stg down" title="Um golpe está bloqueado">DISABLE</i>`;
+    if(s.yawn)h+=`<i class="ar7-stg down" title="Vai dormir no fim do próximo turno">😪 SONO</i>`;
     return h;
   }
   function fieldChips(){
     const v=B.view;let h="";
     if(v.weather)h+=`<b class="ar7-chip w-${v.weather.kind}">${W_ICON[v.weather.kind]||""} ${W_LABEL[v.weather.kind]||""} <small>${v.weather.turns}</small></b>`;
-    for(const k of ["p1","p2"]){const f=v.sides[k].field||{};if(f.royal>0)h+=`<b class="ar7-chip royal">👑 Campo Real · ${esc(sideName(k))} <small>${f.royal}</small></b>`;}
+    for(const k of ["p1","p2"]){const f=v.sides[k].field||{},hz=v.sides[k].hazards||{},nm=esc(sideName(k));
+      if(f.royal>0)h+=`<b class="ar7-chip royal">👑 Campo Real · ${nm} <small>${f.royal}</small></b>`;
+      if(f.reflect>0)h+=`<b class="ar7-chip scr">🛡 Reflect · ${nm} <small>${f.reflect}</small></b>`;
+      if(f.light>0)h+=`<b class="ar7-chip scr">✨ Light Screen · ${nm} <small>${f.light}</small></b>`;
+      if(f.veil>0)h+=`<b class="ar7-chip scr">🌌 Aurora Veil · ${nm} <small>${f.veil}</small></b>`;
+      if(f.tailwind>0)h+=`<b class="ar7-chip tw">🍃 Tailwind · ${nm} <small>${f.tailwind}</small></b>`;
+      if(hz.rocks)h+=`<b class="ar7-chip hz">🪨 Stealth Rock · ${nm}</b>`;
+      if(hz.spikes)h+=`<b class="ar7-chip hz">📌 Spikes ×${hz.spikes} · ${nm}</b>`;
+      if(hz.web)h+=`<b class="ar7-chip hz">🕸 Sticky Web · ${nm}</b>`;
+      if(hz.tspikes)h+=`<b class="ar7-chip hz">☠ Toxic Spikes ×${hz.tspikes} · ${nm}</b>`;}
+    if(v.sides.p1.trick>0)h+=`<b class="ar7-chip trick">🌀 Trick Room <small>${v.sides.p1.trick}</small></b>`;
     return h;
   }
   function monCard(side,pos){
@@ -1420,7 +1440,8 @@
         const zOn=sel.gimmick==="z";
         const streak=s.evadeStreak||0;
         panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} ${s.team?.[s.active]&&!s.team[s.active].fainted?"saiu de campo pelo item!":"desmaiou!"} Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
-          ${mustSwitch?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const locked=s.lock!=null&&s.lock!==i;const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${(zOn&&!zOk)||locked?"disabled":""} ${locked?`title="Preso no golpe escolhido pelo item Choice"`:""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
+          ${!mustSwitch&&s.forced?`<div class="ar9-forced"><p>${s.forced==="recharge"?`<b>${esc(mon.name)}</b> precisa recarregar depois do golpe forte.`:`<b>${esc(mon.name)}</b> continua o <b>${esc(s.forced)}</b>${s.semi?" (ainda invulnerável)":""}.`}</p><button type="button" class="ar7-btn primary" data-ar="move" data-idx="${s.forcedIdx??0}">▶ Continuar</button></div>`:""}
+          ${mustSwitch||s.forced?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const locked=(s.lock!=null&&s.lock!==i)||(s.encore!=null&&s.encore!==i)||s.disable===i||(s.taunt>0&&String(m.category).toLowerCase()==="status");const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${(zOn&&!zOk)||locked?"disabled":""} ${locked?`title="Bloqueado (Choice, Encore, Disable ou Taunt)"`:""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
             <b>${zOk?"Z-":""}${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${(()=>{const q=m.power?qdPreview(v,mine,m,zOk?zp:Number(m.power)):null;const dmg=q?` · <em class="ar9-qd${q.mult>1?" se":q.mult<1?" nve":""}" title="${esc(q.title)}">${esc(q.label)}</em>`:"";return zOk?`${dmg} · não erra`:`${dmg}${m.accuracy!=null?` · ${m.accuracy}%`:""}`;})()}</small></button>`;}).join("")}</div>
           <div class="ar9-tactics">
             ${g.mega.length||g.tera||g.z?`<div class="ar9-gims" role="group" aria-label="Gimmicks (uma de cada por batalha)">

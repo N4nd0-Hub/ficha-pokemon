@@ -82,13 +82,14 @@
       const hp=Math.max(1,Number(m.maxHp||m.stats?.hp||1));
       return {hp,maxHp:hp,fainted:false,status:null,slp:0,tox:0,cnf:0,stages:[],persist:{},crit:0,
         flinch:false,enteredTurn:1,lastMove:"",lastType:"",fury:0,swagger:0,nextPhys:0,nextDouble:null,nextHalf:false,
-        hurt:{phys:0,spec:0,any:false},used:{},protectStreak:0,abilStages:[],evadeStreak:0,part:false,itemGone:false,lock:null,metro:{k:"",n:0}};
+        hurt:{phys:0,spec:0,any:false},used:{},protectStreak:0,abilStages:[],evadeStreak:0,part:false,itemGone:false,lock:null,metro:{k:"",n:0},
+        semi:null,charge:null,recharge:false,sub:0,destiny:false,perish:0,cursed:false,seeded:null,taunt:0,encore:null,disable:null,yawn:0,lastIdx:-1,baton:false};
     }
     function newBattle({id,format,p1,p2,damage:dmgMode}){
-      const side=(info)=>({id:info.id,name:info.name,active:0,needSwitch:false,pending:null,hazards:{tspikes:0},field:{},faintedLastTurn:false,
+      const side=(info)=>({id:info.id,name:info.name,active:0,needSwitch:false,pending:null,hazards:{tspikes:0,rocks:false,spikes:0,web:false},field:{},faintedLastTurn:false,
         gim:{mega:null,tera:null,z:false},items:!!info.items,healMult:info.healMult??1,
         team:info.team.map(monState)});
-      const b={id,format,turn:1,phase:"choose",winner:null,reason:"",weather:null,damage:dmgMode==="matrix"?"matrix":"classic",
+      const b={id,format,turn:1,phase:"choose",winner:null,reason:"",weather:null,trickRoom:0,damage:dmgMode==="matrix"?"matrix":"classic",
         sides:{p1:side(p1),p2:side(p2)},teams:{p1:p1.team.map(prepMon),p2:p2.team.map(prepMon)},events:[]};
       const events=[];
       // as abilities de entrada dos dois primeiros, na ordem de Speed
@@ -115,6 +116,7 @@
     const canEject=(b,s)=>b.sides[s].team.some((t,i)=>!t.fainted&&i!==b.sides[s].active)&&!activeState(b,s).fainted;
     const SOUND=/^(boomburst|bug buzz|chatter|clanging scales|clangorous soul|clangorous soulblaze|confide|disarming voice|echoed voice|eerie spell|grass whistle|growl|heal bell|hyper voice|metal sound|noble roar|overdrive|parting shot|perish song|psychic noise|relic song|roar|round|screech|sing|snarl|snore|sparkling aria|supersonic|torch song|alluring voice|uproar)$/;
     const PUNCH=/punch|^(hammer arm|ice hammer|meteor mash|sky uppercut|rage fist|headlong rush|double iron bash|plasma fists|surging strikes|wicked blow)$/;
+    const grounded=(b,s)=>!typesOf(b,s).includes("Flying")&&key(abil(b,s).name)!=="levitate"&&!itemOf(b,s)?.groundImmune;
     const isSound=move=>!!move?.fx?.sound||SOUND.test(key(move?.name));
     const isPunch=move=>PUNCH.test(key(move?.name));
     function heldSay(b,s,events,text){const it=itemOf(b,s);if(it)events.push({k:"held",side:s,mon:activeMon(b,s).name,item:it.name,text});}
@@ -136,6 +138,7 @@
       if(stat==="spe"){
         if(ms.status==="par")v=Math.floor(v/2);
         if(b.weather&&m.abil.weatherSpeed===b.weather.kind)v*=2;
+        if(b.sides[s].field.tailwind>0)v*=2;
       }
       return v;
     }
@@ -215,6 +218,16 @@
         if(t.includes("Poison")){side.hazards.tspikes=0;events.push({k:"hazard",side:s,kind:"tspikes",layers:0,cleared:true,mon:mon.name});}
         else if(!t.includes("Flying")&&!t.includes("Steel"))giveStatus(b,s,side.hazards.tspikes>=2?"tox":"psn",events,"Toxic Spikes");
       }
+      // Stealth Rock, Spikes e Sticky Web
+      if(!itemOf(b,s)?.boots){
+        const H=side.hazards;
+        if(H.rocks){const m=rules.typeMultiplier("Rock",typesOf(b,s));const dmg=Math.max(1,Math.floor(ms.maxHp*0.125*m));events.push({k:"info",text:`Pedras pontiagudas acertaram ${mon.name}!`});hurt(b,s,dmg,events,"Stealth Rock");}
+        if(!ms.fainted&&grounded(b,s)){
+          if(H.spikes>0){const f=[0,1/8,1/6,1/4][Math.min(3,H.spikes)];events.push({k:"info",text:`${mon.name} pisou nos Spikes!`});hurt(b,s,Math.max(1,Math.floor(ms.maxHp*f)),events,"Spikes");}
+          if(!ms.fainted&&H.web){events.push({k:"info",text:`${mon.name} ficou preso na Sticky Web!`});addStage(b,s,"spe",-1,events,{src:"Sticky Web",fromFoe:true});}
+        }
+      }
+      if(side.healWish&&!ms.fainted){side.healWish=false;ms.status=null;ms.slp=0;ms.tox=0;events.push({k:"info",text:`O desejo de cura envolveu ${mon.name}!`});heal(b,s,ms.maxHp,events,"Healing Wish");}
       // Campo Real do outro lado: −1 Speed em quem entra
       if(!start&&b.sides[foe].field.royal>0)addStage(b,s,"spe",-1,events,{src:"Campo Real",fromFoe:true});
       const shown=[];
@@ -243,6 +256,7 @@
     }
     function resetVolatile(ms){
       ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.eject=false;ms.nextAcc=0;ms.nextFirst=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;ms.evadeStreak=0;ms.lock=null;ms.metro={k:"",n:0};
+      ms.semi=null;ms.charge=null;ms.recharge=false;ms.sub=0;ms.destiny=false;ms.perish=0;ms.cursed=false;ms.seeded=null;ms.taunt=0;ms.encore=null;ms.disable=null;ms.yawn=0;ms.lastIdx=-1;ms.baton=false;
       if(ms.status==="tox")ms.tox=1;
     }
 
@@ -460,6 +474,9 @@
       if(physical&&aS.status==="dbrn"){total=Math.max(1,Math.floor(total/2));notes.push("Deep Burn ½");}
       if(aS.nextDouble&&(aS.nextDouble==="any"||aS.nextDouble===cat)){total*=2;notes.push("dano dobrado");aS.nextDouble=null;}
       if(dS.nextHalf){total=Math.max(1,Math.floor(total/2));notes.push("defesa reforçada ½");dS.nextHalf=false;}
+      const F=b.sides[other(atkSide)].field;
+      if(physical&&(F.reflect>0||F.veil>0)){total=Math.max(1,Math.floor(total/2));notes.push(F.veil>0?"Aurora Veil ½":"Reflect ½");}
+      else if(!physical&&(F.light>0||F.veil>0)){total=Math.max(1,Math.floor(total/2));notes.push(F.veil>0?"Aurora Veil ½":"Light Screen ½");}
       return total;
     }
 
@@ -552,7 +569,7 @@
     }
 
     /* ---------- Usar um golpe ---------- */
-    function useMove(b,s,idx,events,ctx){
+    function useMove(b,s,idx,events,ctx,opt={}){
       const A=activeMon(b,s),aS=activeState(b,s);
       if(aS.fainted)return;
       const tSide=other(s);
@@ -562,8 +579,10 @@
       const fx=move.fx;
       const cat=String(move.category||"").toLowerCase();
       const k=key(move.name);
-      // pode agir?
-      if(aS.status==="slp"){
+      const M=fx.mech||{};
+      // pode agir? (Sleep Talk e Snore funcionam dormindo)
+      if(aS.status==="slp"&&!opt.asleepOK&&(M.sleepTalk||M.snore)&&aS.slp>0){aS.slp--;opt={...opt,asleep:true};}
+      else if(aS.status==="slp"&&!opt.asleepOK){
         if(aS.slp>0){aS.slp--;events.push({k:"cant",side:s,mon:A.name,reason:"slp"});return;}
         aS.status=null;events.push({k:"statusEnd",side:s,mon:A.name,st:"slp"});
       }
@@ -587,6 +606,36 @@
       events.push(ev);
       const prevMove=aS.lastMove;aS.lastMove=k;
       const prevType=aS.lastType;aS.lastType=normT(move.type);
+      aS.destiny=false;aS.lastIdx=idx;
+      const fail=why=>{ev.fail=true;ev.why=why;return true;};
+      // Sleep Talk / Snore
+      if(M.snore&&!opt.asleep&&!opt.asleepOK){fail("só funciona dormindo");return;}
+      if(M.sleepTalk){
+        if(!opt.asleep){fail("só funciona dormindo");return;}
+        const opts=A.moves.map((m,i)=>i).filter(i=>i!==idx&&!(A.moves[i].fx?.mech?.semi||A.moves[i].fx?.mech?.charge||A.moves[i].fx?.mech?.sleepTalk));
+        if(!opts.length){fail("nenhum golpe para usar");return;}
+        useMove(b,s,opts[Math.floor(rand()*opts.length)],events,ctx,{asleepOK:true});return;
+      }
+      // Taunt / Disable
+      if(aS.taunt>0&&cat==="status"){fail("está provocado (Taunt) e só pode atacar");return;}
+      if(aS.disable&&aS.disable.idx===idx){fail("o golpe está bloqueado (Disable)");return;}
+      // golpes de dois turnos (Fly, Dig, Dive, Phantom Force, Solar Beam…)
+      if((M.semi||M.charge)&&!aS.charge){
+        const skip=M.skipIn&&b.weather?.kind===M.skipIn;
+        const herb=!skip&&/power herb/i.test(itemOf(b,s)?.name||"");
+        if(M.chargeStage)addStage(b,s,M.chargeStage.stat,M.chargeStage.n,events,{src:move.name});
+        if(herb)useUpItem(b,s,events,"fez o golpe sair na hora");
+        else if(!skip){aS.charge={idx,name:move.name};if(M.semi)aS.semi=M.semi;events.push({k:"info",text:`${A.name} ${M.say||"está se preparando!"}`});return;}
+      }else if(aS.charge){aS.charge=null;aS.semi=null;}
+      // Focus Punch: perde a concentração se levou dano antes
+      if(M.focus&&aS.hurt.any){fail("perdeu a concentração e não atacou");return;}
+      // Sucker Punch / Thunderclap / Upper Hand: dependem da ação do alvo
+      if(M.needFoeAttack||M.needFoePriority){
+        const fa=ctx.P?.[tSide],fm=fa?.kind==="move"?activeMon(b,tSide).moves[fa.idx]:null;
+        const ok=fm&&!ctx.acted.has(tSide)&&(M.needFoePriority?movePriority(fm)>0:String(fm.category||"").toLowerCase()!=="status");
+        if(!ok){fail(M.needFoePriority?"só funciona contra um golpe de prioridade":"só funciona se o alvo for atacar");return;}
+      }
+      if(M.selfKO)ctx.selfKO.add(s);
       // falhas de condição
       if(fx.firstTurnOnly&&aS.enteredTurn!==b.turn){ev.fail=true;ev.why="só funciona no primeiro turno em campo";aS.lastType=prevType;return;}
       if(fx.protect){
@@ -596,7 +645,18 @@
       }
       const tS=activeState(b,tSide),T=activeMon(b,tSide);
       const affectsFoe=fx.stages.some(x=>x.who==="foe")||fx.status.some(x=>x.who==="foe")||cat!=="status";
+      if(affectsFoe&&ctx.protected.has(tSide)&&M.breakProtect){ctx.protected.delete(tSide);events.push({k:"info",text:`${A.name} quebrou a proteção de ${T.name}!`});}
       if(affectsFoe&&ctx.protected.has(tSide)&&cat!=="status"){events.push({k:"blocked",side:tSide});return;}
+      // alvo no ar, debaixo da terra, na água ou sumido
+      let semiMult=1;
+      if(tS.semi&&!tS.fainted&&(affectsFoe||M.phaze||M.taunt||M.encore||M.disable||M.leechSeed||M.yawn||M.swapItems)){
+        const hm=RULES.SEMI_HIT?.[tS.semi]?.[k];
+        if(!hm&&key(abil(b,s).name)!=="no guard"&&key(abil(b,tSide).name)!=="no guard"){ev.miss=true;ev.why={fly:"está no ar",dig:"está debaixo da terra",dive:"está debaixo d'água",phantom:"sumiu de vista"}[tS.semi];events.push({k:"info",text:`${T.name} ${ev.why}: o golpe não alcançou.`});return;}
+        semiMult=hm||1;
+        if(M.grounds&&tS.semi==="fly"){tS.semi=null;tS.charge=null;events.push({k:"info",text:`${T.name} foi derrubado no chão!`});}
+      }
+      // Substitute bloqueia golpes de status no alvo (som atravessa)
+      if(cat==="status"&&tS.sub>0&&!isSound(move)&&!M.phaze&&(fx.stages.some(x=>x.who==="foe")||fx.status.some(x=>x.who==="foe")||M.taunt||M.encore||M.disable||M.leechSeed||M.yawn||M.foeStages||M.swapItems)){fail(`o substituto de ${T.name} bloqueou`);return;}
       if(fx.powder&&(typesOf(b,tSide).includes("Grass")||abil(b,tSide).immune.powder||itemOf(b,tSide)?.goggles)){const gg=itemOf(b,tSide)?.goggles&&!typesOf(b,tSide).includes("Grass")&&!abil(b,tSide).immune.powder;events.push({k:"cant",side:tSide,mon:T.name,reason:"powder",src:gg?itemOf(b,tSide).name:abil(b,tSide).immune.powder?abil(b,tSide).name:"Grass"});return;}
 
       // golpes de status
@@ -607,6 +667,7 @@
           if(r>acc&&r>5){ev.miss=true;if(ctx.evade?.[tSide]&&r<=acc+ctx.evade[tSide])ev.dodged=true;blunder(b,s,events);return;}
         }
         if(ctx.protected.has(tSide)&&affectsFoe){events.push({k:"blocked",side:tSide});return;}
+        if(fx.mech&&statusMech(b,s,idx,move,M,events,ctx,ev))return;
         applySecondary(b,s,move,events,{hit:true,status:true});
         if(fx.heal)heal(b,s,Math.ceil(aS.maxHp*fx.heal/100),events,move.name);
         if(fx.rest){aS.status="slp";aS.slp=2;heal(b,s,aS.maxHp,events,move.name);events.push({k:"status",side:s,mon:A.name,st:"slp",src:move.name});}
@@ -646,13 +707,48 @@
       }
       // Power
       let power=Number(move.power||0);
-      if(fx.counter){
-        const got=fx.counter==="physical"?aS.hurt.phys:fx.counter==="special"?aS.hurt.spec:(aS.hurt.phys+aS.hurt.spec);
+      if(fx.counter||M.metalBurst){
+        const cm=M.metalBurst?"any":fx.counter;
+        const got=cm==="physical"?aS.hurt.phys:cm==="special"?aS.hurt.spec:(aS.hurt.phys+aS.hurt.spec);
         if(!got){ev.fail=true;ev.why="não recebeu dano para devolver";return;}
-        const amount=got*2;const hit={k:"hit",side:tSide,crit:false,mult:1,amount,fixed:amount,dice:0,rolls:[],notes:["devolveu o dobro"]};
+        const amount=M.metalBurst?Math.floor(got*1.5):got*2;const hit={k:"hit",side:tSide,crit:false,mult:1,amount,fixed:amount,dice:0,rolls:[],notes:[M.metalBurst?"devolveu 1,5×":"devolveu o dobro"]};
         tS.hp=Math.max(0,tS.hp-amount);hit.hp=tS.hp;events.push(hit);afterHit(b,s,move,events,hit,amount,ctx);return;
       }
       if(!power)power=60;
+      // Power que depende da situação
+      const hpR=aS.hp/aS.maxHp;
+      if(M.power==="reversal")power=hpR<=.0417?200:hpR<=.104?150:hpR<=.208?100:hpR<=.354?80:hpR<=.6875?40:20;
+      if(M.power==="hpHigh")power=Math.max(1,Math.floor(150*hpR));
+      if(M.power==="boosts")power=20+20*["atk","def","spa","spd","spe","acc","eva"].reduce((t,x)=>t+Math.max(0,stageTotal(aS,x)),0);
+      if(M.power==="acrobatics"&&!itemOf(b,s))power*=2;
+      if(M.power==="brine"&&tS.hp*2<=tS.maxHp)power*=2;
+      if(M.power==="weather"&&b.weather){power*=2;const wt={sun:"Fire",rain:"Water",sand:"Rock",hail:"Ice",snow:"Ice"}[b.weather.kind];if(wt)move={...move,type:wt};}
+      if(M.knockOff&&itemOf(b,tSide))power=Math.floor(power*1.5);
+      if(semiMult>1)power*=semiMult;
+      if(M.breakScreens){const F=b.sides[tSide].field;if(F.reflect>0||F.light>0||F.veil>0){F.reflect=0;F.light=0;F.veil=0;events.push({k:"info",text:`${A.name} quebrou as barreiras de ${T.name}!`});}}
+      // dano fixo, nocaute e golpes que custam a vida
+      if(M.fixed||M.ohko||M.gambit||M.endeavor){
+        if(typeMult(b,s,normT(move.type))===0){events.push({k:"hit",side:tSide,crit:false,mult:0,amount:0,immune:true,hp:tS.hp});return;}
+        let amount=0;
+        if(M.ohko){
+          const al=Number(A.level||1),tl=Number(T.level||1);
+          if(tl>al){fail("o alvo tem nível maior");return;}
+          const r2=d(100),acc2=30+al-tl;ev.roll=r2;ev.acc=acc2;
+          if(r2>acc2){ev.miss=true;return;}
+          amount=tS.hp;if(abil(b,tSide).sturdy){amount=0;fail(`${abil(b,tSide).name} impediu o nocaute`);return;}
+          events.push({k:"info",text:"É um nocaute de um golpe!"});
+        }
+        else if(M.gambit)amount=aS.hp;
+        else if(M.endeavor){amount=Math.max(0,tS.hp-aS.hp);if(!amount){fail("o alvo não tem mais HP que o usuário");return;}}
+        else if(M.fixed==="level")amount=Number(A.level||1);
+        else if(M.fixed==="half")amount=Math.max(1,Math.floor(tS.hp/2));
+        else if(M.fixed==="psywave")amount=Math.max(1,Math.floor(Number(A.level||1)*(50+d(101)-1)/100));
+        else amount=Number(M.fixed)||1;
+        if(ctx.endure.has(tSide)&&amount>=tS.hp){amount=tS.hp-1;events.push({k:"info",text:`${T.name} aguentou firme!`});}
+        if(subAbsorb(b,s,move,amount,events))return afterSub(b,s,move,M,events,amount);
+        const hit={k:"hit",side:tSide,crit:false,mult:1,amount,fixed:amount,dice:0,rolls:[],notes:["dano fixo"]};
+        tS.hp=Math.max(0,tS.hp-amount);hit.hp=tS.hp;events.push(hit);afterHit(b,s,move,events,hit,amount,ctx);return;
+      }
       const gemIt=itemOf(b,s);
       if(gemIt?.gem&&gemIt.gem.type===normT(move.type)){power=Math.round(power*gemIt.gem.x);useUpItem(b,s,events,`deu Power ×${String(gemIt.gem.x).replace(".",",")} ao golpe`);}
       for(const c of fx.doubleIf){
@@ -683,10 +779,106 @@
       if(tIt?.resist&&tIt.resist.type===normT(move.type)&&(!tIt.resist.se||hit.mult>=2)&&amount>0){amount=Math.max(1,Math.floor(amount/2));hit.notes=[...(hit.notes||[]),`${tIt.name} ½`];useUpItem(b,tSide,events,"diminuiu o dano pela metade");}
       if(tIt&&!tS.itemGone&&tIt.sash&&tS.hp>=tS.maxHp&&amount>=tS.hp){amount=tS.hp-1;useUpItem(b,tSide,events,"aguentou com 1 HP");}
       else if(tIt&&tIt.band&&amount>=tS.hp&&chance(tIt.band)){amount=tS.hp-1;heldSay(b,tSide,events,"aguentou com 1 HP");}
+      if(ctx.endure.has(tSide)&&amount>=tS.hp){amount=tS.hp-1;events.push({k:"info",text:`${T.name} aguentou firme (Endure)!`});}
+      if(subAbsorb(b,s,move,amount,events))return afterSub(b,s,move,M,events,amount);
       hit.amount=amount;
       tS.hp=Math.max(0,tS.hp-amount);hit.hp=tS.hp;
       events.push(hit);
       afterHit(b,s,move,events,hit,amount,ctx);
+    }
+    /* Substitute: o boneco leva o dano no lugar (golpes de som atravessam) */
+    function subAbsorb(b,s,move,amount,events){
+      const tSide=other(s),tS=activeState(b,tSide),T=activeMon(b,tSide);
+      if(!(tS.sub>0)||isSound(move))return false;
+      const took=Math.min(tS.sub,amount);tS.sub-=took;
+      events.push({k:"info",text:`O substituto de ${T.name} levou ${took} de dano${tS.sub<=0?" e quebrou!":"."}`});
+      if(tS.sub<=0)tS.sub=0;
+      return true;
+    }
+    function afterSub(b,s,move,M,events,amount){
+      const aS=activeState(b,s);
+      if(move.fx.recoil&&amount>0)hurt(b,s,Math.max(1,Math.floor(amount*move.fx.recoil/100)),events,"recoil");
+      if(M.recharge&&!aS.fainted)aS.recharge=true;
+      if(M.halfCost&&!aS.fainted)hurt(b,s,Math.max(1,Math.ceil(aS.maxHp/2)),events,move.name);
+      if(M.pivot&&!aS.fainted&&canEject(b,s)){aS.eject=true;}
+    }
+    /* Roar, Whirlwind, Dragon Tail: o alvo é trocado por um aleatório */
+    function forceOut(b,t,events,ctx){
+      const side=b.sides[t];
+      const opts=side.team.map((x,i)=>i).filter(i=>!side.team[i].fainted&&i!==side.active);
+      if(!opts.length)return false;
+      events.push({k:"info",text:`${activeMon(b,t).name} foi arrastado para fora!`});
+      applySwitch(b,t,opts[Math.floor(rand()*opts.length)],events);
+      ctx.forced=ctx.forced||new Set();ctx.forced.add(t);
+      return true;
+    }
+    /* Golpes de status com mecânica própria. Devolve true se cuidou do golpe. */
+    function statusMech(b,s,idx,move,M,events,ctx,ev){
+      const tSide=other(s),A=activeMon(b,s),aS=activeState(b,s),T=activeMon(b,tSide),tS=activeState(b,tSide);
+      const say=t=>events.push({k:"info",text:t});
+      const fail=w=>{ev.fail=true;ev.why=w;return true;};
+      const side=b.sides[s],foeSide=b.sides[tSide];
+      if(M.substitute){
+        if(aS.sub>0)return fail("já tem um substituto");
+        const cost=Math.floor(aS.maxHp/4);if(aS.hp<=cost)return fail("não tem HP para o substituto");
+        hurt(b,s,cost,events,"Substitute");aS.sub=cost;say(`${A.name} criou um substituto (${cost} HP)!`);return true;
+      }
+      if(M.curse){
+        if(typesOf(b,s).includes("Ghost")){
+          if(tS.cursed)return fail("o alvo já está amaldiçoado");
+          hurt(b,s,Math.max(1,Math.floor(aS.maxHp/2)),events,"Curse");tS.cursed=true;say(`${A.name} cortou a própria vida e amaldiçoou ${T.name}!`);
+        }else{addStage(b,s,"atk",1,events,{src:"Curse"});addStage(b,s,"def",1,events,{src:"Curse"});addStage(b,s,"spe",-1,events,{src:"Curse"});}
+        return true;
+      }
+      if(M.bellyDrum){
+        const cost=Math.floor(aS.maxHp/2);if(aS.hp<=cost)return fail("não tem HP suficiente");
+        hurt(b,s,cost,events,"Belly Drum");addStage(b,s,"atk",12,events,{src:"Belly Drum"});say(`${A.name} cortou o HP e maximizou o Attack!`);return true;
+      }
+      if(M.destiny){aS.destiny=true;say(`${A.name} quer levar o rival junto se for derrotado!`);return true;}
+      if(M.perish){let any=false;for(const x of [s,tSide]){const ms=activeState(b,x);if(!ms.fainted&&!ms.perish&&!(x===tSide&&key(abil(b,x).name)==="soundproof")){ms.perish=4;any=true;}}
+        if(!any)return fail("todos já ouviram a canção");say("Todos que ouviram a canção vão desmaiar em 3 turnos!");return true;}
+      if(M.endure){const ok=aS.protectStreak>0?d(3)===1:true;if(!ok){aS.protectStreak=0;return fail("falhou (uso seguido)");}ctx.endure.add(s);aS.protectStreak++;say(`${A.name} se preparou para aguentar!`);return true;}
+      if(M.painSplit){const avg=Math.floor((aS.hp+tS.hp)/2);aS.hp=Math.min(aS.maxHp,avg);tS.hp=Math.min(tS.maxHp,avg);
+        events.push({k:"heal",side:s,mon:A.name,amount:0,hp:aS.hp,src:"Pain Split"},{k:"sdmg",side:tSide,mon:T.name,amount:0,hp:tS.hp,src:"Pain Split"});say(`${A.name} e ${T.name} dividiram o HP (${avg}).`);return true;}
+      if(M.taunt){if(tS.taunt>0)return fail("o alvo já está provocado");tS.taunt=3;say(`${T.name} caiu na provocação: só pode atacar por 3 turnos!`);return true;}
+      if(M.encore){const li=tS.lastIdx;if(li<0||tS.encore)return fail("o alvo não tem golpe para repetir");tS.encore={idx:li,n:3};say(`${T.name} ficou preso no bis: só usa ${T.moves[li]?.name} por 3 turnos!`);return true;}
+      if(M.disable){const li=tS.lastIdx;if(li<0||tS.disable)return fail("o alvo não tem golpe para bloquear");tS.disable={idx:li,n:4};say(`${T.moves[li]?.name} de ${T.name} foi bloqueado por 4 turnos!`);return true;}
+      if(M.leechSeed){if(typesOf(b,tSide).includes("Grass"))return fail("Pokémon Grass são imunes");if(tS.seeded)return fail("o alvo já tem sementes");tS.seeded=s;say(`${T.name} foi semeado!`);return true;}
+      if(M.yawn){if(tS.status||tS.yawn)return fail("não funcionou");tS.yawn=2;say(`${T.name} ficou com sono…`);return true;}
+      if(M.trickRoom){b.trickRoom=b.trickRoom>0?0:5;say(b.trickRoom?"As dimensões se distorceram: os mais lentos agem primeiro por 5 turnos!":"As dimensões voltaram ao normal.");return true;}
+      if(M.tailwind){if(side.field.tailwind>0)return fail("o vento já está soprando");side.field.tailwind=4;say(`Um vento a favor soprou para o time de ${A.name}! (4 turnos)`);return true;}
+      if(M.screen){
+        if(M.screen==="veil"&&!(b.weather&&(b.weather.kind==="hail"||b.weather.kind==="snow")))return fail("só funciona com granizo/neve");
+        if(side.field[M.screen]>0)return fail("a barreira já está ativa");
+        side.field[M.screen]=/light clay/i.test(itemOf(b,s)?.name||"")?8:5;say(`${move.name} protege o time de ${A.name} por ${side.field[M.screen]} turnos!`);return true;
+      }
+      if(M.hazard){const H=foeSide.hazards;
+        if(M.hazard==="rocks"){if(H.rocks)return fail("já há pedras");H.rocks=true;say(`Pedras pontiagudas flutuam no lado de ${T.name}!`);}
+        if(M.hazard==="spikes"){if(H.spikes>=3)return fail("já há 3 camadas");H.spikes++;say(`Spikes espalhados no lado de ${T.name} (${H.spikes}/3)!`);}
+        if(M.hazard==="web"){if(H.web)return fail("já há uma teia");H.web=true;say(`Uma teia pegajosa cobre o lado de ${T.name}!`);}
+        return true;}
+      if(M.clearHazards==="both"){for(const x of [s,tSide]){const H=b.sides[x].hazards;H.tspikes=0;H.rocks=false;H.spikes=0;H.web=false;}
+        if(M.clearFoeScreens){const F=foeSide.field;F.reflect=0;F.light=0;F.veil=0;if(!tS.fainted)addStage(b,tSide,"eva",-1,events,{src:move.name,fromFoe:true});}
+        if(M.selfStages)M.selfStages.forEach(x=>addStage(b,s,x.stat,x.n,events,{src:move.name}));
+        say("Os perigos de campo foram limpos!");return true;}
+      if(M.wish){if(side.wish)return fail("já há um desejo");side.wish={turns:2,amount:Math.floor(aS.maxHp/2)};say(`${A.name} fez um desejo!`);return true;}
+      if(M.swapItems){const ai=A.item&&!aS.itemGone?A.item:null,ti=T.item&&!tS.itemGone?T.item:null;if(!ai&&!ti)return fail("ninguém tem item");
+        A.item=ti?{...ti}:null;T.item=ai?{...ai}:null;aS.itemGone=false;tS.itemGone=false;aS.lock=null;tS.lock=null;say(`${A.name} trocou de item com ${T.name}!`);return true;}
+      if(M.phaze){if(!forceOut(b,tSide,events,ctx))return fail("o alvo não tem quem entrar");return true;}
+      if(M.selfStages&&M.charge){M.selfStages.forEach(x=>addStage(b,s,x.stat,x.n,events,{src:move.name}));return true;}
+      if(M.selfKO){
+        if(M.foeStages&&!tS.fainted)M.foeStages.forEach(x=>addStage(b,tSide,x.stat,x.n,events,{src:move.name,fromFoe:true}));
+        if(M.healWish){side.healWish=true;say(`${A.name} deixou um desejo de cura para quem entrar!`);}
+        return true;// o desmaio vem depois do golpe (ctx.selfKO)
+      }
+      if(M.pivot){
+        if(M.foeStages&&!tS.fainted)M.foeStages.forEach(x=>addStage(b,tSide,x.stat,x.n,events,{src:move.name,fromFoe:true}));
+        if(!canEject(b,s))return M.foeStages?true:fail("não tem quem entrar");
+        if(M.shedTail){const cost=Math.ceil(aS.maxHp/2);if(aS.hp<=cost)return fail("não tem HP suficiente");hurt(b,s,cost,events,"Shed Tail");side.passSub=Math.floor(aS.maxHp/4);}
+        if(M.baton)aS.baton=true;
+        aS.eject=true;say(`${A.name} vai trocar de lugar${M.baton?" passando os estágios":""}!`);return true;
+      }
+      return false;
     }
     function blunder(b,s,events){
       const it=itemOf(b,s);if(!it?.blunder||activeState(b,s).fainted)return;
@@ -785,6 +977,16 @@
         }
       }
       if(isSound(move))throatSpray(b,s,events);
+      const M=fx.mech||{};
+      if(fainted&&tS.destiny&&!aS.fainted){events.push({k:"info",text:`${T.name} levou ${A.name} junto (Destiny Bond)!`});aS.hp=0;checkFaint(b,s,events);}
+      if(M.recharge&&!aS.fainted)aS.recharge=true;
+      if(M.halfCost&&!aS.fainted)hurt(b,s,Math.max(1,Math.ceil(aS.maxHp/2)),events,move.name);
+      if(M.knockOff&&amount>0&&!tS.fainted&&itemOf(b,tSide)){const nm=itemOf(b,tSide).name;tS.itemGone=true;events.push({k:"info",text:`${A.name} derrubou o ${nm} de ${T.name}!`});}
+      if(M.stealItem&&amount>0&&!aS.fainted&&!itemOf(b,s)&&itemOf(b,tSide)){const it=itemOf(b,tSide);A.item={...it};aS.itemGone=false;tS.itemGone=true;events.push({k:"info",text:`${A.name} roubou o ${it.name} de ${T.name}!`});}
+      if(M.clearHazards==="self"&&!aS.fainted){const H=b.sides[s].hazards;if(H.tspikes||H.rocks||H.spikes||H.web){H.tspikes=0;H.rocks=false;H.spikes=0;H.web=false;events.push({k:"info",text:`${A.name} limpou os perigos do seu lado!`});}}
+      if(M.selfStages&&!aS.fainted)M.selfStages.forEach(x=>addStage(b,s,x.stat,x.n,events,{src:move.name}));
+      if(M.phaze&&amount>0&&!tS.fainted&&tS.sub<=0)forceOut(b,tSide,events,ctx);
+      if(M.pivot&&!aS.fainted&&canEject(b,s)){aS.eject=true;events.push({k:"info",text:`${A.name} vai voltar para a Pokébola.`});}
       // Eject Button: quem levou o golpe sai no fim do turno
       if(amount>0&&!tS.fainted&&itemOf(b,tSide)?.ejectButton&&canEject(b,tSide)){useUpItem(b,tSide,events,"tirou o Pokémon de campo");tS.eject=true;}
       // Red Card: o atacante é trocado por um aleatório
@@ -817,9 +1019,14 @@
     function applySwitch(b,s,idx,events){
       const side=b.sides[s];
       const fromMs=activeState(b,s);
-      const from=activeMon(b,s).name;resetVolatile(fromMs);
+      const from=activeMon(b,s).name;
+      const pass=fromMs.baton?{stages:fromMs.stages.map(x=>({...x})),persist:{...fromMs.persist},sub:fromMs.sub,crit:fromMs.crit}:null;
+      resetVolatile(fromMs);
       side.active=idx;side.needSwitch=false;
       events.push({k:"switch",side:s,from,to:activeMon(b,s).name,hp:activeState(b,s).hp});
+      {const ns=activeState(b,s);
+        if(pass){ns.stages=pass.stages;ns.persist=pass.persist;ns.sub=pass.sub;ns.crit=pass.crit;}
+        if(side.passSub){ns.sub=side.passSub;side.passSub=0;events.push({k:"info",text:`${activeMon(b,s).name} recebeu o substituto!`});}}
       onEnter(b,s,events,false);
     }
 
@@ -860,6 +1067,10 @@
           if(eIt.clearDrops&&ms.stages.some(x=>x.n<0)){ms.stages=ms.stages.filter(x=>x.n>=0);useUpItem(b,s,events,"zerou os estágios reduzidos");}
           itemPinch(b,s,events);
         }
+        // maldição, sementes, sono do Yawn
+        if(ms.cursed){events.push({k:"info",text:`${mon.name} sofre com a maldição!`});hurt(b,s,Math.max(1,Math.floor(ms.maxHp/4)),events,"Curse");if(ms.fainted)continue;}
+        if(ms.seeded){const src=ms.seeded,dmg=Math.max(1,Math.floor(ms.maxHp/8));hurt(b,s,dmg,events,"Leech Seed");if(!activeState(b,src).fainted)heal(b,src,dmg,events,"Leech Seed");if(ms.fainted)continue;}
+        if(ms.yawn>0){ms.yawn--;if(ms.yawn===0&&!ms.status)giveStatus(b,s,"slp",events,"Yawn");}
         // Campo Real cura os aliados
         if(side.field.royal>0)heal(b,s,Math.max(1,Math.floor(ms.maxHp/16)),events,"Campo Real");
         // ability de fim de turno
@@ -868,6 +1079,17 @@
         if(A.endTurn.healPct)heal(b,s,Math.max(1,Math.floor(ms.maxHp*A.endTurn.healPct/100)),events,A.name);
         lowHpCheck(b,s,events);
       }
+      // Perish Song, Wish e contadores
+      for(const s of order){
+        const ms=activeState(b,s),side=b.sides[s];
+        if(!ms.fainted&&ms.perish>0){ms.perish--;events.push({k:"info",text:`${activeMon(b,s).name}: contagem da Perish Song ${ms.perish}.`});if(ms.perish===0){ms.hp=0;checkFaint(b,s,events);}}
+        if(side.wish){side.wish.turns--;if(side.wish.turns<=0){if(!ms.fainted){events.push({k:"info",text:"O desejo se realizou!"});heal(b,s,side.wish.amount,events,"Wish");}side.wish=null;}}
+        if(ms.taunt>0){ms.taunt--;if(!ms.taunt)events.push({k:"info",text:`${activeMon(b,s).name} não está mais provocado.`});}
+        if(ms.encore){ms.encore.n--;if(ms.encore.n<=0)ms.encore=null;}
+        if(ms.disable){ms.disable.n--;if(ms.disable.n<=0)ms.disable=null;}
+        for(const f of ["reflect","light","veil","tailwind"])if(side.field[f]>0){side.field[f]--;if(!side.field[f])events.push({k:"info",text:`${{reflect:"Reflect",light:"Light Screen",veil:"Aurora Veil",tailwind:"O vento a favor"}[f]} acabou para o time de ${side.name}.`});}
+      }
+      if(b.trickRoom>0){b.trickRoom--;if(!b.trickRoom)events.push({k:"info",text:"As dimensões voltaram ao normal."});}
       // durações
       for(const s of ["p1","p2"]){
         const side=b.sides[s];
@@ -902,9 +1124,17 @@
         b.events=events;return events;
       }
       const ties={p1:rand(),p2:rand()};
+      // ações forçadas: recarga, segundo turno de Fly/Dig/Solar Beam e Encore
+      for(const s of ["p1","p2"]){
+        const ms=activeState(b,s),a=P[s];if(!a||ms.fainted)continue;
+        if(ms.recharge)P[s]={kind:"recharge"};
+        else if(ms.charge)P[s]={kind:"move",idx:ms.charge.idx,react:false};
+        else if(a.kind==="move"&&ms.encore&&activeMon(b,s).moves[ms.encore.idx])P[s]={...a,idx:ms.encore.idx};
+      }
+      for(const s of ["p1","p2"])if(P[s]?.kind==="recharge"){activeState(b,s).recharge=false;events.push({k:"cant",side:s,mon:activeMon(b,s).name,reason:"recharge"});}
       for(const s of ["p1","p2"])if(P[s]?.kind==="switch")applySwitch(b,s,P[s].idx,events);
       for(const s of ["p1","p2"])if(P[s]?.kind==="item")useItem(b,s,P[s],events);
-      const ctx={protected:new Set(),acted:new Set(),evade:{},z:new Set()};
+      const ctx={protected:new Set(),acted:new Set(),evade:{},z:new Set(),P,selfKO:new Set(),endure:new Set()};
       // gimmicks antes dos golpes (mais rápido primeiro)
       for(const s of ["p1","p2"].sort((x,y)=>effSpeed(b,y)-effSpeed(b,x)||ties[y]-ties[x])){
         const a=P[s];if(a?.kind!=="move"||!a.gimmick||activeState(b,s).fainted)continue;
@@ -928,11 +1158,12 @@
         else if(quick)heldSay(b,s,events,"agiu primeiro");
         const slow=!quick&&itemOf(b,s)?.slow;
         return {s,prio:movePriority(mv)+(quick?.5:slow?-.5:0),spe:effSpeed(b,s),tie:ties[s]};
-      }).sort((x,y)=>y.prio-x.prio||y.spe-x.spe||y.tie-x.tie);
+      }).sort((x,y)=>y.prio-x.prio||(b.trickRoom>0?x.spe-y.spe:y.spe-x.spe)||y.tie-x.tie);
       for(const o of order){
         if(b.phase==="end")break;
         if(activeState(b,o.s).eject||ctx.forced?.has(o.s))continue;
         useMove(b,o.s,P[o.s].idx,events,ctx);
+        if(ctx.selfKO.has(o.s)){const ms=activeState(b,o.s);if(!ms.fainted){ms.hp=0;checkFaint(b,o.s,events);}ctx.selfKO.delete(o.s);}
         ctx.acted.add(o.s);
       }
       b.sides.p1.pending=b.sides.p2.pending=null;
@@ -964,7 +1195,9 @@
     function view(b,s){
       const side=b.sides[s],ms=activeState(b,s);
       const stg={};STAT_KEYS.forEach(k=>{const v=stageTotal(ms,k);if(v)stg[k]=v;});
-      return {stg,cnf:ms.cnf>0,crit:ms.crit||0,swagger:ms.swagger>0,field:{...side.field},hazards:{...side.hazards},gim:{...side.gim},items:side.items,evadeStreak:ms.evadeStreak||0,lock:itemOf(b,s)?.choiceLock?ms.lock:null,itemGone:!!ms.itemGone};
+      return {stg,cnf:ms.cnf>0,crit:ms.crit||0,swagger:ms.swagger>0,field:{...side.field},hazards:{...side.hazards},gim:{...side.gim},items:side.items,evadeStreak:ms.evadeStreak||0,lock:itemOf(b,s)?.choiceLock?ms.lock:null,itemGone:!!ms.itemGone,
+        semi:ms.semi||null,forced:ms.recharge?"recharge":ms.charge?ms.charge.name:null,forcedIdx:ms.charge?ms.charge.idx:null,sub:ms.sub||0,perish:ms.perish>0?ms.perish:0,
+        cursed:!!ms.cursed,seeded:!!ms.seeded,taunt:ms.taunt||0,encore:ms.encore?ms.encore.idx:null,disable:ms.disable?ms.disable.idx:null,yawn:ms.yawn||0,trick:b.trickRoom||0};
     }
 
     return {newBattle,submit,resolve,walkover,canAct,movePriority,activeMon,activeState,view,stageTotal,effStat,gimmickOptions,zMoveOk,zPower};
