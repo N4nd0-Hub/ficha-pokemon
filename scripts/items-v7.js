@@ -224,7 +224,7 @@
       <nav class="it7-tabs" role="tablist">${tabs.map(([k,i,l,s])=>`<button type="button" role="tab" aria-selected="${ui.tab===k}" class="${ui.tab===k?"on":""}" data-it="tab" data-v="${k}"><i>${i}</i><b>${l}</b><small>${s}</small></button>`).join("")}</nav>
       <div class="it7-body" data-tab="${ui.tab}">${ui.tab==="team"?teamView():`
         <div class="it7-listcol">
-          <div class="it7-tools">${ui.tab==="shop"?`<div class="it7-city"><b>🏔 Loja de Altamuralha</b><small>Primeira cidade grande: vende ${shopItems().length} itens, 25% mais caro e nada abaixo de 1.000₽. Não vende Master Ball, itens-chave nem doces de nível.</small></div>`:""}<input class="it7-q" data-it="q" type="search" placeholder="Buscar item ou efeito (ex.: Fire, cura, crítico)…" value="${esc(ui.q)}" aria-label="Buscar item">
+          <div class="it7-tools">${ui.tab==="shop"?`<div class="it7-city"><b>🏔 Loja de Altamuralha</b><small>A Grande Cidade na montanha, lar do Rochedo Eterno. · ${shopItems().length} itens à venda</small></div>`:""}<input class="it7-q" data-it="q" type="search" placeholder="Buscar item ou efeito (ex.: Fire, cura, crítico)…" value="${esc(ui.q)}" aria-label="Buscar item">
             <div class="it7-groups">${GROUPS.map(([k,l,i])=>`<button type="button" class="${ui.group===k?"on":""}" data-it="group" data-v="${k}">${i} ${l}</button>`).join("")}</div></div>
           <div class="it7-list" role="list"></div>
         </div>
