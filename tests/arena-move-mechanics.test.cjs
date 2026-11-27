@@ -153,9 +153,11 @@ test("Vários acertos: 2–5 vira 3 fixos, Double Kick 2, Triple Axel 3", () => 
   const foe = () => [mon("B", ["Normal"], { hp: 900, spe: 10 }, [M("Splash", "Normal", "Status", 0, null)])];
   for (const [mv, n] of [[M("Bullet Seed", "Grass", "Physical", 25, 100, "Dispara 2-5 sementes."), 3], [M("Double Kick", "Fighting", "Physical", 30, 100), 2], [M("Triple Axel", "Ice", "Physical", 20, 90), 3]]) {
     const { e, bt } = battle([mon("A", ["Normal"], { spe: 200 }, [mv])], foe(), () => 0.5);
-    const h = hitOn(turn(e, bt), "p2")[0];
-    assert.equal(h.hits, n, mv.name);
+    const hs = hitOn(turn(e, bt), "p2");
+    assert.equal(hs.length, n, mv.name + ": um evento por acerto");
+    assert.ok(hs.every((h, i) => h.hitNo === i + 1 && h.of === n));
+    assert.ok(hs[1].hp < hs[0].hp, "a vida desce a cada acerto");
   }
   const sl = battle([mon("A", ["Normal"], { spe: 200 }, [M("Rock Blast", "Rock", "Physical", 25, 90)], { ability: "Skill Link" })], foe(), () => 0.5);
-  assert.equal(hitOn(turn(sl.e, sl.bt), "p2")[0].hits, 5, "Skill Link acerta 5");
+  assert.equal(hitOn(turn(sl.e, sl.bt), "p2").length, 5, "Skill Link acerta 5");
 });

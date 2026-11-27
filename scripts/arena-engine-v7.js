@@ -539,7 +539,7 @@
     const QD_SIDES={d4:[4],d6:[6],d8:[8],d10:[10],d12:[12],"d12+d4":[12,4],"d12+d6":[12,6],d20:[20]};
     const quality=v=>v<=49?0:v<=75?1:v<=100?2:v<=125?3:v<=150?4:v<=175?5:v<=200?6:v<=225?7:8;
     const pdice=p=>p<=0?0:p<=20?1:p<=40?2:p<=60?3:p<=80?4:p<=100?5:6;
-    function matrixDamage(b,atkSide,move,ev,{crit,critKind,power,hits}){
+    function matrixDamage(b,atkSide,move,ev,{crit,critKind,power,hits,follow=false}){
       const defSide=other(atkSide);
       const A=activeMon(b,atkSide);
       const cat=String(move.category||"").toLowerCase(),physical=cat==="physical";
@@ -566,7 +566,8 @@
       count=Math.max(1,count+(ex.qa||0)-(ex.qp||0));
       let extra=stab+ex.add-ex.pen;
       if(extra<0){count=Math.max(1,count+extra);extra=0;}
-      const level=Math.floor(Number(A.level||1)/5);
+      // acertos seguintes de um golpe de vários acertos não somam o bônus fixo de nível
+      const level=follow?0:Math.floor(Number(A.level||1)/5);
       const rolls=[];let total=0;
       for(const sides of QD_SIDES[qd])for(let i=0;i<count;i++){
         let v=critKind==="natural"&&crit?sides:d(sides);
@@ -824,6 +825,36 @@
         else hits=H.min+Math.floor(rand()*(H.max-H.min+1));
         // Power que cresce a cada acerto (Triple Axel/Kick): usa a soma
         if(H.perHit){const per=H.perHit.slice(0,hits);power=Math.round(per.reduce((x,y)=>x+y,0)/hits);}
+      }
+      // vários acertos: cada acerto rola o próprio dano e desce a vida separado
+      if(hits>1){
+        const per=fx.hits?.perHit;let total=0,last=null;
+        for(let i=0;i<hits;i++){
+          if(tS.fainted)break;
+          const h={k:"hit",side:tSide,crit,hitNo:i+1,of:hits};
+          const pw=per?.[i]??(per?power:power);
+          let a=b.damage==="matrix"?matrixDamage(b,s,move,h,{crit,critKind:ev.critKind,power:per?per[i]:power,hits:1,follow:i>0}):damage(b,s,move,h,{crit,critKind:ev.critKind,power:per?per[i]:power});
+          if(h.immune){h.amount=0;h.hp=tS.hp;events.push(h);
+            const ab=abil(b,tSide);const mt=normT(move.type);
+            if(ab.absorb?.[mt])heal(b,tSide,Math.ceil(tS.maxHp*ab.absorb[mt]/100),events,ab.name);
+            return;}
+          void pw;
+          if(abil(b,tSide).sturdy&&tS.hp>=tS.maxHp&&a>=tS.hp){a=tS.hp-1;h.notes=[...(h.notes||[]),abil(b,tSide).name];}
+          const ti=itemOf(b,tSide);
+          if(i===0&&ti?.resist&&ti.resist.type===normT(move.type)&&(!ti.resist.se||h.mult>=2)&&a>0){a=Math.max(1,Math.floor(a/2));h.notes=[...(h.notes||[]),`${ti.name} ½`];useUpItem(b,tSide,events,"diminuiu o dano pela metade");}
+          if(ti&&!tS.itemGone&&ti.sash&&tS.hp>=tS.maxHp&&a>=tS.hp){a=tS.hp-1;useUpItem(b,tSide,events,"aguentou com 1 HP");}
+          if(ctx.endure.has(tSide)&&a>=tS.hp){a=tS.hp-1;events.push({k:"info",text:`${T.name} aguentou firme (Endure)!`});}
+          if(subAbsorb(b,s,move,a,events)){total+=0;continue;}
+          if(fx.falseSwipe&&a>=tS.hp)a=Math.max(0,tS.hp-1);
+          h.amount=a;tS.hp=Math.max(0,tS.hp-a);h.hp=tS.hp;total+=a;
+          events.push(h);last=h;
+          if(tS.hp<=0)break;
+        }
+        const done=last?last.hitNo:0;
+        if(done>1)events.push({k:"info",text:`Acertou ${done} vez${done>1?"es":""}! (${total} de dano no total)`});
+        if(!last)return afterSub(b,s,move,M,events,0);
+        afterHit(b,s,move,events,last,total,ctx);
+        return;
       }
       const hit={k:"hit",side:tSide,crit};
       let amount=0;
