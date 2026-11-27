@@ -173,6 +173,14 @@
     throw new Error("Não consegui falar com a PokéAPI.");
   }
 
+  const TYPE_ITEM={Normal:"silk-scarf",Fire:"charcoal",Water:"mystic-water",Electric:"magnet",Grass:"miracle-seed",Ice:"never-melt-ice",Fighting:"black-belt",Poison:"poison-barb",
+    Ground:"soft-sand",Flying:"sharp-beak",Psychic:"twisted-spoon",Bug:"silver-powder",Rock:"hard-stone",Ghost:"spell-tag",Dragon:"dragon-fang",Dark:"black-glasses",Steel:"metal-coat",Fairy:"fairy-feather"};
+  function foeItem(types,build){
+    const cat=typeof POKEAPI_ITEM_BY_SLUG!=="undefined"?POKEAPI_ITEM_BY_SLUG:null;if(!cat)return null;
+    const opts=[TYPE_ITEM[types[0]],"leftovers","sitrus-berry","focus-sash",build==="tank"?"rocky-helmet":build==="attacker"?"choice-band":build==="special"?"choice-specs":"life-orb","expert-belt"].filter(Boolean);
+    const it=cat.get(pick(opts))||cat.get("leftovers");
+    return it?{name:it.name,apiName:it.apiName,description:it.description,automation:it.automation||null}:null;
+  }
   async function makeFoe(info,avoid,pool){
     const p=await randomSpecies(info,avoid,pool);avoid.add(p.id);
     const base={};p.stats.forEach(s=>{base[STAT_KEY[s.stat.name]]=s.base_stat;});
@@ -185,6 +193,8 @@
     const moves=await buildMoves(p,info.level);
     const name=cap(p.species?.name||p.name);
     const foe={name,level:info.level,types:p.types.map(t=>cap(t.type.name)),stats,maxHp:stats.hp,ability,abilityText:"",img,moves,build:BUILDS[build].label,dex:p.id,bst:Object.values(base).reduce((a,b)=>a+b,0)};
+    // Elites e Chefes/Guardiões seguram um item (lido pelo leitor de itens)
+    if(info.elite||info.boss)foe.item=foeItem(foe.types,build);
     // Guardiões das cidades Terastalizam no tipo da área
     if(info.region&&info.boss)foe.gimmick={teraType:(REGIONS[info.region]||{}).type||""};
     return foe;

@@ -29,12 +29,16 @@
      forma: tipos, atributos e ability), Terastalização (vira o Tera Type,
      STAB do Tera Type +2d6) e Z-Move (golpe do tipo do Cristal Z com
      Power turbinado que não erra). Mega e Tera não vão no mesmo Pokémon;
-   • itens da Bolsa (só nos modos solo): curas, reviver, curar status.
+   • itens da Bolsa (só nos modos solo): curas, reviver, curar status;
+   • item segurado (lido por item-rules-v7.js): Leftovers, Life Orb, Choice,
+     itens de tipo (+1 dado da QD), bagas de HP baixo, bagas de resistência,
+     Focus Sash, Rocky Helmet, Scope Lens, Air Balloon, Weakness Policy…
    Não depende da tela: recebe as funções de regra por injeção.
    ============================================================ */
 (function(root){
   "use strict";
   const RULES=(typeof module!=="undefined"&&module.exports)?require("./arena-rules-v7.js"):root.hhArenaRules;
+  const ITEMS=(typeof module!=="undefined"&&module.exports)?require("./item-rules-v7.js"):root.hhItemRules;
   const key=s=>String(s||"").toLowerCase().replace(/[^a-z0-9' -]/g,"").trim();
 
   function movePriority(move){
@@ -60,13 +64,19 @@
       const moves=(m.moves||[]).map(mv=>({...mv,fx:RULES.parseMove(mv)}));
       const g=m.gimmick||{};
       const gimmick={megaForms:(g.megaForms||[]).filter(f=>f&&f.name&&f.stats).slice(0,3),teraType:normT(g.teraType)||"",zType:normT(g.zType)||""};
-      return {...m,moves,gimmick,origTypes:(m.types||[]).map(normT).filter(Boolean),abil:RULES.parseAbility(m.ability||"",m.abilityText||"")};
+      // item segurado: o leitor de itens transforma o texto em efeito de batalha
+      let item=null;
+      if(m.item&&m.item.name&&ITEMS){
+        const r=ITEMS.interpret(m.item);item={name:String(m.item.name),...r.battle};
+        if(item.species?.length){const who=`${m.name} ${m.species||""}`.toLowerCase();if(!item.species.some(x=>who.includes(String(x).toLowerCase())))item.inactive=true;}
+      }
+      return {...m,moves,gimmick,item,origTypes:(m.types||[]).map(normT).filter(Boolean),abil:RULES.parseAbility(m.ability||"",m.abilityText||"")};
     }
     function monState(m){
       const hp=Math.max(1,Number(m.maxHp||m.stats?.hp||1));
       return {hp,maxHp:hp,fainted:false,status:null,slp:0,tox:0,cnf:0,stages:[],persist:{},crit:0,
         flinch:false,enteredTurn:1,lastMove:"",lastType:"",fury:0,swagger:0,nextPhys:0,nextDouble:null,nextHalf:false,
-        hurt:{phys:0,spec:0,any:false},used:{},protectStreak:0,abilStages:[],evadeStreak:0,part:false};
+        hurt:{phys:0,spec:0,any:false},used:{},protectStreak:0,abilStages:[],evadeStreak:0,part:false,itemGone:false,lock:null,metro:{k:"",n:0}};
     }
     function newBattle({id,format,p1,p2,damage:dmgMode}){
       const side=(info)=>({id:info.id,name:info.name,active:0,needSwitch:false,pending:null,hazards:{tspikes:0},field:{},faintedLastTurn:false,
@@ -87,6 +97,15 @@
     const alive=(b,s)=>b.sides[s].team.some(m=>!m.fainted);
     const typesOf=(b,s)=>[...new Set((activeMon(b,s).types||[]).map(normT).filter(Boolean))];
     const abil=(b,s)=>activeMon(b,s).abil;
+    const t_=(b,s)=>typesOf(b,s);
+    /* item segurado ativo (não consumido e da espécie certa) */
+    const itemOf=(b,s)=>{const it=activeMon(b,s).item;return it&&!it.inactive&&!activeState(b,s).itemGone?it:null;};
+    function useUpItem(b,s,events,text){
+      const it=itemOf(b,s);if(!it)return;
+      activeState(b,s).itemGone=true;
+      events.push({k:"held",side:s,mon:activeMon(b,s).name,item:it.name,text:text||"foi consumido"});
+    }
+    function heldSay(b,s,events,text){const it=itemOf(b,s);if(it)events.push({k:"held",side:s,mon:activeMon(b,s).name,item:it.name,text});}
 
     /* ---------- Estágios ---------- */
     function stageTotal(ms,stat){
@@ -100,6 +119,8 @@
     function effStat(b,s,stat){
       const m=activeMon(b,s),ms=activeState(b,s);
       let v=Math.floor(Math.max(0,Number(m.stats?.[stat]||0))*stageMult(stat,stageTotal(ms,stat)));
+      const it=m.item&&!m.item.inactive&&!ms.itemGone?m.item:null;
+      if(it?.statMult?.[stat])v=Math.floor(v*it.statMult[stat]);
       if(stat==="spe"){
         if(ms.status==="par")v=Math.floor(v/2);
         if(b.weather&&m.abil.weatherSpeed===b.weather.kind)v*=2;
@@ -146,11 +167,18 @@
       if(st==="cnf")ms.cnf=d(3);
       else{ms.status=st;if(st==="slp")ms.slp=d(3);if(st==="tox")ms.tox=1;}
       events.push({k:"status",side:s,mon:mon.name,st,src});
+      // bagas que curam status na hora (Lum, Cheri…)
+      const it=itemOf(b,s);
+      if(it?.cure&&(it.cure==="any"||it.cure.includes(st))){
+        if(st==="cnf")ms.cnf=0;else{ms.status=null;ms.slp=0;ms.tox=0;}
+        useUpItem(b,s,events,`curou ${st==="cnf"?"a confusão":"o status"}`);events.push({k:"statusEnd",side:s,mon:mon.name,st});
+      }
       return true;
     }
 
     /* ---------- Entrada em campo ---------- */
-    function setWeather(b,kind,turns,events,src){
+    function setWeather(b,kind,turns,events,src,s){
+      if(s&&itemOf(b,s)?.weatherTurns)turns=Math.max(turns,itemOf(b,s).weatherTurns);
       if(b.weather&&b.weather.kind===kind){b.weather.turns=Math.max(b.weather.turns,turns);}
       else b.weather={kind,turns};
       events.push({k:"weather",kind,turns,src});
@@ -169,7 +197,7 @@
       if(!start&&b.sides[foe].field.royal>0)addStage(b,s,"spe",-1,events,{src:"Campo Real",fromFoe:true});
       const shown=[];
       const say=()=>{if(!shown.length){shown.push(1);events.push({k:"ability",side:s,mon:mon.name,name:A.name});}};
-      if(A.onEnter.weather){say();setWeather(b,A.onEnter.weather.kind,A.onEnter.weather.turns,events,A.name);}
+      if(A.onEnter.weather){say();setWeather(b,A.onEnter.weather.kind,A.onEnter.weather.turns,events,A.name,s);}
       if(A.onEnter.field?.kind==="royal"){say();side.field.royal=A.onEnter.field.turns;side.field.royalOwner=side.active;events.push({k:"field",side:s,kind:"royal",turns:side.field.royal});
         if(!activeState(b,foe).fainted)addStage(b,foe,"spe",-1,events,{src:"Campo Real",fromFoe:true});}
       for(const st of A.onEnter.stages){
@@ -187,7 +215,7 @@
       if(A.onEnter.foeAccFirstTurn&&!activeState(b,foe).fainted){say();addStage(b,foe,"acc",A.onEnter.foeAccFirstTurn,events,{src:A.name,fromFoe:true,rounds:1});}
     }
     function resetVolatile(ms){
-      ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;ms.evadeStreak=0;
+      ms.stages=[];ms.cnf=0;ms.crit=0;ms.flinch=false;ms.fury=0;ms.swagger=0;ms.protectStreak=0;ms.abilStages=[];ms.nextDouble=null;ms.nextHalf=false;ms.evadeStreak=0;ms.lock=null;ms.metro={k:"",n:0};
       if(ms.status==="tox")ms.tox=1;
     }
 
@@ -209,6 +237,7 @@
       }else if(action.kind==="move"){
         if(b.phase==="switch")return false;
         const mon=activeMon(b,s);if(!mon?.moves?.[action.idx]&&action.idx!==-1)return false;
+        const lk=activeState(b,s).lock;if(lk!=null&&itemOf(b,s)?.choiceLock&&action.idx!==lk)return false;
         const g=action.gimmick&&gimmickOptions(b,s);
         const okG=!action.gimmick||(action.gimmick==="mega"&&g.mega.length&&g.mega[Number(action.form)||0])||(action.gimmick==="tera"&&g.tera)
           ||(action.gimmick==="z"&&g.z&&zMoveOk(mon,mon.moves[action.idx],g.z));
@@ -321,6 +350,7 @@
       const defTypes=typesOf(b,other(atkSide));
       let mult=defTypes.length?rules.typeMultiplier(mtype,defTypes):1;
       if(abil(b,other(atkSide)).immune.types.has(mtype))mult=0;
+      if(mtype==="Ground"&&itemOf(b,other(atkSide))?.groundImmune)mult=0;
       if(abil(b,atkSide).tinted&&mult>0&&mult<1)mult=Math.min(1,mult*2);
       return mult;
     }
@@ -352,7 +382,7 @@
       if(dice<=0&&!critFixed)dice=1;
       const rolls=roll(dice);
       let total=Math.max(1,sum(rolls)+fixed+critFixed-defFixed);
-      total=finalMods(b,atkSide,cat,physical,total,notes);
+      total=finalMods(b,atkSide,cat,physical,total+(ex.flat||0),notes);
       ev.dice=(ev.dice||0)+dice;ev.rolls=[...(ev.rolls||[]),...rolls];ev.fixed=(ev.fixed||0)+fixed+critFixed-defFixed;
       if(notes.length)ev.notes=[...new Set([...(ev.notes||[]),...notes])];
       return total;
@@ -381,9 +411,18 @@
       if(physical&&A.abil.guts&&aS.status)q(1,"Guts +1 QD");
       // abilities do defensor
       for(const t of D.abil.dmgTaken)if((!t.type||t.type===mtype)&&(!t.fullHp||dS.hp>=dS.maxHp))q(t.dice,`${D.abil.name} ${t.dice} QD`);
+      // item segurado do atacante
+      let flat=0;const it=itemOf(b,atkSide);
+      if(it){
+        if(it.typeQD&&it.typeQD.types.includes(mtype))q(it.typeQD.n,`${it.name} +${it.typeQD.n} QD`);
+        if(it.allQD)q(it.allQD,`${it.name} +${it.allQD} QD`);
+        if(it.seQD&&typeMult(b,atkSide,mtype)>=2)q(it.seQD,`${it.name} +${it.seQD} QD`);
+        if(it.catFlat&&it.catFlat.cat===(physical?"physical":"special")){flat+=it.catFlat.n;notes.push(`${it.name} +${it.catFlat.n}`);}
+        if(it.metronome&&aS.metro.n>1){const n=Math.min(3,aS.metro.n-1);q(n,`${it.name} +${n} QD`);}
+      }
       // no dano da ficha (clássico) o dado é sempre d6
       if(b.damage!=="matrix"){add+=qa;pen+=qp;qa=0;qp=0;}
-      return {add,pen,notes,qa,qp};
+      return {add,pen,notes,qa,qp,flat};
     }
     function finalMods(b,atkSide,cat,physical,total,notes){
       const aS=activeState(b,atkSide),dS=activeState(b,other(atkSide));
@@ -440,7 +479,7 @@
         if(crit&&critKind==="boosted")v=Math.max(v,d(sides));
         rolls.push(v);total+=v;
       }
-      const d6=roll(extra);rolls.push(...d6);total+=sum(d6)+level;
+      const d6=roll(extra);rolls.push(...d6);total+=sum(d6)+level+(ex.flat||0);
       total=Math.max(1,finalMods(b,atkSide,cat,physical,total,ex.notes));
       ev.stab=stab>0;ev.qd=qd;ev.count=count;ev.extra=extra;ev.level=level;ev.gap=gap;ev.offQ=offQ;ev.defQ=defQ;
       ev.expr=`${QD_SIDES[qd].map(x=>`${count}d${x}`).join("+")}${extra?` +${extra}d6`:""}${level?` +${level}`:""}`;
@@ -478,7 +517,7 @@
       }
     }
     function critMargin(b,s,move){
-      return 5+5*Math.max(0,(move.fx?.critStage||0)+(activeState(b,s).crit||0));
+      return 5+5*Math.max(0,(move.fx?.critStage||0)+(activeState(b,s).crit||0)+(itemOf(b,s)?.crit||0));
     }
 
     /* ---------- Usar um golpe ---------- */
@@ -510,6 +549,10 @@
       }
       const ev={k:"move",side:s,mon:A.name,move:move.name,type:move.type,category:move.category};
       if(isZ){ev.z=true;ev.power=move.power;}
+      // item: Choice prende no golpe; Metronome conta usos seguidos
+      const myItem=itemOf(b,s);
+      if(myItem?.choiceLock&&aS.lock==null&&A.moves[idx])aS.lock=idx;
+      const mk=key(move.name);aS.metro=aS.metro.k===mk?{k:mk,n:aS.metro.n+1}:{k:mk,n:1};
       events.push(ev);
       const prevMove=aS.lastMove;aS.lastMove=k;
       const prevType=aS.lastType;aS.lastType=normT(move.type);
@@ -536,7 +579,7 @@
         if(fx.heal)heal(b,s,Math.ceil(aS.maxHp*fx.heal/100),events,move.name);
         if(fx.rest){aS.status="slp";aS.slp=2;heal(b,s,aS.maxHp,events,move.name);events.push({k:"status",side:s,mon:A.name,st:"slp",src:move.name});}
         if(fx.selfCrit){aS.crit+=fx.selfCrit;events.push({k:"info",text:`${A.name} se concentrou: crítico aumentado em ${fx.selfCrit} estágio${fx.selfCrit>1?"s":""}.`});}
-        if(fx.weather)setWeather(b,fx.weather.kind,fx.weather.turns,events,move.name);
+        if(fx.weather)setWeather(b,fx.weather.kind,fx.weather.turns,events,move.name,s);
         if(fx.hazard==="tspikes"){const h=b.sides[tSide].hazards;h.tspikes=Math.min(2,h.tspikes+1);events.push({k:"hazard",side:tSide,kind:"tspikes",layers:h.tspikes});}
         if(fx.haze){for(const x of ["p1","p2"]){activeState(b,x).stages=[];}events.push({k:"info",text:"Todos os estágios foram zerados."});}
         if(fx.nextDouble){aS.nextDouble=fx.nextDouble;events.push({k:"info",text:`O próximo golpe ${fx.nextDouble==="physical"?"físico ":fx.nextDouble==="special"?"especial ":""}de ${A.name} causa o dobro do dano.`});}
@@ -576,6 +619,8 @@
         tS.hp=Math.max(0,tS.hp-amount);hit.hp=tS.hp;events.push(hit);afterHit(b,s,move,events,hit,amount,ctx);return;
       }
       if(!power)power=60;
+      const gemIt=itemOf(b,s);
+      if(gemIt?.gem&&gemIt.gem.type===normT(move.type)){power=Math.round(power*gemIt.gem.x);useUpItem(b,s,events,`deu Power ×${String(gemIt.gem.x).replace(".",",")} ao golpe`);}
       for(const c of fx.doubleIf){
         if(c.cond==="targetStatus"&&tS.status&&c.st.some(x=>x===tS.status||(x==="psn"&&tS.status==="tox")||(x==="tox"&&tS.status==="psn")))power*=2;
         if(c.cond==="targetHurt"&&tS.hurt.any)power*=2;
@@ -598,6 +643,11 @@
         return;}
       if(fx.falseSwipe&&amount>=tS.hp)amount=Math.max(0,tS.hp-1);
       if(abil(b,tSide).sturdy&&tS.hp>=tS.maxHp&&amount>=tS.hp){amount=tS.hp-1;hit.notes=[...(hit.notes||[]),abil(b,tSide).name];}
+      // itens do alvo antes do dano
+      const tIt=itemOf(b,tSide);
+      if(tIt?.resist&&tIt.resist.type===normT(move.type)&&(!tIt.resist.se||hit.mult>=2)&&amount>0){amount=Math.max(1,Math.floor(amount/2));hit.notes=[...(hit.notes||[]),`${tIt.name} ½`];useUpItem(b,tSide,events,"diminuiu o dano pela metade");}
+      if(tIt&&!tS.itemGone&&tIt.sash&&tS.hp>=tS.maxHp&&amount>=tS.hp){amount=tS.hp-1;useUpItem(b,tSide,events,"aguentou com 1 HP");}
+      else if(tIt&&tIt.band&&amount>=tS.hp&&chance(tIt.band)){amount=tS.hp-1;heldSay(b,tSide,events,"aguentou com 1 HP");}
       hit.amount=amount;
       tS.hp=Math.max(0,tS.hp-amount);hit.hp=tS.hp;
       events.push(hit);
@@ -608,7 +658,21 @@
       const net=Math.max(-6,Math.min(6,stageTotal(activeState(b,s),"acc")-stageTotal(activeState(b,other(s)),"eva")));
       const acc=Math.max(1,Math.min(90,Math.floor(base*stageMult("acc",net))));
       const ev=ctx?.evade?.[other(s)]||0;
-      return ev?Math.max(1,acc-ev):acc;
+      const mine=itemOf(b,s),theirs=itemOf(b,other(s));
+      let bonus=(mine?.acc||0)+(mine?.accLate&&ctx?.acted?.has(other(s))?mine.accLate:0)-(theirs?.foeAcc||0);
+      const out=acc+bonus;
+      return Math.max(1,Math.min(bonus>0?100:acc,out)-ev);
+    }
+    /* bagas de HP baixo (Sitrus, Oran, Liechi…) */
+    function itemPinch(b,s,events){
+      const it=itemOf(b,s),ms=activeState(b,s);
+      if(!it?.pinch||ms.fainted)return;
+      if(ms.hp>ms.maxHp*it.pinch.at)return;
+      const p=it.pinch;
+      if(p.consume!==false)useUpItem(b,s,events,"foi comido");else heldSay(b,s,events,"ativou");
+      if(p.healFrac)heal(b,s,Math.max(1,Math.floor(ms.maxHp*p.healFrac)),events,it.name);
+      if(p.healFlat)heal(b,s,p.healFlat,events,it.name);
+      if(p.stage){const st=p.stage.stat==="random"?["atk","def","spa","spd","spe"][d(5)-1]:p.stage.stat;addStage(b,s,st,p.stage.n,events,{src:it.name});}
     }
     function afterHit(b,s,move,events,hit,amount,ctx){
       const tSide=other(s),A=activeMon(b,s),aS=activeState(b,s),T=activeMon(b,tSide),tS=activeState(b,tSide);
@@ -653,6 +717,21 @@
         if(K.healPct)heal(b,s,Math.max(1,Math.floor(aS.maxHp*K.healPct/100)),events,A.abil.name);
         if(K.nextPhys)aS.nextPhys+=K.nextPhys;
       }
+      // ---- itens segurados depois do golpe
+      const aIt=itemOf(b,s),dIt=itemOf(b,tSide);
+      if(amount>0&&aIt?.drain&&!aS.fainted)heal(b,s,Math.max(1,Math.floor(amount*aIt.drain)),events,aIt.name);
+      if(amount>0&&aIt?.flinch&&!fx.flinch&&!fainted&&!ctx.acted.has(tSide)&&!abil(b,tSide).immune.flinch&&chance(aIt.flinch))tS.flinch=true;
+      if(amount>0&&dIt&&!tS.fainted){
+        if(dIt.groundImmune)useUpItem(b,tSide,events,"estourou");
+        else if(dIt.weakPolicy&&hit.mult>=2){useUpItem(b,tSide,events,"ativou");addStage(b,tSide,"atk",dIt.weakPolicy,events,{src:dIt.name});addStage(b,tSide,"spa",dIt.weakPolicy,events,{src:dIt.name});}
+        else if(dIt.seHeal&&hit.mult>=2){useUpItem(b,tSide,events,"foi comido");heal(b,tSide,Math.max(1,Math.floor(tS.maxHp*dIt.seHeal)),events,dIt.name);}
+        else if(dIt.hitStage&&(dIt.hitStage.on.toLowerCase()===cat||dIt.hitStage.on===mtype)){useUpItem(b,tSide,events,"ativou");addStage(b,tSide,dIt.hitStage.stat,dIt.hitStage.n,events,{src:dIt.name});}
+        else if(dIt.hitRecoil&&dIt.hitRecoil.cat===cat&&!aS.fainted){useUpItem(b,tSide,events,"machucou o atacante");hurt(b,s,Math.max(1,Math.floor(aS.maxHp*dIt.hitRecoil.frac)),events,dIt.name);}
+        itemPinch(b,tSide,events);
+      }
+      if(amount>0&&physical&&dIt?.contactHurt&&!aS.fainted){heldSay(b,tSide,events,"machucou quem encostou");hurt(b,s,Math.max(1,Math.floor(aS.maxHp*dIt.contactHurt)),events,dIt.name);}
+      if(amount>0&&aIt?.recoil&&!aS.fainted){heldSay(b,s,events,"cobrou o preço");hurt(b,s,Math.max(1,Math.floor(aS.maxHp*aIt.recoil)),events,aIt.name);}
+      if(!aS.fainted)itemPinch(b,s,events);
       // contato contra ability do alvo (Static, Toxic Shell…)
       if(physical&&amount>0&&!aS.fainted){
         for(const o of abil(b,tSide).onHurtContact){
@@ -712,6 +791,16 @@
           if(b.weather.kind==="hail"&&!t.includes("Ice"))hurt(b,s,sum(roll(1)),events,"hail");
         }
         if(ms.fainted)continue;
+        // item segurado no fim da rodada
+        const eIt=itemOf(b,s);
+        if(eIt){
+          if(eIt.endHeal&&(!eIt.endHealType||t_(b,s).includes(eIt.endHealType)))heal(b,s,Math.max(1,Math.floor(ms.maxHp*eIt.endHeal)),events,eIt.name);
+          else if(eIt.endHurt){heldSay(b,s,events,"machucou o usuário");hurt(b,s,Math.max(1,Math.floor(ms.maxHp*eIt.endHurt)),events,eIt.name);}
+          if(ms.fainted)continue;
+          if(eIt.selfStatus&&!ms.status)giveStatus(b,s,eIt.selfStatus,events,eIt.name);
+          if(eIt.clearDrops&&ms.stages.some(x=>x.n<0)){ms.stages=ms.stages.filter(x=>x.n>=0);useUpItem(b,s,events,"zerou os estágios reduzidos");}
+          itemPinch(b,s,events);
+        }
         // Campo Real cura os aliados
         if(side.field.royal>0)heal(b,s,Math.max(1,Math.floor(ms.maxHp/16)),events,"Campo Real");
         // ability de fim de turno
@@ -774,7 +863,9 @@
       for(const s of ["p1","p2"]){const ms=activeState(b,s);if(!ms.evadedThisTurn)ms.evadeStreak=0;}
       const order=["p1","p2"].filter(s=>P[s]?.kind==="move").map(s=>{
         const mon=activeMon(b,s),mv=mon.moves[P[s].idx]||{};
-        return {s,prio:movePriority(mv),spe:effSpeed(b,s),tie:ties[s]};
+        const qc=itemOf(b,s)?.quick;const quick=qc&&d(10000)<=qc*100;
+        if(quick)heldSay(b,s,events,"agiu primeiro");
+        return {s,prio:movePriority(mv)+(quick?.5:0),spe:effSpeed(b,s),tie:ties[s]};
       }).sort((x,y)=>y.prio-x.prio||y.spe-x.spe||y.tie-x.tie);
       for(const o of order){
         if(b.phase==="end")break;
@@ -806,7 +897,7 @@
     function view(b,s){
       const side=b.sides[s],ms=activeState(b,s);
       const stg={};STAT_KEYS.forEach(k=>{const v=stageTotal(ms,k);if(v)stg[k]=v;});
-      return {stg,cnf:ms.cnf>0,crit:ms.crit||0,swagger:ms.swagger>0,field:{...side.field},hazards:{...side.hazards},gim:{...side.gim},items:side.items,evadeStreak:ms.evadeStreak||0};
+      return {stg,cnf:ms.cnf>0,crit:ms.crit||0,swagger:ms.swagger>0,field:{...side.field},hazards:{...side.hazards},gim:{...side.gim},items:side.items,evadeStreak:ms.evadeStreak||0,lock:itemOf(b,s)?.choiceLock?ms.lock:null,itemGone:!!ms.itemGone};
     }
 
     return {newBattle,submit,resolve,walkover,canAct,movePriority,activeMon,activeState,view,stageTotal,effStat,gimmickOptions,zMoveOk,zPower};
