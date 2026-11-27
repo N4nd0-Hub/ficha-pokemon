@@ -107,3 +107,14 @@ test("leitor entende os held items novos", () => {
   assert.equal(b("Segurado: o usuário ignora os perigos de entrada (Spikes, Stealth Rock, Toxic Spikes, Sticky Web).").boots, true);
   assert.deepEqual(b("Segurado por Genesect: Techno Blast vira Water.").form, { type: "Water", move: "Techno Blast" });
 });
+
+test("Drain Punch recupera 50% do dano causado e STAB soma 1 dado da QD", () => {
+  const dp = { name: "Drain Punch", type: "Fighting", category: "Physical", power: 75, accuracy: 100, desc: "O usuário recupera 50% do dano causado." };
+  const { e, bt } = battle([mon("A", ["Fighting"], { spe: 200 }, [dp])], [mon("B", ["Normal"], { hp: 900 }, [{ ...tackle, power: 0, category: "Status" }])]);
+  e.activeState(bt, "p1").hp = 50;
+  const evs = turn(e, bt);
+  const hit = evs.find(x => x.k === "hit" && x.side === "p2");
+  const heal = evs.find(x => x.k === "heal" && x.side === "p1");
+  assert.ok(hit && hit.amount > 0);
+  assert.ok(heal && heal.amount === Math.max(1, Math.floor(hit.amount / 2)), JSON.stringify(heal));
+});

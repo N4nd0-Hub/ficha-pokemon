@@ -191,6 +191,6 @@ test("Sistema de QD: bônus de ability vira dado da QD no dano experimental", ()
   e.submit(bt, "p1", { kind: "move", idx: 0 }); e.submit(bt, "p2", { kind: "move", idx: 0 });
   const hit = e.resolve(bt).find(x => x.k === "hit" && x.side === "p2");
   assert.ok(hit.notes.includes("Guts +1 QD"));
-  // Tackle (40) = 2 dados de Poder +1 dado da QD do Guts = 3 dados da QD
-  assert.equal(hit.count, 3);
+  // Tackle (40) = 2 dados de Poder +1 do Guts +1 do STAB (Normal) = 4 dados da QD
+  assert.equal(hit.count, 4);
 });
