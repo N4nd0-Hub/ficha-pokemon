@@ -125,7 +125,7 @@
   }
 
   /* ---------- Loja de Altamuralha ----------
-     Primeira cidade grande da região: vende quase tudo do catálogo oficial,
+     Primeira cidade grande da região (loja de meio de jogo): vende boa parte do catálogo,
      25% mais caro que o preço base. Fora da loja: Master Ball e outras bolas
      de captura garantida, itens-chave/de história, itens de eventos,
      doces de nível/EXP, Ability Patch, Bottle Caps, itens de valor (que só
@@ -167,6 +167,9 @@
   function altSells(it){
     if(!it?.apiName||ALT_BLOCK.has(it.apiName)||ALT_BLOCK_CAT.test(String(it.category||"")))return false;
     if(/-candy(-l|-xl)?$/.test(it.apiName))return false;
+    // loja de meio de jogo: nada exclusivo de um Pokémon (Plates, Memories, Drives, Orbs, Mega Stones, Cristais Z exclusivos…)
+    if(/^(plates|memories|species-specific|mega-stones)$/.test(String(it.category||"")))return false;
+    if(/^Segurado por /.test(String(it.description||""))||read(it).battle.species?.length)return false;
     if(/^Item registrado no PokéAPI/.test(String(it.description||""))&&!/held|mega|z-crystal/.test(String(it.category||"")))return false;
     return true;
   }
