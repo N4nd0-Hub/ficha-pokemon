@@ -806,7 +806,7 @@
     if(root.hidden&&!ui.cap)return;
     if(ui.view==="area"&&!exp())ui.view="map";
     root.innerHTML=`<div class="ex7-win${gm.on?" gm-on":""}">${head()}${ui.view==="area"?areaView():mapView()}${ui.camp?campModal():""}${ui.gm?gmModal():""}
-      <button type="button" class="ex7-gmbtn" data-ex="gm" aria-label="Modo Mestre" title="${gm.on?"Modo Mestre":""}">${gm.on?"♛":"·"}</button></div>`;
+      <button type="button" class="ex7-gmbtn" data-ex="gm" aria-label="Modo Mestre" title="Modo Mestre">♛</button></div>`;
     if(ui.cap?.phase==="aim")startRing();
     if(ui.pwd)setTimeout(()=>root.querySelector("#ex7Pwd")?.focus(),30);
   }
