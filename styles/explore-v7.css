@@ -6,7 +6,7 @@
 .ex7-topico{display:inline-grid;place-items:center;width:20px;height:20px}
 .ex7-px{image-rendering:pixelated;flex:none}
 
-.ex7{position:fixed;inset:0;z-index:10001;display:grid;place-items:center;padding:14px;background:rgba(8,14,12,.7);backdrop-filter:blur(2px)}
+.ex7{position:fixed;inset:0;z-index:10060;display:grid;place-items:center;padding:14px;background:rgba(8,14,12,.7);backdrop-filter:blur(2px)}
 .ex7[hidden]{display:none}
 body.ex7-open{overflow:hidden}
 .ex7-win{position:relative;width:min(1240px,100%);height:min(820px,calc(100vh - 28px));display:grid;grid-template-rows:auto 1fr;overflow:hidden;
@@ -29,19 +29,19 @@ body.ex7-open{overflow:hidden}
 .ex7-lifebar i.low{background:linear-gradient(180deg,#ff7a6e,#d0362c)}
 .ex7-lifebar b{position:relative;display:block;text-align:center;font:700 10px/12px var(--cl-pixel,monospace);color:#fff;text-shadow:0 1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000}
 .ex7-life small{font:700 9px var(--cl-pixel,monospace);white-space:nowrap;color:#5a4410}
-.ex7-x{width:38px;height:38px;border-radius:10px;border:3px solid #181a24;background:#fff;color:#181a24;font:900 16px inherit;cursor:pointer;box-shadow:0 3px 0 #181a24}
+.ex7-x{width:38px;height:38px;border-radius:10px;border:3px solid #181a24;background:#fff;color:#181a24;font-weight:900;font-size:16px;cursor:pointer;box-shadow:0 3px 0 #181a24}
 .ex7-x:active{transform:translateY(2px);box-shadow:0 1px 0 #181a24}
 
 .ex7-body{position:relative;min-height:0;display:grid;gap:14px;padding:14px;overflow:auto}
 .ex7-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;border-radius:10px;border:3px solid #181a24;background:#fff;color:#181a24;
-  font:800 13px/1.1 inherit;cursor:pointer;box-shadow:0 3px 0 #181a24;white-space:nowrap}
+  font-weight:800;font-size:13px;line-height:1.1;cursor:pointer;box-shadow:0 3px 0 #181a24;white-space:nowrap}
 .ex7-btn small{font-weight:700;opacity:.7}
 .ex7-btn:hover:not(:disabled){filter:brightness(1.05)}
 .ex7-btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #181a24}
 .ex7-btn.primary{background:linear-gradient(180deg,#5cc483,#2f8a4a);color:#fff}
 .ex7-btn.ghost{background:#efe7cf}
 .ex7-btn:disabled{opacity:.45;cursor:not-allowed}
-.ex7-type{display:inline-block;margin:0 3px 0 0;padding:2px 6px;border-radius:6px;background:var(--t);color:#fff;font:800 10px/1.2 inherit;text-shadow:0 1px 0 rgba(0,0,0,.35);border:1px solid rgba(0,0,0,.25)}
+.ex7-type{display:inline-block;margin:0 3px 0 0;padding:2px 6px;border-radius:6px;background:var(--t);color:#fff;font-weight:800;font-size:10px;line-height:1.2;text-shadow:0 1px 0 rgba(0,0,0,.35);border:1px solid rgba(0,0,0,.25)}
 
 /* ---------- mapa ---------- */
 .ex7-mapbody{grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);align-items:start}
@@ -54,23 +54,23 @@ body.ex7-open{overflow:hidden}
 .ex7-maplabel{position:absolute;transform:translate(-50%,-50%);font:700 9px var(--cl-pixel,monospace);letter-spacing:.06em;color:#fff;text-shadow:1px 1px 0 #181a24,-1px -1px 0 #181a24,1px -1px 0 #181a24,-1px 1px 0 #181a24;pointer-events:none;z-index:2;white-space:nowrap}
 .ex7-maplabel.big{font-size:13px;letter-spacing:.2em;opacity:.85}
 .ex7-maplabel.peak{color:#f3d2ff}
-.ex7-pin{position:absolute;transform:translate(-50%,-100%);display:grid;justify-items:center;z-index:3;pointer-events:auto}
-.ex7-pin-ico{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#fff;border:3px solid #181a24;box-shadow:0 3px 0 #181a24,0 0 0 3px var(--c) inset}
-.ex7-pin-ico b{font:900 18px var(--cl-pixel,monospace);color:#555}
-.ex7-pin-name{margin-top:3px;padding:2px 7px;border-radius:6px;background:#181a24;color:#fff;font:700 10px var(--cl-pixel,monospace);white-space:nowrap}
+.ex7-pin{position:absolute;transform:translate(-50%,0);display:grid;justify-items:center;z-index:3;pointer-events:auto}
+.ex7-pin-ico{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;background:#fff;border:2px solid #181a24}
+.ex7-pin-ico b{font:900 11px var(--cl-pixel,monospace);color:#555}
+.ex7-pin-name{display:inline-flex;align-items:center;gap:5px;padding:2px 7px 2px 3px;border-radius:7px;background:#181a24;color:#fff;font:700 10px var(--cl-pixel,monospace);white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.4)}
 .ex7-pin.unknown{opacity:.85}
-.ex7-pin.unknown .ex7-pin-ico{background:#d9dde6;box-shadow:0 3px 0 #181a24}
-.ex7-pin.here .ex7-pin-ico{animation:ex7-bob 1.2s ease-in-out infinite;box-shadow:0 3px 0 #181a24,0 0 0 3px var(--c) inset,0 0 0 6px rgba(255,210,63,.75)}
-.ex7-pin.here .ex7-pin-name{background:var(--c);border:2px solid #181a24}
+.ex7-pin.unknown .ex7-pin-ico{background:#d9dde6}
+.ex7-pin.here{animation:ex7-bob 1.2s ease-in-out infinite}
+.ex7-pin.here .ex7-pin-name{background:var(--c);border:2px solid #181a24;box-shadow:0 0 0 3px rgba(255,210,63,.8)}
 .ex7-here{display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:2px 6px;border-radius:6px;background:#ffd23f;border:2px solid #181a24;font:700 9px var(--cl-pixel,monospace);color:#3a2a00;white-space:nowrap}
 @keyframes ex7-bob{50%{transform:translateY(-4px)}}
-.ex7-mapnote{display:flex;align-items:center;gap:6px;margin:0;font:700 12px inherit;color:#5a4a20}
+.ex7-mapnote{display:flex;align-items:center;gap:6px;margin:0;font-weight:700;font-size:12px;color:#5a4a20}
 
 .ex7-region{display:grid;gap:10px;padding:12px;border:3px solid #181a24;border-radius:12px;background:#fffdf3;box-shadow:0 4px 0 #181a24;border-top:8px solid var(--c)}
 .ex7-rhead{display:flex;align-items:center;gap:10px}
 .ex7-rhead>div{flex:1;display:grid}
 .ex7-rhead b{font:400 22px var(--cl-title,inherit)}
-.ex7-rhead small{font:700 11px inherit;color:#6a5a30}
+.ex7-rhead small{font-weight:700;font-size:11px;color:#6a5a30}
 .ex7-rico{display:grid;place-items:center;width:52px;height:52px;border-radius:12px;background:var(--c);border:3px solid #181a24;box-shadow:0 3px 0 #181a24}
 .ex7-rico.sm{width:38px;height:38px}
 .ex7-rdesc{margin:0;font-size:13px;line-height:1.45;color:#3a3324}
@@ -106,7 +106,7 @@ body.ex7-open{overflow:hidden}
 .ex7-areahead{display:flex;align-items:center;gap:10px;padding:8px 10px;border:3px solid #181a24;border-radius:12px;background:#fffdf3;box-shadow:0 3px 0 #181a24;border-left:8px solid var(--c)}
 .ex7-areahead>div{flex:1;display:grid;min-width:0}
 .ex7-areahead b{font:400 19px var(--cl-title,inherit)}
-.ex7-areahead small{font:700 11px inherit;color:#6a5a30}
+.ex7-areahead small{font-weight:700;font-size:11px;color:#6a5a30}
 .ex7-grid{width:100%;max-width:min(100%,calc((100vh - 290px)*1.4));justify-self:center;display:grid;grid-template-columns:repeat(var(--w),1fr);gap:4px;padding:8px;border:3px solid #181a24;border-radius:12px;background:#2c3a2c;box-shadow:0 4px 0 #181a24}
 .ex7-tile{position:relative;aspect-ratio:1;display:grid;place-items:center;border:2px solid rgba(0,0,0,.45);border-radius:8px;cursor:default;padding:0;overflow:hidden;
   box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.25)}
@@ -172,11 +172,11 @@ body.ex7-open{overflow:hidden}
 .ex7-foe{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
 .ex7-foeimg{position:relative;flex:none;width:112px;height:112px;display:grid;place-items:center;border:3px solid #181a24;border-radius:14px;box-shadow:inset 0 -14px 0 rgba(0,0,0,.12)}
 .ex7-foeimg img{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 3px 0 rgba(0,0,0,.3));animation:ex7-pop .4s}
-.ex7-shiny{position:absolute;bottom:-8px;padding:1px 6px;border-radius:6px;background:#ffd23f;border:2px solid #181a24;font:700 10px inherit}
+.ex7-shiny{position:absolute;bottom:-8px;padding:1px 6px;border-radius:6px;background:#ffd23f;border:2px solid #181a24;font-weight:700;font-size:10px}
 .ex7-foeinfo{display:grid;gap:4px}
 .ex7-foeinfo b{font:400 22px var(--cl-title,inherit)}
 .ex7-foeinfo small{font-size:12px;color:#6a5a30}
-.ex7-rar{justify-self:start;padding:2px 8px;border-radius:8px;border:2px solid #181a24;font:700 11px inherit;background:#e8e8e8}
+.ex7-rar{justify-self:start;padding:2px 8px;border-radius:8px;border:2px solid #181a24;font-weight:700;font-size:11px;background:#e8e8e8}
 .ex7-rar.r-uncommon{background:#d6f0ff}.ex7-rar.r-rare{background:#ffe9a8}.ex7-rar.r-veryrare{background:#f3d2ff}
 
 /* captura */
@@ -198,8 +198,8 @@ body.ex7-open{overflow:hidden}
 .ex7-ballfx.shake .ex7-ball{animation:ex7-wob .5s ease-in-out infinite}
 @keyframes ex7-wob{25%{transform:rotate(-22deg)}75%{transform:rotate(22deg)}}
 .ex7-ballfx.caught .ex7-ball{filter:brightness(.8)}
-.ex7-stars{position:absolute;margin-top:-56px;font:900 18px inherit;color:#ffd23f;text-shadow:0 2px 0 #181a24;animation:ex7-pop .4s}
-.ex7-capmsg{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);padding:3px 10px;border-radius:8px;background:#181a24;color:#fff;font:700 12px inherit;white-space:nowrap}
+.ex7-stars{position:absolute;margin-top:-56px;font-weight:900;font-size:18px;color:#ffd23f;text-shadow:0 2px 0 #181a24;animation:ex7-pop .4s}
+.ex7-capmsg{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);padding:3px 10px;border-radius:8px;background:#181a24;color:#fff;font-weight:700;font-size:12px;white-space:nowrap}
 .ex7-capmsg.caught{background:#2f8a4a}.ex7-capmsg.fail{background:#b0362c}
 .ex7-capballs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
 .ex7-capball{display:grid;justify-items:center;gap:1px;padding:5px 8px;border:2px solid #181a24;border-radius:10px;background:#fff;cursor:pointer;color:#222}
@@ -223,7 +223,25 @@ body.ex7-open{overflow:hidden}
   .ex7-grid{gap:3px;padding:5px}
   .ex7-areahead{flex-wrap:wrap}.ex7-areahead b{font-size:16px}.ex7-areahead .ex7-btn{width:100%}
   .ex7-rhead{flex-wrap:wrap}.ex7-rhead .ex7-btn{width:100%}
-  .ex7-maplabel{font-size:7px}.ex7-maplabel.big{font-size:9px}.ex7-pin-ico{width:28px;height:28px}.ex7-pin-name{font-size:8px}.ex7-here{display:none}
+  .ex7-maplabel{font-size:7px}.ex7-maplabel.big{font-size:9px}.ex7-pin-ico{width:14px;height:14px}.ex7-pin-name{font-size:8px}.ex7-here{display:none}
   .ex7-foeimg{width:88px;height:88px}.ex7-foeimg img{width:76px;height:76px}
 }
-@media (prefers-reduced-motion:reduce){.ex7-pin.here .ex7-pin-ico,.ex7-me,.ex7-bounce{animation:none}}
+@media (prefers-reduced-motion:reduce){.ex7-pin.here,.ex7-me,.ex7-bounce{animation:none}}
+.ex7-pin.here{animation-name:ex7-bobc}
+@keyframes ex7-bobc{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-4px)}}
+.ex7-back{padding:8px 12px;border-radius:10px;border:3px solid #181a24;background:#fff;color:#181a24;font-weight:800;font-size:12px;cursor:pointer;box-shadow:0 3px 0 #181a24;white-space:nowrap}
+.ex7-back:active{transform:translateY(2px);box-shadow:0 1px 0 #181a24}
+
+/* cartão da Exploração dentro da Aventura */
+.ar9-explore{position:relative;overflow:hidden;display:grid;grid-template-columns:150px 1fr auto;gap:14px;align-items:center;padding:12px 14px;margin-bottom:12px;border-radius:16px;color:#fff;
+  background:radial-gradient(circle at 85% 30%,rgba(255,255,255,.14),transparent 45%),linear-gradient(135deg,#2f8a4a,#174a28)}
+.ar9-ex-map{height:94px;border-radius:12px;border:3px solid #181a24;box-shadow:0 3px 0 #181a24;background:#24509c url('../assets/explore/helikon-map.png') center/cover no-repeat;image-rendering:pixelated}
+.ar9-ex-txt{display:grid;gap:4px;min-width:0}
+.ar9-ex-txt small{font:700 10px var(--cl-pixel,monospace);letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+.ar9-ex-txt h3{margin:0;font:400 24px var(--cl-title,inherit);text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.ar9-ex-txt h3 em{display:block;margin-top:2px;font-family:var(--cl-pixel,monospace);font-weight:700;font-size:11px;font-style:normal;opacity:.85;text-shadow:none}
+.ar9-ex-txt p{margin:0;font-size:13px}
+.ar9-ex-life{position:relative;display:block;width:min(220px,100%);height:16px;border:2px solid #181a24;border-radius:6px;background:#3b2525;overflow:hidden}
+.ar9-ex-life i{position:absolute;inset:0 auto 0 0;background:linear-gradient(180deg,#5fe08a,#2ea85a)}
+.ar9-ex-life b{position:relative;display:block;text-align:center;font:700 10px/12px var(--cl-pixel,monospace);text-shadow:0 1px 0 #000}
+@media (max-width:760px){.ar9-explore{grid-template-columns:1fr}.ar9-ex-map{height:110px}.ar9-ex-act .ar7-btn{width:100%}}
