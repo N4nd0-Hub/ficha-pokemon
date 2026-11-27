@@ -125,3 +125,10 @@ test("Telas: Reflect corta o dano físico pela metade e Brick Break quebra", () 
   turn(r.e, r.bt, 0, 1);
   assert.equal(r.bt.sides.p1.field.reflect, 0);
 });
+
+test("Ability tipo Sword of Ruin escrita na ficha reduz a Defesa do rival", () => {
+  const blade = { ability: "Blade of Judgment", abilityText: "Reduz em 25% a Defesa de todos os outros Pokémon em campo" };
+  const { e, bt } = battle([mon("A", ["Normal"], {}, [tackle], blade)], [mon("B", ["Normal"], { def: 100 }, [tackle])]);
+  assert.equal(e.effStat(bt, "p2", "def"), 75);
+  assert.equal(e.effStat(bt, "p1", "def"), 80, "o próprio dono não é afetado");
+});
