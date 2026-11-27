@@ -175,12 +175,12 @@
   }
   function giftView(){
     if(!gmOn())return `<div class="gift7 locked"><span class="gift7-lock">${ico("gift","it7-px big")}</span><b>Baú do Mestre</b>
-      <p>Itens de graça para repor o que os jogadores perderam. Só o Mestre abre.</p>
+      <p>Só o Mestre tem a chave.</p>
       <form class="tm7-row" data-gift-form="pwd"><input data-gift="pwd" type="password" placeholder="Senha do Mestre" autocomplete="off"><button type="submit" class="it7-btn go">Abrir</button></form>
       ${gift.msg?`<p class="tm7-err">${esc(gift.msg)}</p>`:""}</div>`;
     const res=results();
     return `<div class="gift7">
-      <header class="gift7-head">${ico("gift")}<div><b>Baú do Mestre</b><small>Tudo aqui sai de graça · entra na Bolsa ou no Inventário de Viagem</small></div><button type="button" class="it7-btn" data-it="gift-lock">🔒 Trancar</button></header>
+      <header class="gift7-head">${ico("gift")}<div><b>Baú do Mestre</b><small>Pra repor o que se perdeu pelo caminho.</small></div><button type="button" class="it7-btn" data-it="gift-lock">🔒 Trancar</button></header>
       <section class="gift7-sec"><h4>Dinheiro</h4><form class="tm7-row" data-gift-form="money"><input data-gift="money" type="number" min="1" max="9999999" placeholder="Quantia em ₽"><button type="submit" class="it7-btn go">Dar ₽</button></form></section>
       <section class="gift7-sec"><h4>Procurar item</h4>
         <div class="tm7-row"><input data-gift="q" type="search" placeholder="Nome do item (Potion, Leftovers, Barraca, Ultra Ball…)" value="${esc(gift.q)}" autocomplete="off">
