@@ -151,6 +151,17 @@
     "draco meteor":{stages:[{who:"self",stat:"spa",n:-2}]},"overheat":{stages:[{who:"self",stat:"spa",n:-2}]},"leaf storm":{stages:[{who:"self",stat:"spa",n:-2}]}
   };
 
+  /* Golpes de vários acertos oficiais. "2–5" segue a regra do Heaven & Hell:
+     3 acertos fixos, 5 no Crítico Natural (Skill Link, Loaded Dice e afins: 5).
+     perHit: Power de cada acerto quando ele muda (Triple Axel, Triple Kick). */
+  const MULTI={
+    "arm thrust":[2,5],"barrage":[2,5],"bone rush":[2,5],"bullet seed":[2,5],"comet punch":[2,5],"double slap":[2,5],"fury attack":[2,5],
+    "fury swipes":[2,5],"icicle spear":[2,5],"pin missile":[2,5],"rock blast":[2,5],"scale shot":[2,5],"spike cannon":[2,5],"tail slap":[2,5],
+    "water shuriken":[2,5],"bonemerang":[2,2],"double hit":[2,2],"double iron bash":[2,2],"double kick":[2,2],"dragon darts":[2,2],
+    "dual chop":[2,2],"dual wingbeat":[2,2],"gear grind":[2,2],"tachyon cutter":[2,2],"twin beam":[2,2],"twineedle":[2,2],
+    "surging strikes":[3,3],"triple dive":[3,3],"population bomb":[1,10],
+    "triple axel":[3,3,[20,40,60]],"triple kick":[3,3,[10,20,30]]
+  };
   /* Golpes com mecânica própria (Arena): o motor lê fx.mech */
   const SEMI_HIT={fly:{"thunder":1,"hurricane":1,"gust":2,"twister":2,"sky uppercut":1,"smack down":1,"thousand arrows":1},
     dig:{"earthquake":2,"magnitude":2,"fissure":1},dive:{"surf":2,"whirlpool":2},phantom:{}};
@@ -236,10 +247,12 @@
       // armadilhas
       if(/espinhos venenosos|toxic spikes/i.test(s)){fx.hazard="tspikes";continue;}
       // vários acertos
-      const hm=/(\d)\s*(?:a|-|–|ou)\s*(\d)\s*(?:acertos|vezes|hits|golpes)/i.exec(s);
-      const hf=/(\d)\s*acertos fixos|(\d)\s*hits?\b|ataca\s+(\d)\s+vezes|acerta\s+(\d)\s+vezes|(?:duas|two) vezes|twice/i.exec(s);
-      if(hm)fx.hits={min:Number(hm[1]),max:Number(hm[2])};
-      else if(hf){const n=Number(hf[1]||hf[2]||hf[3]||hf[4]||2);if(n>=2&&n<=10)fx.hits={min:n,max:n};}
+      if(!fx.hits){
+        const hm=/(\d{1,2})\s*(?:a|-|–|ou|to)\s*(\d{1,2})\s*(?:acertos|vezes|hits|golpes|times|sementes|agulhas|espinhos|pedras|ataques)/i.exec(s);
+        const hf=/(\d)\s*acertos fixos|(\d)\s*hits?\b|(?:ataca|acerta|atinge|golpeia|chuta|bate)\s+(?:o alvo\s+)?(\d+)\s+vezes|(\d+)\s+vezes\s+seguidas|(?:hits|strikes)\s+(?:the target\s+)?(\d+)\s+times|(?:duas|two) vezes|\btwice\b|(?:tr[êe]s|three) vezes/i.exec(s);
+        if(hm&&Number(hm[2])>=2&&Number(hm[2])<=10)fx.hits={min:Number(hm[1]),max:Number(hm[2])};
+        else if(hf){const n=Number(hf[1]||hf[2]||hf[3]||hf[4]||hf[5]||(/tr[êe]s|three/i.test(hf[0])?3:2));if(n>=2&&n<=10)fx.hits={min:n,max:n};}
+      }
       // primeiro turno
       if(/primeiro turno|first turn/i.test(s))fx.firstTurnOnly=true;
       // false swipe
@@ -291,6 +304,9 @@
     if(name==="royal command")fx.field="royal";
     if(name==="rest"){fx.rest=true;fx.heal=0;}
     if(fx.hazard)fx.status=[];
+    // tabela oficial manda sobre o texto
+    if(MULTI[name]){const [a,b2,per]=MULTI[name];fx.hits={min:a,max:b2,...(per?{perHit:per}:{})};}
+    if(cat==="status")fx.hits=null;
     fx.mech=MECH[name]||null;
     if(fx.mech){
       const M=fx.mech;

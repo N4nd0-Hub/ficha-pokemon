@@ -148,3 +148,14 @@ test("Brute Chaos: Protosynthesis no Sol troca de forma e liga os bônus", () =>
   const hit = hitOn(t2, "p2")[0];
   assert.ok(hit.notes.some(n => /Protosynthesis \+1 QD/.test(n)), "golpe Ground ganhou +1 QD");
 });
+
+test("Vários acertos: 2–5 vira 3 fixos, Double Kick 2, Triple Axel 3", () => {
+  const foe = () => [mon("B", ["Normal"], { hp: 900, spe: 10 }, [M("Splash", "Normal", "Status", 0, null)])];
+  for (const [mv, n] of [[M("Bullet Seed", "Grass", "Physical", 25, 100, "Dispara 2-5 sementes."), 3], [M("Double Kick", "Fighting", "Physical", 30, 100), 2], [M("Triple Axel", "Ice", "Physical", 20, 90), 3]]) {
+    const { e, bt } = battle([mon("A", ["Normal"], { spe: 200 }, [mv])], foe(), () => 0.5);
+    const h = hitOn(turn(e, bt), "p2")[0];
+    assert.equal(h.hits, n, mv.name);
+  }
+  const sl = battle([mon("A", ["Normal"], { spe: 200 }, [M("Rock Blast", "Rock", "Physical", 25, 90)], { ability: "Skill Link" })], foe(), () => 0.5);
+  assert.equal(hitOn(turn(sl.e, sl.bt), "p2")[0].hits, 5, "Skill Link acerta 5");
+});
