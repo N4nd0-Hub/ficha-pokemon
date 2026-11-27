@@ -135,6 +135,8 @@
       let v=Math.floor(Math.max(0,Number(m.stats?.[stat]||0))*stageMult(stat,stageTotal(ms,stat)));
       const it=m.item&&!m.item.inactive&&!ms.itemGone?m.item:null;
       if(it?.statMult?.[stat])v=Math.floor(v*it.statMult[stat]);
+      // auras do rival (Sword of Ruin e abilities iguais): reduzem o atributo de quem está do outro lado
+      {const o=other(s),om=activeMon(b,o);if(om&&!activeState(b,o).fainted)for(const r of om.abil?.ruin||[])if(r.stat===stat&&!(m.abil?.ruin||[]).some(x=>x.stat===stat))v=Math.floor(v*(1-r.pct/100));}
       // Areia: Rock ganha SP.DEF ×1,5 · Neve: Ice ganha DEF ×1,5
       if(b.weather?.kind==="sand"&&stat==="spd"&&typesOf(b,s).includes("Rock"))v=Math.floor(v*1.5);
       if(b.weather?.kind==="snow"&&stat==="def"&&typesOf(b,s).includes("Ice"))v=Math.floor(v*1.5);
@@ -255,6 +257,7 @@
         const best=["atk","def","spa","spd","spe"].reduce((x,y)=>Number(mon.stats?.[y]||0)>Number(mon.stats?.[x]||0)?y:x,"atk");
         useUpItem(b,s,events,`ativou ${A.name}`);addStage(b,s,best,1,events,{src:"Booster Energy",rounds:null});
       }
+      if(A.ruin?.length){const L={atk:"Attack",def:"Defense",spa:"Sp.Atk",spd:"Sp.Def",spe:"Speed"};events.push({k:"ability",side:s,mon:mon.name,name:A.name});events.push({k:"info",text:`${A.name}: ${A.ruin.map(r=>`${L[r.stat]} −${r.pct}%`).join(", ")} em todos os outros Pokémon.`});}
       if(A.onEnter.foeAccFirstTurn&&!activeState(b,foe).fainted){say();addStage(b,foe,"acc",A.onEnter.foeAccFirstTurn,events,{src:A.name,fromFoe:true,rounds:1});}
     }
     function resetVolatile(ms){

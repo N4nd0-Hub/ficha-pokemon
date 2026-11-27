@@ -309,10 +309,12 @@
     return {name:String(name||""),onEnter:{stages:[],weather:null,field:null,foeAccFirstTurn:0},onHit:[],onKO:{stages:[],healPct:0,nextPhys:0},
       lowHp:null,weatherSpeed:null,weatherBoost:[],pinch:null,immune:{status:new Set(),flinch:false,powder:false,drain:false,types:new Set(),intimidate:false,statDrop:false},
       absorb:{},onHurtContact:[],dmgTaken:[],tinted:false,maxHits:false,endTurn:{stages:[],healPct:0},sturdy:false,guts:false,
-      critMode:null,aerial:false,keepOnMiss:false,notes:[]};
+      critMode:null,aerial:false,keepOnMiss:false,ruin:[],notes:[]};
   }
   const OFFICIAL={
     "intimidate":a=>a.onEnter.stages.push({who:"foe",stat:"atk",n:-1}),
+    "sword of ruin":a=>a.ruin.push({stat:"def",pct:25}),"beads of ruin":a=>a.ruin.push({stat:"spd",pct:25}),
+    "tablets of ruin":a=>a.ruin.push({stat:"atk",pct:25}),"vessel of ruin":a=>a.ruin.push({stat:"spa",pct:25}),
     "drizzle":a=>a.onEnter.weather={kind:"rain",turns:5},"drought":a=>a.onEnter.weather={kind:"sun",turns:5},
     "sand stream":a=>a.onEnter.weather={kind:"sand",turns:5},"snow warning":a=>a.onEnter.weather={kind:"snow",turns:5},
     "swift swim":a=>a.weatherSpeed="rain","chlorophyll":a=>a.weatherSpeed="sun","sand rush":a=>a.weatherSpeed="sand","slush rush":a=>a.weatherSpeed="hail",
@@ -336,6 +338,12 @@
       const low=s.toLowerCase();
       // fora de combate: ignora
       if(/fora de combate|fora da batalha|outside of battle/i.test(s))continue;
+      // aura que reduz um atributo de todos os outros (Sword of Ruin e afins)
+      {const rx=/(?:reduz|diminui|abaixa|corta)\w*\s+(?:em\s+)?(\d+)\s*%\s+(?:d[oa]s?\s+|[oa]s?\s+)?(ataque especial|defesa especial|sp\.?\s*atk|sp\.?\s*def|ataque|defesa|velocidade|speed|attack|defense)\b[^.]*?(todos os outros|outros pok[eé]mon|dos? inimigos?|dos? advers[aá]rios?|dos? oponentes?|do alvo|dos? rivais?)/i.exec(s)
+          ||/(?:lowers?|reduces?)\s+the\s+(sp\.?\s*atk|sp\.?\s*def|attack|defense|speed)\s+of\s+all\s+(?:other\s+)?pok[eé]mon/i.exec(s);
+        if(rx){const pct=rx.length>3?Number(rx[1]):25,word=(rx.length>3?rx[2]:rx[1]).toLowerCase().replace(/\s+/g," ");
+          const stat=/ataque especial|sp\.? ?atk/.test(word)?"spa":/defesa especial|sp\.? ?def/.test(word)?"spd":/ataque|attack/.test(word)?"atk":/defesa|defense/.test(word)?"def":"spe";
+          if(pct>0&&pct<100){a.ruin.push({stat,pct});continue;}}}
       // imunidades
       if(/imune|immune|n[ãa]o pode ser|cannot be|impede/i.test(s)){
         if(!/de p[óo]|powder/i.test(s))statusKeys(s).forEach(k=>{a.immune.status.add(k);if(k==="psn")a.immune.status.add("tox");if(k==="brn")a.immune.status.add("dbrn");});
