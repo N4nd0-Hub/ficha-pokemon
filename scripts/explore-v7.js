@@ -625,6 +625,7 @@
   let tick=0;
   function open(){
     X();root.hidden=false;document.body.classList.add("ex7-open");sfx("page");
+    root.classList.remove("settled");clearTimeout(root._st);root._st=setTimeout(()=>root.classList.add("settled"),400);
     ui.view=exp()?"area":"map";render();
     clearInterval(tick);tick=setInterval(()=>{if(root.hidden){clearInterval(tick);return;}paintHp();},1000);
   }
@@ -805,6 +806,9 @@
   function render(){
     if(root.hidden&&!ui.cap)return;
     if(ui.view==="area"&&!exp())ui.view="map";
+    /* as animações de entrada só tocam quando a janela/caixa é nova, não a cada atualização */
+    const mk=`${ui.view}|${ui.ev?.kind||""}|${ui.ev?.foe?.name||ui.ev?.slug||ui.ev?.text||""}|${ui.camp?"camp":""}|${ui.gm}|${ui.pwd}`;
+    root.classList.toggle("still",mk===ui.lastKey);ui.lastKey=mk;
     root.innerHTML=`<div class="ex7-win${gm.on?" gm-on":""}">${head()}${ui.view==="area"?areaView():mapView()}${ui.camp?campModal():""}${ui.gm?gmModal():""}
       <button type="button" class="ex7-gmbtn" data-ex="gm" aria-label="Modo Mestre" title="Modo Mestre">♛</button></div>`;
     if(ui.cap?.phase==="aim")startRing();

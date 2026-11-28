@@ -225,7 +225,7 @@
     box.addEventListener("input",e=>{const ext=(window.hhItemsTabs||[]).find(t=>t.key===ui.tab);if(ext?.onInput&&!e.target.matches("[data-it=q]")){ext.onInput(e);return;}if(e.target.matches("[data-it=q]")){ui.q=e.target.value;ui.page=1;renderList();}});
     return box;
   }
-  function open(tab){ensure();ui.open=true;if(tab)ui.tab=tab;box.hidden=false;document.body.classList.add("it7-open");sfx("page");render();setTimeout(()=>box.querySelector("[data-it=q]")?.focus({preventScroll:true}),60);}
+  function open(tab){ensure();ui.open=true;if(tab)ui.tab=tab;box.hidden=false;box.classList.remove("settled");clearTimeout(box._st);box._st=setTimeout(()=>box.classList.add("settled"),400);document.body.classList.add("it7-open");sfx("page");render();setTimeout(()=>box.querySelector("[data-it=q]")?.focus({preventScroll:true}),60);}
   function close(){if(!box)return;ui.open=false;box.hidden=true;document.body.classList.remove("it7-open");}
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&ui.open)close();});
 
