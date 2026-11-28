@@ -44,7 +44,7 @@
   /* Centro do sprite em coordenadas do campo */
   function center(field,pos){
     const f=field.getBoundingClientRect(),m=field.querySelector(`.ar7-mon.${pos}`);
-    if(!m)return {x:f.width*(pos==="me"?.25:.72),y:f.height*(pos==="me"?.68:.32),s:f.width*.2};
+    if(!m)return {x:f.width*(String(pos).startsWith("me")?.25:.72),y:f.height*(String(pos).startsWith("me")?.68:.32),s:f.width*.2};
     const r=m.getBoundingClientRect();
     return {x:r.left-f.left+r.width/2,y:r.top-f.top+r.height*.58,s:Math.min(r.width,r.height)};
   }
@@ -179,9 +179,9 @@
   function play(field,ev,ctx){
     if(!field||reduce())return 0;
     const l=layer(field);
-    const P=s=>ctx.pos(s),other=p=>p==="me"?"foe":"me";
+    const P=s=>ctx.pos(s),other=p=>String(p).startsWith("me")?"foe":"me";
     if(ev.k==="move"){
-      const pos=P(ev.side),tpos=other(pos);
+      const pos=P(ev.side),tpos=ev.target?P(ev.target):other(pos);
       const from=center(field,pos),to=center(field,tpos);
       const lk=look(ev.type),cat=String(ev.category||"").toLowerCase();
       lastMove={lk,cat,side:ev.side,type:norm(ev.type)};
@@ -198,9 +198,9 @@
       if(ev.noTarget)return 500;
       // ataque físico: investida até o alvo
       if(cat==="physical"){
-        const dx=(to.x-from.x)*.55,dy=(to.y-from.y)*.55,flip=pos==="me"?" scaleX(-1)":"";
+        const dx=(to.x-from.x)*.55,dy=(to.y-from.y)*.55,flip=String(pos).startsWith("me")?" scaleX(-1)":"";
         monAnim(field,pos,[{transform:"translate(0,0)"},{transform:`translate(${-dx*.12}px,${-dy*.12}px)`,offset:.25},{transform:`translate(${dx}px,${dy}px)`,offset:.55},{transform:"translate(0,0)"}],{duration:560,easing:"cubic-bezier(.5,0,.4,1)"});
-        if(ev.miss){setTimeout(()=>{monAnim(field,tpos,[{transform:"translateX(0)"},{transform:`translateX(${tpos==="foe"?28:-28}px)`},{transform:"translateX(0)"}],{duration:420,easing:"ease-out"});label(field,to,"Errou!","miss");},300);return 900;}
+        if(ev.miss){setTimeout(()=>{monAnim(field,tpos,[{transform:"translateX(0)"},{transform:`translateX(${String(tpos).startsWith("foe")?28:-28}px)`},{transform:"translateX(0)"}],{duration:420,easing:"ease-out"});label(field,to,"Errou!","miss");},300);return 900;}
         return 420;
       }
       // ataque especial: projétil, raio, raio elétrico…
@@ -216,7 +216,7 @@
       else if(sp==="slash"){t=200;}
       else t=travel(l,from,to,lk,{size:Math.max(22,from.s*.32),dur:480});
       if(ev.miss){
-        setTimeout(()=>{monAnim(field,tpos,[{transform:"translateX(0)"},{transform:`translateX(${tpos==="foe"?28:-28}px)`},{transform:"translateX(0)"}],{duration:420,easing:"ease-out"});label(field,to,"Errou!","miss");},t);
+        setTimeout(()=>{monAnim(field,tpos,[{transform:"translateX(0)"},{transform:`translateX(${String(tpos).startsWith("foe")?28:-28}px)`},{transform:"translateX(0)"}],{duration:420,easing:"ease-out"});label(field,to,"Errou!","miss");},t);
         return t+700;
       }
       return t;
@@ -281,10 +281,10 @@
     if(ev.k==="statusEnd"){const at=center(field,P(ev.side));burst(l,at,{shape:"star",colors:["#ffffff","#fff4b0"],glow:"#fff"},{n:10,size:10});return 650;}
     if(ev.k==="ability"){
       const pos=P(ev.side);
-      const pop=document.createElement("div");pop.className="ar7-p s-abpop "+pos;
+      const pop=document.createElement("div");pop.className="ar7-p s-abpop "+String(pos).replace("."," ");
       pop.innerHTML=`<small></small><b></b>`;pop.querySelector("small").textContent=ev.mon;pop.querySelector("b").textContent=ev.name;
       l.appendChild(pop);
-      anim(pop,[{transform:`translateX(${pos==="foe"?"-110%":"110%"})`,opacity:0},{transform:"translateX(0)",opacity:1,offset:.18},{transform:"translateX(0)",opacity:1,offset:.82},{transform:`translateX(${pos==="foe"?"-110%":"110%"})`,opacity:0}],{duration:1500,easing:"cubic-bezier(.2,.8,.3,1)"});
+      anim(pop,[{transform:`translateX(${String(pos).startsWith("foe")?"-110%":"110%"})`,opacity:0},{transform:"translateX(0)",opacity:1,offset:.18},{transform:"translateX(0)",opacity:1,offset:.82},{transform:`translateX(${pos==="foe"?"-110%":"110%"})`,opacity:0}],{duration:1500,easing:"cubic-bezier(.2,.8,.3,1)"});
       return 1100;
     }
     if(ev.k==="weather"&&!ev.end){

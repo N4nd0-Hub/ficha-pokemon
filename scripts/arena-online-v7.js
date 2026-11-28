@@ -50,10 +50,10 @@
   const qualityOf=v=>v<=49?0:v<=75?1:v<=100?2:v<=125?3:v<=150?4:v<=175?5:v<=200?6:v<=225?7:8;
   const pdiceOf=p=>p<=0?0:p<=20?1:p<=40?2:p<=60?3:p<=80?4:p<=100?5:6;
   const stageMul=n=>n>=0?(2+n)/2:2/(2-n);
-  function qdPreview(v,mine,move,power){
+  function qdPreview(v,mine,move,power,target){
     try{
-      const foe=mine==="p1"?"p2":"p1";
-      const A=B.teams[mine][v.sides[mine].active],D=B.teams[foe][v.sides[foe].active];
+      const foe=target&&v.sides[target]?target:(baseOf(mine)==="p1"?"p2":"p1");
+      const A=B.teams[baseOf(mine)][v.sides[mine].active],D=B.teams[baseOf(foe)][v.sides[foe].active];
       if(!A||!D||!power)return null;
       const phys=String(move.category||"").toLowerCase()==="physical";
       const ak=phys?"atk":"spa",dk=phys?"def":"spd";
@@ -74,6 +74,15 @@
     }catch(e){return null;}
   }
   let people={},chat=[],outgoing=null,incoming=null,myTeamCache=null;
+  /* Formato escolhido ao entrar: "single" (1 em campo) ou "double" (2 em campo de cada lado) */
+  let FMT=(()=>{try{return localStorage.getItem("hh_arena_fmt")==="double"?"double":"single";}catch(e){return "single";}})();
+  const dblOn=()=>FMT==="double";
+  /* posições em campo: na dupla cada treinador tem "pX" e "pXb" */
+  const baseOf=s=>String(s||"").slice(0,2);
+  const isDbl=()=>!!B?.view?.dbl;
+  const posList=side=>isDbl()?[side,side+"b"]:[side];
+  const upPos=p=>{const s=B?.view?.sides?.[p];if(!s||s.empty)return false;const st=s.team?.[s.active];return !!st&&!st.fainted;};
+  const posCls=s=>{const base=baseOf(s)===mySide()?"me":"foe";return isDbl()?`${base}.s${String(s).length>2?1:0}`:base;};
   // batalha atual: {id,role:'p1'|'p2'|'spec',host:bool,state,teams,format,opp,names,playing}
   let B=null;
   /* Desafio Sem Fim: corrida atual (time, HP que sobra entre ondas, onda) */
@@ -392,9 +401,9 @@
   /* ---------- Desafios ---------- */
   function challenge(to,format){
     const id="b"+uidShort();
-    outgoing={id,to,format,at:Date.now()};
+    outgoing={id,to,format,at:Date.now(),dbl:dblOn()&&format!==1};
     outgoing.arena=pickScene(scene);outgoing.dmg=dmgMode;
-    send(lobby,"challenge",{id,from:me.id,fromName:me.name,to,format,arena:outgoing.arena,dmg:outgoing.dmg});
+    send(lobby,"challenge",{id,from:me.id,fromName:me.name,to,format,arena:outgoing.arena,dmg:outgoing.dmg,dbl:outgoing.dbl});
     sfx("select");render();
     setTimeout(()=>{if(outgoing&&outgoing.id===id){send(lobby,"challenge-cancel",{id});outgoing=null;toast("O desafio expirou.");render();}},45000);
   }
@@ -409,19 +418,19 @@
     if(!incoming)return;
     const p=incoming;incoming=null;
     send(lobby,"challenge-reply",{id:p.id,to:p.from,from:me.id,accept});
-    if(accept)joinBattle({id:p.id,role:"p2",format:p.format,arena:p.arena,dmg:p.dmg,names:{p1:p.fromName,p2:me.name}});
+    if(accept)joinBattle({id:p.id,role:"p2",format:p.format,arena:p.arena,dmg:p.dmg,dbl:!!p.dbl,names:{p1:p.fromName,p2:me.name}});
     render();
   }
   function onReply(p){
     if(p.to!==me.id||!outgoing||outgoing.id!==p.id)return;
     const o=outgoing;outgoing=null;
     if(!p.accept){toast(p.busy?"O treinador está ocupado.":"Desafio recusado.");render();return;}
-    joinBattle({id:o.id,role:"p1",format:o.format,arena:o.arena,dmg:o.dmg,names:{p1:me.name,p2:people[o.to]?.name||"Rival"}});
+    joinBattle({id:o.id,role:"p1",format:o.format,arena:o.arena,dmg:o.dmg,dbl:!!o.dbl,names:{p1:me.name,p2:people[o.to]?.name||"Rival"}});
   }
 
   /* ---------- Batalha: rede ---------- */
-  async function joinBattle({id,role,format,names,arena,dmg}){
-    B={id,role,dmg:"matrix",arena:sceneOk(arena)?arena:"standard",host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
+  async function joinBattle({id,role,format,names,arena,dmg,dbl}){
+    B={id,role,dbl:!!dbl,done:new Set(),dmg:"matrix",arena:sceneOk(arena)?arena:"standard",host:role==="p1",format:Number(format)||3,names,state:null,teams:null,pendingTeams:{},specs:{},queue:[],playing:false,log:[],chosen:false};
     for(const k in lastHp)delete lastHp[k];
     sfx("page");render();
     battleCh=sb.channel("hh-arena-b:"+id,{config:{presence:{key:me.id},broadcast:{self:false}}});
@@ -497,7 +506,8 @@
     if(!B?.host||B.state)return;
     B.pendingTeams[p.side]={id:p.id,name:p.name,team:p.team};
     if(B.pendingTeams.p1&&B.pendingTeams.p2){
-      B.state=engine.newBattle({id:B.id,format:B.format,p1:B.pendingTeams.p1,p2:B.pendingTeams.p2,damage:B.dmg});
+      const two=B.dbl&&B.pendingTeams.p1.team.length>=2&&B.pendingTeams.p2.team.length>=2;
+      B.state=engine.newBattle({id:B.id,format:B.format,p1:B.pendingTeams.p1,p2:B.pendingTeams.p2,damage:B.dmg,slots:two?2:1});
       B.teams=B.state.teams;B.names={p1:B.pendingTeams.p1.name,p2:B.pendingTeams.p2.name};
       B.started=true;
       send(battleCh,"start",{teams:B.teams,state:pub(B.state),names:B.names,format:B.format,arena:B.arena,dmg:B.dmg});
@@ -508,27 +518,34 @@
     if(!B?.host||!B.state)return;
     if(turn!=null&&turn!==B.state.turn&&action.kind!=="forfeit")return;
     let ready=engine.submit(B.state,side,action);
-    if(B.solo&&side==="p1"&&!ready)ready=aiAct();
+    if(B.solo&&baseOf(side)==="p1"&&!ready)ready=aiAct();
     if(ready){engine.resolve(B.state);broadcastState();if(B.solo)soloFollowUp();}
     else{broadcastState(true);}
   }
   function aiAct(){
     if(!B?.solo||!B.state||B.state.phase==="end")return false;
-    if(!engine.canAct(B.state,"p2"))return false;
-    const a=SURV()?.choose(B.state,engine,"p2",aiRules);
-    return a?engine.submit(B.state,"p2",a):false;
+    let ready=false;
+    for(const pos of (B.state.dbl?["p2","p2b"]:["p2"])){
+      if(!B.state.sides[pos]||!engine.canAct(B.state,pos))continue;
+      let a=SURV()?.choose(B.state,engine,pos,aiRules);
+      if(B.state.dbl&&a?.kind==="switch"){const bench=engine.benchOf(B.state,pos);a=bench.length?{kind:"switch",idx:bench[0]}:null;}
+      if(B.state.dbl&&a?.kind==="move"){const foes=engine.foesOf(B.state,pos).filter(x=>{const sd=B.state.sides[x];return !sd.team[sd.active]?.fainted;});if(foes.length)a.target=foes[Math.floor(Math.random()*foes.length)];}
+      if(a)ready=engine.submit(B.state,pos,a)||ready;
+    }
+    return ready;
   }
   function soloFollowUp(){
     // o oponente troca sozinho quando o Pokémon dele desmaia
-    for(let k=0;k<4&&B?.state?.phase==="switch"&&B.state.sides.p2.needSwitch&&!B.state.sides.p2.pending;k++){
+    const p2need=()=>(B.state.dbl?["p2","p2b"]:["p2"]).some(x=>B.state.sides[x]&&B.state.sides[x].needSwitch&&!B.state.sides[x].pending);
+    for(let k=0;k<6&&B?.state?.phase==="switch"&&p2need();k++){
       const ready=aiAct();
       if(ready){engine.resolve(B.state);broadcastState();}else break;
     }
   }
   function pub(s){
     // estado sem os times (que já foram enviados no início)
-    return {id:s.id,format:s.format,turn:s.turn,phase:s.phase,winner:s.winner,reason:s.reason,events:s.events||[],
-      sides:Object.fromEntries(["p1","p2"].map(k=>[k,{name:s.sides[k].name,active:s.sides[k].active,needSwitch:s.sides[k].needSwitch,ready:!!s.sides[k].pending,
+    return {id:s.id,format:s.format,turn:s.turn,phase:s.phase,winner:s.winner,reason:s.reason,events:s.events||[],dbl:!!s.dbl,
+      sides:Object.fromEntries((s.dbl?["p1","p1b","p2","p2b"]:["p1","p2"]).map(k=>[k,{name:s.sides[k].name,active:s.sides[k].active,needSwitch:s.sides[k].needSwitch,ready:!!s.sides[k].pending,empty:!!s.sides[k].empty,
         team:s.sides[k].team.map(t=>({hp:t.hp,maxHp:t.maxHp,fainted:t.fainted,status:t.status||null})),...(engine.view?engine.view(s,k):{})}])),
       weather:s.weather?{...s.weather}:null};
   }
@@ -540,12 +557,25 @@
   }
 
   /* ---------- Batalha: ações do jogador ---------- */
-  function act(action){
+  function act(action,pos){
     if(!B||B.role==="spec"||!B.view)return;
-    B.chosen=true;B.sel={};B.bagOpen=false;sfx("select");buzz(8);
-    if(B.host)hostAction("p1",action,B.view.turn);
-    else send(battleCh,"action",{side:B.role,action,turn:B.view.turn});
+    pos=pos||B.cur||mySide();
+    if(baseOf(pos)!==mySide())return;
+    B.done=B.done||new Set();B.done.add(pos);
+    if(action.kind==="switch")B.picked=Object.assign(B.picked||{},{[pos]:action.idx});
+    // na dupla só espera quando os dois do time já escolheram
+    const left=posList(mySide()).filter(p=>!B.done.has(p)&&needsChoice(p));
+    B.chosen=!left.length;B.sel={};B.bagOpen=false;sfx("select");buzz(8);
+    if(B.host)hostAction(pos,action,B.view.turn);
+    else send(battleCh,"action",{side:pos,action,turn:B.view.turn});
     render();
+  }
+  /* esta posição ainda precisa escolher algo nesta fase? */
+  function needsChoice(p){
+    const v=B?.view,s=v?.sides?.[p];if(!s||s.empty)return false;
+    if(v.phase==="switch")return !!s.needSwitch&&!s.ready;
+    if(v.phase!=="choose")return false;
+    return !s.ready&&upPos(p);
   }
 
   /* ---------- Batalha: animação dos eventos ---------- */
@@ -555,7 +585,7 @@
     if(initial||!B.view){if(!B.view){B.intro=true;setTimeout(()=>{if(B){B.intro=false;if(!B.playing)render(true);}},2200);}B.view=JSON.parse(JSON.stringify(s));B.view.events=[];if(events.length)pushLog(events);render();return;}
     if(!events.length){
       // só mudou quem já escolheu
-      for(const k of ["p1","p2"])B.view.sides[k].ready=s.sides[k].ready;
+      for(const k of Object.keys(s.sides))if(B.view.sides[k])B.view.sides[k].ready=s.sides[k].ready;
       B.view.phase=s.phase;render();return;
     }
     B.queue.push(s);
@@ -572,13 +602,13 @@
         if(ev.k==="switch"){B.view.sides[ev.side].active=s.sides[ev.side].active;}
         if(ev.k==="faint"){B.view.sides[ev.side].team[B.view.sides[ev.side].active].fainted=true;}
         if(ev.k==="switch"||ev.k==="gimmick"||(ev.k==="item"&&ev.revived))render(true);else patch();
-        if(ev.k==="gimmick"){const el=root.querySelector(`.ar7-mon.${ev.side===mySide()?"me":"foe"}`);el?.classList.add("ar9-evolve",ev.kind);sfx("page");buzz([20,30,60]);}
-        if(ev.k==="evade"&&!ev.fail){const el=root.querySelector(`.ar7-mon.${ev.side===mySide()?"me":"foe"}`);el?.classList.remove("ar9-dodge");void el?.offsetWidth;el?.classList.add("ar9-dodge");}
+        if(ev.k==="gimmick"){const el=root.querySelector(`.ar7-mon.${posCls(ev.side)}`);el?.classList.add("ar9-evolve",ev.kind);sfx("page");buzz([20,30,60]);}
+        if(ev.k==="evade"&&!ev.fail){const el=root.querySelector(`.ar7-mon.${posCls(ev.side)}`);el?.classList.remove("ar9-dodge");void el?.offsetWidth;el?.classList.add("ar9-dodge");}
         const wait=animate(ev);
         await new Promise(r=>setTimeout(r,Math.max(wait||0,ev.k==="move"?450:ev.k==="hit"?(ev.hitNo&&ev.hitNo<ev.of?480:850):ev.k==="faint"?1000:ev.k==="gimmick"?1400:500)));
       }
       if(!B)return;
-      B.view=JSON.parse(JSON.stringify(s));B.view.events=[];B.chosen=false;
+      B.view=JSON.parse(JSON.stringify(s));B.view.events=[];B.chosen=false;B.done=new Set();B.picked={};
       if(B.view.phase==="end"){sfx(B.view.winner===B.role?"page":"select");buzz([30,40,30]);}
       if(!B.queue.length)B.playing=false;
       const prevTurn=B.shownTurn||1;
@@ -595,13 +625,13 @@
   }
   /* Gimmicks que o meu ativo ainda pode usar (vale também para quem não é o anfitrião) */
   function gimmicksFor(side){
-    const v=B.view.sides[side],mon=B.teams[side][v.active],g=mon?.gimmick||{},used=v.gim||{mega:null,tera:null,z:false};
+    const v=B.view.sides[side],mon=(B.teams[baseOf(side)]||B.teams[side])[v.active],g=mon?.gimmick||{},used=v.gim||{mega:null,tera:null,z:false};
     return {mega:used.mega==null&&used.tera!==v.active&&!mon.mega?(g.megaForms||[]):[],
       tera:used.tera==null&&used.mega!==v.active&&!mon.mega&&!mon.tera&&g.teraType?g.teraType:"",
       z:!used.z&&g.zType&&(mon.moves||[]).some(m=>String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.zType)?g.zType:""};
   }
-  function sideName(s){return B?.names?.[s]||s;}
-  function monName(side,idx){const t=B?.teams?.[side];const i=idx??B?.view?.sides?.[side]?.active;return t?.[i]?.name||"Pokémon";}
+  function sideName(s){return B?.names?.[baseOf(s)]||B?.names?.[s]||s;}
+  function monName(side,idx){const t=B?.teams?.[baseOf(side)]||B?.teams?.[side];const i=idx??B?.view?.sides?.[side]?.active;return t?.[i]?.name||"Pokémon";}
   function effText(m){return m===0?"Não teve efeito…":m>=4?"Extremamente efetivo!":m>=2?"É super efetivo!":m<=.25?"Quase não teve efeito…":m<=.5?"Não é muito efetivo…":"";}
   /* Atualiza o que a tela mostra a cada evento (HP, status, estágios, clima) */
   function applyEventToView(ev){
@@ -639,7 +669,8 @@
     for(const ev of events){
       let line="",cls="";
       if(ev.k==="move"){
-        line=`<b>${esc(ev.mon)}</b> (${esc(sideName(ev.side))}) usou <b class="ar7-mv" style="--t:${typeColor(ev.type)}">${esc(ev.move)}</b>!`;
+        line=ev.follow?`↳ <b class="ar7-mv" style="--t:${typeColor(ev.type)}">${esc(ev.move)}</b> também atinge <b>${esc(monName(ev.target))}</b>`
+          :`<b>${esc(ev.mon)}</b> (${esc(sideName(ev.side))}) usou <b class="ar7-mv" style="--t:${typeColor(ev.type)}">${esc(ev.move)}</b>${ev.target&&!ev.spread&&String(ev.category).toLowerCase()!=="status"?` em <b>${esc(monName(ev.target))}</b>`:ev.spread?" <small>(acerta vários)</small>":""}!`;
         if(ev.roll!=null)line+=` <span class="ar7-dice">🎲 d100 ${ev.roll}${ev.acc!=null?` / ${ev.acc}%`:""}</span>`;
         if(ev.z)line=`<b class="ar9-zline">Z-MOVE!</b> `+line+` <small>Power ${ev.power}</small>`;
         if(ev.miss){line+=ev.dodged?" — <i>esquivou!</i>":" — <i>errou!</i>";cls="miss";}
@@ -702,7 +733,7 @@
     B.log=B.log.slice(-80);
   }
   function animate(ev){
-    const pos=s=>(s===mySide()?"me":"foe");
+    const pos=s=>posCls(s);
     const field=root.querySelector(".ar7-field");if(!field)return 0;
     let wait=0;
     try{wait=window.hhArenaFx?.play(field,ev,{pos})||0;}catch(e){}
@@ -723,12 +754,13 @@
     const field=root.querySelector(".ar7-field");
     if(!B?.view||!field){render(true);return;}
     const mine=mySide(),foe=mine==="p1"?"p2":"p1";
-    for(const [side,pos] of [[foe,"foe"],[mine,"me"]]){
+    for(const side of [...posList(foe),...posList(mine)]){
+      const pos=posCls(side);
       const sp=field.querySelector(`.ar7-spot.${pos}`);if(!sp)continue;
-      const s=B.view.sides[side],st=s.team[s.active],pct=hpPct(st);
+      const s=B.view.sides[side];if(!s||s.empty)continue;const st=s.team[s.active],pct=hpPct(st);
       const hp=sp.querySelector(".ar7-hp");if(hp)hp.className="ar7-hp "+hpClass(pct);
       const bar=sp.querySelector(".ar7-hp i");if(bar){bar.dataset.to=pct;bar.style.setProperty("--w",pct+"%");}
-      lastHp[pos]=pct;
+      lastHp[side]=pct;
       const num=sp.querySelector(".ar7-hp-num");if(num)num.textContent=`${st.hp} / ${st.maxHp}`;
       sp.querySelectorAll(".ar7-balls i").forEach((b,i)=>b.classList.toggle("out",!!s.team[i]?.fainted));
       sp.querySelector(".ar7-mon")?.classList.toggle("fainted",!!st.fainted);
@@ -882,8 +914,15 @@
       </div>
       <div class="ar8-party" aria-label="Seu time">${Array.from({length:6},(_,i)=>{const p=slots[i];if(!p)return `<span class="ar8-slot empty">${PX("ball",22)}</span>`;const im=localImg(p);return `<span class="ar8-slot${i===0?" lead":""}" title="${esc(p.name)} • Lv. ${Number(p.level||1)}" style="--t:${typeColor(p.type1)}">${im?`<img src="${esc(im)}" alt="${esc(p.name)}">`:`<i>${esc((p.name||"?").slice(0,1))}</i>`}<small>Lv${Number(p.level||1)}</small></span>`;}).join("")}</div>
     </section>
-    ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.format>=6?"time todo":`${outgoing.format} vs ${outgoing.format}`} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
+    ${outgoing?`<section class="ar7-card ar7-wait"><b>Desafio enviado para ${esc(people[outgoing.to]?.name||"…")}</b><small>${outgoing.dbl?"Dupla · ":""}${outgoing.format>=6?"time todo":`${outgoing.format} vs ${outgoing.format}`} · aguardando resposta</small><button type="button" class="ar7-btn" data-ar="cancel">Cancelar</button></section>`:""}
     ${exploreCard()}
+    <section class="ar9-fmt" aria-label="Formato das batalhas">
+      <div class="ar9-fmt-txt"><b>Formato das batalhas</b><small>${dblOn()?"Dupla: 2 Pokémon em campo de cada lado. Golpes em área acertam os dois (×0,75).":"Simples: 1 Pokémon em campo de cada lado."} Vale para desafiar amigos, o Desafio Sem Fim e as cidades.</small></div>
+      <div class="ar9-fmt-btns" role="group" aria-label="Formato">
+        <button type="button" class="${dblOn()?"":"on"}" data-ar="fmt" data-v="single" aria-pressed="${!dblOn()}"><i>⚔</i>Simples<small>1 vs 1 em campo</small></button>
+        <button type="button" class="${dblOn()?"on":""}" data-ar="fmt" data-v="double" aria-pressed="${dblOn()}"><i>⚔⚔</i>Dupla<small>2 vs 2 em campo</small></button>
+      </div>
+    </section>
     <section class="ar8-modes">
       <article class="ar8-mode friends ar8-frame">
         <span class="ar8-mode-ico">${PX("swords",72)}</span>
@@ -936,7 +975,7 @@
         ${p.status==="idle"&&!outgoing&&myTeam.length?`<div class="ar7-formats" role="group" aria-label="Desafiar ${esc(p.name)}">
           <button type="button" class="ar7-btn primary ar7-ch-main" data-ar="challenge" data-to="${esc(p.id)}" data-format="6">⚔ Desafiar <small>time todo</small></button>
           <button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="3">3 vs 3</button>
-          <button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="1">1 vs 1</button></div>`:""}
+          ${dblOn()?`<button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="2">2 vs 2</button>`:`<button type="button" class="ar7-btn" data-ar="challenge" data-to="${esc(p.id)}" data-format="1">1 vs 1</button>`}</div>`:""}
       </li>`;}).join("")}</ul>`:`<div class="ar8-empty">${PX("people",48)}<p>${status==="on"?"Ninguém mais nesta sala ainda.":"Conectando…"}</p>${status==="on"?`<button type="button" class="ar7-btn primary" data-ar="share">🔗 Mandar convite</button>`:""}</div>`}
     </div>
     <div class="ar8-sec">
@@ -1040,7 +1079,7 @@
     const team=await buildTeam(6);
     if(!team.length){toast("Monte um time primeiro.");return;}
     RUN={wave:0,team,hp:team.map(m=>({hp:Math.max(1,Number(m.maxHp||1)),maxHp:Math.max(1,Number(m.maxHp||1)),fainted:false})),train:0,dmg:dmgMode,cleared:0,done:false,
-      region,mode:region?region.id:"endless",ppg:{},lastGains:[]};
+      region,mode:region?region.id:"endless",ppg:{},lastGains:[],dbl:dblOn()};
     RUN.id="run-"+uidShort();openRunCh();
     state.arenaAttempts=state.arenaAttempts||{};
     state.arenaAttempts[RUN.mode]=myAttempts(RUN.mode)+1;RUN.attempt=state.arenaAttempts[RUN.mode];
@@ -1080,14 +1119,15 @@
     sfx("page");render();track();
     const ref=Math.round(RUN.team.reduce((x,m)=>x+Number(m.level||1),0)/RUN.team.length);
     let wave;
-    try{wave=region?await SURV().makeRegionWave(region.id,RUN.wave):await SURV().makeWave(RUN.wave,ref);}
+    try{wave=region?await SURV().makeRegionWave(region.id,RUN.wave,{min:RUN.dbl?2:1}):await SURV().makeWave(RUN.wave,ref,{min:RUN.dbl?2:1});}
     catch(e){if(RUN){RUN.error="A PokéAPI não respondeu.";render();}return;}
     if(!B?.solo||!RUN)return;
     RUN.waveInfo=wave;
     const alive=RUN.team.map((m,i)=>i).filter(i=>!RUN.hp[i].fainted);
     RUN.alive=alive;
     const foeName=region?`${wave.label} · Andar ${RUN.wave}`:`${wave.boss?"Chefe da onda":wave.elite?"Elite da onda":"Onda"} ${RUN.wave}`;
-    B.state=engine.newBattle({id:B.id,format:6,damage:RUN.dmg,
+    B.done=new Set();
+    B.state=engine.newBattle({id:B.id,format:6,damage:RUN.dmg,slots:RUN.dbl&&alive.length>=2&&wave.team.length>=2?2:1,
       // no desafio da cidade, golpes e abilities curam só metade
       p1:{id:me.id,name:me.name,team:alive.map(i=>RUN.team[i]),items:true,healMult:region?.5:1},
       p2:{id:"cpu",name:foeName,team:wave.team}});
@@ -1481,7 +1521,7 @@
     return `<div class="ar7-modal" role="alertdialog" aria-modal="true" aria-labelledby="ar7ChTitle">
       <div class="ar7-modal-box"><span class="ar7-modal-ico" aria-hidden="true">⚔</span>
         <h3 id="ar7ChTitle">${esc(p.fromName)} te desafiou!</h3>
-        ${sceneOk(p.arena)?`<i class="ar7-modal-scene" style="background-image:url('assets/arenas/${esc(p.arena)}.png')"></i>`:""}<p>Formato: <b>${p.format===1?"1 vs 1":p.format>=6?"time todo (até 6)":`${p.format} vs ${p.format}`}</b>${sceneOk(p.arena)?` · Ambiente: <b>${esc(sceneLabel(p.arena))}</b>`:""} · <b>${DMG_LABEL[p.dmg==="matrix"?"matrix":"classic"]}</b>. Vai o time que você montou na arena (o primeiro começa).</p>
+        ${sceneOk(p.arena)?`<i class="ar7-modal-scene" style="background-image:url('assets/arenas/${esc(p.arena)}.png')"></i>`:""}<p>Formato: <b>${p.dbl?"⚔⚔ Dupla · ":""}${p.format===1?"1 vs 1":p.format>=6?"time todo (até 6)":`${p.format} vs ${p.format}`}</b>${sceneOk(p.arena)?` · Ambiente: <b>${esc(sceneLabel(p.arena))}</b>`:""} · <b>${DMG_LABEL[p.dmg==="matrix"?"matrix":"classic"]}</b>. Vai o time que você montou na arena (o primeiro começa).</p>
         <div class="ar7-modal-actions"><button type="button" class="ar7-btn" data-ar="decline">Recusar</button><button type="button" class="ar7-btn primary" data-ar="accept">Aceitar</button></div>
       </div></div>`;
   }
@@ -1521,19 +1561,23 @@
     if(v.sides.p1.trick>0)h+=`<b class="ar7-chip trick">🌀 Trick Room <small>${v.sides.p1.trick}</small></b>`;
     return h;
   }
-  function monCard(side,pos){
-    const v=B.view,s=v.sides[side],t=B.teams[side],m=t[s.active],st=s.team[s.active];
+  function monCard(side){
+    const v=B.view,s=v.sides[side];if(!s||s.empty)return "";
+    const t=B.teams[baseOf(side)]||B.teams[side],m=t[s.active],st=s.team[s.active];
+    if(!m||!st)return "";
+    const pc=posCls(side),cls=pc.replace("."," "),pos=pc.split(".")[0];
     const pct=hpPct(st);
-    return `<div class="ar7-spot ${pos}">
+    const tgt=isDbl()&&B.sel?.target===side&&pos==="foe"&&!B.playing;
+    return `<div class="ar7-spot ${cls}${tgt?" tgt":""}">
       <div class="ar7-hud"><div class="ar7-hud-name"><b>${esc(m.name)}</b><small>Lv. ${m.level}</small></div>
-        ${m.build&&pos==="foe"?`<small class="ar7-build">${esc(m.build)}${m.ability?` · ${esc(m.ability)}`:""}</small>`:""}
+        ${m.build&&pos==="foe"&&!isDbl()?`<small class="ar7-build">${esc(m.build)}${m.ability?` · ${esc(m.ability)}`:""}</small>`:""}
         ${m.item?.name&&!s.itemGone?`<small class="ar9-hud-item" title="Item segurado">🎒 ${esc(m.item.name)}</small>`:""}
         <div class="ar7-hud-types">${(m.types||[]).map(x=>`<i style="--t:${typeColor(x)};--td:${typeDark(x)}">${esc(x)}</i>`).join("")}</div>
-        <div class="ar7-hp ${hpClass(pct)}"><span>HP</span><div><i data-to="${pct}" style="--w:${lastHp[pos]??pct}%"></i></div>${pos==="me"?`<small class="ar7-hp-num">${st.hp} / ${st.maxHp}</small>`:""}</div>
-        <div class="ar7-balls">${s.team.map(x=>`<i class="${x.fainted?"out":""}"></i>`).join("")}</div>
+        <div class="ar7-hp ${hpClass(pct)}"><span>HP</span><div><i data-to="${pct}" style="--w:${lastHp[side]??pct}%"></i></div>${pos==="me"?`<small class="ar7-hp-num">${st.hp} / ${st.maxHp}</small>`:""}</div>
+        ${!isDbl()||String(side).length===2?`<div class="ar7-balls">${s.team.map(x=>`<i class="${x.fainted?"out":""}"></i>`).join("")}</div>`:""}
         <div class="ar7-badges">${hudBadges(s)}</div>
       </div>
-      <div class="ar7-mon ${pos}${st.fainted?" fainted":""}${B.intro?" intro":""}">${m.img?`<img src="${esc(m.img)}" alt="${esc(m.name)}">`:`<i>${esc(m.name.slice(0,1))}</i>`}</div>
+      <div class="ar7-mon ${cls}${st.fainted?" fainted":""}${B.intro?" intro":""}">${m.img?`<img src="${esc(m.img)}" alt="${esc(m.name)}">`:`<i>${esc(m.name.slice(0,1))}</i>`}</div>
     </div>`;
   }
   const lastHp={};
@@ -1550,25 +1594,37 @@
       panel=`<div class="ar7-result ${win===B.role?"win":win?"lose":""}"><b>${win?(B.role===win?"🏆 Você venceu!":B.role==="spec"?`🏆 ${esc(sideName(win))} venceu!`:"Você perdeu…"):"Batalha encerrada"}</b>
         <button type="button" class="ar7-btn primary" data-ar="leave">Voltar ao lobby</button></div>`;
     }else if(B.role==="spec"){
-      panel=`<div class="ar7-waiting">👁 Você está assistindo. ${["p1","p2"].map(s=>`${esc(sideName(s))}: ${v.sides[s].ready?"✓ escolheu":"pensando…"}`).join(" · ")}</div>`;
+      panel=`<div class="ar7-waiting">👁 Você está assistindo${isDbl()?" (dupla)":""}. ${["p1","p2"].map(s=>`${esc(sideName(s))}: ${v.sides[s].ready?"✓ escolheu":"pensando…"}`).join(" · ")}</div>`;
     }else{
-      const s=v.sides[mine],team=B.teams[mine];
+      const D=isDbl();
+      const myPos=posList(mine).filter(p=>v.sides[p]&&!v.sides[p].empty);
+      const cur=D?myPos.find(p=>needsChoice(p)&&!B.done?.has(p)):mine;
+      B.cur=cur||mine;
+      const s=v.sides[B.cur],team=B.teams[mine];
       const mustSwitch=v.phase==="switch"&&s.needSwitch;
-      const waitingSwitch=v.phase==="switch"&&!s.needSwitch;
+      const waitingSwitch=v.phase==="switch"&&(D?!cur:!s.needSwitch);
+      const step=D?`<small class="ar9-step">${myPos.indexOf(B.cur)+1}/${myPos.length}</small>`:"";
+      // alvo (dupla): oponentes de pé; padrão é o que está à frente
+      const foesUp=D?posList(foe).filter(upPos):[];
+      const sameSlot=foesUp.find(p=>(p.length>2)===(String(B.cur).length>2));
+      if(D&&!(B.sel?.target&&foesUp.includes(B.sel.target)))B.defTarget=sameSlot||foesUp[0]||"";
+      const tgt=D?(foesUp.includes(B.sel?.target)?B.sel.target:B.defTarget):"";
+      const partnerIdx=D?myPos.filter(p=>p!==B.cur).flatMap(p=>[v.sides[p].active,B.picked?.[p]]).filter(x=>x!=null):[];
       if(B.playing)panel=`<div class="ar7-waiting ar7-dots">Resolvendo o turno</div>`;
       else if(waitingSwitch)panel=`<div class="ar7-waiting">Esperando ${esc(sideName(foe))} escolher o próximo Pokémon…</div>`;
-      else if(s.ready||B.chosen)panel=`<div class="ar7-waiting">✓ Ação escolhida. Esperando ${esc(sideName(foe))}…</div>`;
+      else if((s.ready&&!D)||B.chosen||(D&&!cur))panel=`<div class="ar7-waiting">✓ ${D?"Ações escolhidas":"Ação escolhida"}. Esperando ${esc(sideName(foe))}…</div>`;
       else if(!mustSwitch&&B.bagOpen&&s.items)panel=`<p class="ar7-ask">🎒 Usar um item gasta a ação de <b>${esc(team[s.active].name)}</b>.</p>${bagPanel(false)}<button type="button" class="ar7-btn" data-ar="bag-close">← Voltar aos golpes</button>`;
       else{
         const mon=team[s.active];
         const sel=B.sel||(B.sel={});
-        const g=gimmicksFor(mine);
+        const g=gimmicksFor(B.cur);
         const zOn=sel.gimmick==="z";
         const streak=s.evadeStreak||0;
-        panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} ${s.team?.[s.active]&&!s.team[s.active].fainted?"saiu de campo pelo item!":"desmaiou!"} Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer?</p>`}
+        panel=`${mustSwitch?`<p class="ar7-ask">${esc(mon.name)} ${s.team?.[s.active]&&!s.team[s.active].fainted?"saiu de campo pelo item!":"desmaiou!"} Escolha o próximo:</p>`:`<p class="ar7-ask">O que <b>${esc(mon.name)}</b> vai fazer? ${step}</p>`}
+          ${D&&!mustSwitch&&!s.forced&&foesUp.length>1?`<div class="ar9-targets" role="group" aria-label="Escolha o alvo"><span>🎯 Alvo:</span>${foesUp.map(p=>{const fm=B.teams[foe][v.sides[p].active];return `<button type="button" class="${tgt===p?"on":""}" data-ar="target" data-v="${esc(p)}" aria-pressed="${tgt===p}">${fm?.img?`<img src="${esc(fm.img)}" alt="" width="28" height="28">`:""}${esc(fm?.name||"?")}</button>`;}).join("")}</div>`:""}
           ${!mustSwitch&&s.forced?`<div class="ar9-forced"><p>${s.forced==="recharge"?`<b>${esc(mon.name)}</b> precisa recarregar depois do golpe forte.`:`<b>${esc(mon.name)}</b> continua o <b>${esc(s.forced)}</b>${s.semi?" (ainda invulnerável)":""}.`}</p><button type="button" class="ar7-btn primary" data-ar="move" data-idx="${s.forcedIdx??0}">▶ Continuar</button></div>`:""}
           ${mustSwitch||s.forced?"":`<div class="ar7-moves">${mon.moves.map((m,i)=>{const zOk=zOn&&g.z&&String(m.category).toLowerCase()!=="status"&&normalizeTypeName(m.type)===g.z;const locked=(s.lock!=null&&s.lock!==i)||(s.encore!=null&&s.encore!==i)||s.disable===i||(s.taunt>0&&String(m.category).toLowerCase()==="status");const zp=zOk?engine.zPower(m.power):0;return `<button type="button" class="ar7-move${zOk?" zmove":""}" data-ar="move" data-idx="${i}" ${(zOn&&!zOk)||locked?"disabled":""} ${locked?`title="Bloqueado (Choice, Encore, Disable ou Taunt)"`:""} style="--t:${typeColor(m.type)};--td:${typeDark(m.type)}" title="${esc(m.desc)}">
-            <b>${zOk?"Z-":""}${esc(m.name)}</b><small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${(()=>{const q=m.power?qdPreview(v,mine,m,zOk?zp:Number(m.power)):null;const dmg=q?` · <em class="ar9-qd${q.mult>1?" se":q.mult<1?" nve":""}" title="${esc(q.title)}">${esc(q.label)}</em>`:"";return zOk?`${dmg} · não erra`:`${dmg}${m.accuracy!=null?` · ${m.accuracy}%`:""}`;})()}</small></button>`;}).join("")}</div>
+            <b>${zOk?"Z-":""}${esc(m.name)}</b>${D&&engine.spreadKind?.(m.name)?`<em class="ar9-spread" title="Acerta ${engine.spreadKind(m.name)==="all"?"todos em volta, até o parceiro":"os dois oponentes"} com ×0,75">${engine.spreadKind(m.name)==="all"?"TODOS":"2 ALVOS"}</em>`:""}<small>${esc(m.type)} · ${m.category==="Physical"?"Físico":m.category==="Special"?"Especial":"Status"}${(()=>{const q=m.power?qdPreview(v,B.cur,m,zOk?zp:Number(m.power),tgt||undefined):null;const dmg=q?` · <em class="ar9-qd${q.mult>1?" se":q.mult<1?" nve":""}" title="${esc(q.title)}">${esc(q.label)}</em>`:"";return zOk?`${dmg} · não erra`:`${dmg}${m.accuracy!=null?` · ${m.accuracy}%`:""}`;})()}</small></button>`;}).join("")}</div>
           <div class="ar9-tactics">
             ${g.mega.length||g.tera||g.z?`<div class="ar9-gims" role="group" aria-label="Gimmicks (uma de cada por batalha)">
               ${g.mega.map((f,i)=>`<button type="button" class="ar9-gim mega${sel.gimmick==="mega"&&(sel.form||0)===i?" on":""}" data-ar="gim" data-v="mega" data-form="${i}" aria-pressed="${sel.gimmick==="mega"&&(sel.form||0)===i}" title="Mega Evolui antes de atacar: ${esc(f.name)} (${esc((f.types||[]).join("/"))})"><i>◆</i>${g.mega.length>1?esc(f.name):"Mega Evoluir"}</button>`).join("")}
@@ -1584,16 +1640,16 @@
             ${streak>=2?`<p class="ar9-tired">${streak>=3?"⚠ Cansado: a próxima evasão custa 1/16 do HP.":"Mais uma evasão seguida e o cansaço começa."}</p>`:""}
           </div>`}
           <p class="ar7-party-title">${mustSwitch?"Escolha quem entra:":`Trocar Pokémon <small>(gasta o turno)</small>`}</p>
-          <div class="ar7-party">${team.map((m,i)=>{const st=s.team[i];const dis=st.fainted||i===s.active;return `<button type="button" class="ar7-switch" data-ar="switch" data-idx="${i}" ${dis?"disabled":""} title="Trocar para ${esc(m.name)}">
+          <div class="ar7-party">${team.map((m,i)=>{const st=s.team[i];const dis=st.fainted||i===s.active||partnerIdx.includes(i);return `<button type="button" class="ar7-switch" data-ar="switch" data-idx="${i}" ${dis?"disabled":""} title="Trocar para ${esc(m.name)}">
             ${m.img?`<img src="${esc(m.img)}" alt="" width="34" height="34">`:`<i>${esc(m.name.slice(0,1))}</i>`}<span><b>${esc(m.name)}</b><small class="${hpClass(hpPct(st))}">${st.fainted?"desmaiado":`${st.hp}/${st.maxHp}`}</small></span></button>`;}).join("")}</div>
           ${mustSwitch?"":RUN?.wild?`<button type="button" class="ar7-btn ar7-forfeit" data-ar="wild-flee">🏃 Fugir</button>`:`<button type="button" class="ar7-btn ar7-forfeit" data-ar="forfeit">🏳 Desistir</button>`}`;
       }
     }
     return `<section class="ar7-battle">
       <div class="ar7-vs"><b>${esc(sideName(foe))}</b><span>VS</span><b>${esc(sideName(mine))}</b><small>${B.role==="spec"&&B.sub?`${esc(B.sub)} · `:""}${B.solo&&RUN?.attempt?`🔁 ${RUN.attempt}ª tentativa · `:""}${B.solo&&RUN?.region?`⛰ ${esc(RUN.region.area)} · Andar ${RUN.wave} · ${RUN.waveInfo?.depth||RUN.wave*40} m${RUN.waveInfo?.boss?" · GUARDIÃO":RUN.waveInfo?.elite?" · Montanhista":""} · `:B.solo?`🗼 Onda ${RUN?.wave||1}${RUN?.waveInfo?.boss?" · CHEFE":RUN?.waveInfo?.elite?" · Elite":""} · `:""}Turno ${v.turn}${specs.length?` · 👁 ${specs.length}`:""}${B.dmg==="matrix"?"":" · Dano antigo (d6)"}</small></div>
-      <div class="ar7-field" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
+      <div class="ar7-field${isDbl()?" dbl":""}" data-scene="${esc(B.arena||"standard")}" data-weather="${esc(B.view.weather?.kind||"")}" style="--ar7-t:-${(performance.now()/1000).toFixed(2)}s">
         <div class="ar7-fx" aria-hidden="true"></div><i class="ar7-plat foe" aria-hidden="true"></i><i class="ar7-plat me" aria-hidden="true"></i>
-        ${monCard(foe,"foe")}${monCard(mine,"me")}
+        ${posList(foe).map(p=>monCard(p)).join("")}${posList(mine).map(p=>monCard(p)).join("")}
         ${B.intro?`<div class="ar7-vsintro" aria-hidden="true"><b class="l">${esc(sideName(foe))}</b><span>VS</span><b class="r">${esc(sideName(mine))}</b></div>`:""}
         <div class="ar7-wx" aria-hidden="true"></div>
         <div class="ar7-chips">${fieldChips()}</div>
@@ -1613,6 +1669,7 @@
     const b=e.target.closest("[data-ar]");if(!b)return;
     const a=b.dataset.ar;
     if(a==="close")close();
+    else if(a==="fmt"){FMT=b.dataset.v==="double"?"double":"single";try{localStorage.setItem("hh_arena_fmt",FMT);}catch(err){}sfx("select");render(true);}
     else if(a==="explore"){window.hhExplore?.open({from:"arena"});}
     else if(a==="retry"){status="off";connect();}
     else if(a==="room")switchRoom(document.getElementById("ar7Room")?.value);
@@ -1626,7 +1683,8 @@
     else if(a==="decline")reply(false);
     else if(a==="watch")spectate(b.dataset.id,{p1:b.dataset.p1,p2:b.dataset.p2});
     else if(a==="leave"){if(B&&B.role!=="spec"&&B.view&&B.view.phase!=="end"&&!confirm("Sair agora conta como desistência. Sair?"))return;leaveBattle();render();}
-    else if(a==="move"){const sel=B?.sel||{};act({kind:"move",idx:Number(b.dataset.idx),react:!!sel.react,gimmick:sel.gimmick||"",form:sel.form||0});}
+    else if(a==="move"){const sel=B?.sel||{};act({kind:"move",idx:Number(b.dataset.idx),react:!!sel.react,gimmick:sel.gimmick||"",form:sel.form||0,target:isDbl()?(sel.target||B.defTarget||""):""});}
+    else if(a==="target"){const sel=B.sel=B.sel||{};sel.target=b.dataset.v;sfx("select");render(true);}
     else if(a==="gim"){const sel=B.sel=B.sel||{};const v=b.dataset.v,f=Number(b.dataset.form||0);if(sel.gimmick===v&&(sel.form||0)===f)sel.gimmick="";else{sel.gimmick=v;sel.form=f;}sfx("select");render(true);}
     else if(a==="react"){const sel=B.sel=B.sel||{};sel.react=!sel.react;sfx("select");render(true);}
     else if(a==="evade")act({kind:"evade"});
@@ -1636,7 +1694,7 @@
     else if(a==="bag-use"){
       const it=bagList().find(x=>x.slug===b.dataset.slug);if(!it)return;
       const idx=Number(b.dataset.idx);
-      if(it.spec.kind==="stage"&&idx!==B.view.sides[mySide()].active){toast("Itens de estágio só no Pokémon em campo.");return;}
+      if(it.spec.kind==="stage"&&!posList(mySide()).some(p=>B.view.sides[p]?.active===idx)){toast("Itens de estágio só no Pokémon em campo.");return;}
       if(!spendItem(it.slug))return;
       B.bagOpen=false;B.bagItem="";
       act({kind:"item",target:idx,slug:it.slug,name:it.name,effect:it.spec});

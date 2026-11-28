@@ -199,8 +199,9 @@
     if(info.region&&info.boss)foe.gimmick={teraType:(REGIONS[info.region]||{}).type||""};
     return foe;
   }
-  async function makeRegionWave(regionId,n){
+  async function makeRegionWave(regionId,n,opt={}){
     const info=regionInfo(regionId,n);
+    if(opt.min&&info.count<opt.min)info.count=opt.min;
     const pool=await typePool(REGIONS[info.region].type);
     const avoid=new Set(),team=[];
     for(let i=0;i<info.count;i++){
@@ -211,8 +212,9 @@
     return {...info,team};
   }
 
-  async function makeWave(n,refLevel){
+  async function makeWave(n,refLevel,opt={}){
     const info=waveInfo(n,refLevel);
+    if(opt.min&&info.count<opt.min)info.count=opt.min;
     const avoid=new Set();
     const team=[];
     for(let i=0;i<info.count;i++)team.push(await makeFoe(info,avoid));
