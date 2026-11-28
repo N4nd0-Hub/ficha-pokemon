@@ -1,7 +1,9 @@
 /* ============================================================
    V7 — Página 04 · Centro de Treinamento
    ============================================================ */
-.tr7{--ink:#14161f;--paper:#fffdf3;--soft:#efe7cf;--mut:#6a5a30;--gold:#ffd23f;display:grid;gap:14px;color:#1b1d2a}
+.tr7{--ink:#14161f;--paper:#fffdf3;--soft:#efe7cf;--mut:#6a5a30;--gold:#ffd23f;color:#1b1d2a}
+.tr7.page.active{display:grid;gap:14px}
+.tr7.page:not(.active){display:none!important}
 .tr7 .tr7-legacy{display:none!important}
 
 /* topo */
