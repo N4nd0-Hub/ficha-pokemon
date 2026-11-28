@@ -1052,3 +1052,54 @@ html[data-theme-skin] .ar7{background:var(--sk-body,var(--bg,#121316))}
 .ar9-forced p{margin:0;font-size:13px}
 .ar7-chip.w-snow{background:rgba(150,200,235,.9);color:#10304a}
 .ar9-hitno{font-style:normal;font-weight:900;padding:0 5px;border-radius:6px;background:#e0393e;color:#fff;margin-right:3px}
+
+/* ============================================================
+   Batalha em dupla (2 Pokémon em campo de cada lado)
+   ============================================================ */
+.ar9-fmt{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border:3px solid var(--cl-ink,#181a24);border-radius:16px;background:var(--cl-card,#fffdf3);box-shadow:0 4px 0 var(--cl-ink,#181a24)}
+.ar9-fmt-txt{flex:1;min-width:220px;display:grid;gap:2px}
+.ar9-fmt-txt b{font-size:14px}.ar9-fmt-txt small{font-size:11px;opacity:.8;line-height:1.35}
+.ar9-fmt-btns{display:flex;gap:6px}
+.ar9-fmt-btns button{display:grid;justify-items:center;gap:1px;min-width:112px;padding:7px 12px;border:3px solid var(--cl-ink,#181a24);border-radius:12px;background:#efe7cf;color:#222;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 3px 0 var(--cl-ink,#181a24)}
+.ar9-fmt-btns button i{font-style:normal;font-size:15px}
+.ar9-fmt-btns button small{font-size:9px;font-weight:700;opacity:.75}
+.ar9-fmt-btns button.on{background:linear-gradient(180deg,#ffd45a,#e3a012);box-shadow:0 3px 0 var(--cl-ink,#181a24),0 0 0 3px rgba(255,210,63,.45)}
+.ar9-fmt-btns button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--cl-ink,#181a24)}
+
+.ar9-targets{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 8px}
+.ar9-targets>span{font-weight:800;font-size:12px}
+.ar9-targets button{display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 4px;border:2px solid var(--cl-ink,#181a24);border-radius:10px;background:#fff;color:#222;font-weight:800;font-size:12px;cursor:pointer}
+.ar9-targets button img{object-fit:contain}
+.ar9-targets button.on{background:#ffe0de;box-shadow:0 0 0 3px #e3262f}
+.ar9-step{display:inline-block;margin-left:4px;padding:1px 6px;border-radius:6px;background:#181a24;color:#fff;font-size:10px;vertical-align:middle}
+.ar9-spread{display:inline-block;margin-left:5px;padding:0 5px;border-radius:5px;background:rgba(0,0,0,.35);color:#fff;font-style:normal;font-size:8px;letter-spacing:.04em;vertical-align:middle}
+
+/* campo da dupla: dois sprites de cada lado */
+.ar7-field.dbl .ar7-mon.foe.s0{right:30%;top:12%;width:20%;height:36%}
+.ar7-field.dbl .ar7-mon.foe.s1{right:6%;top:6%;width:20%;height:36%}
+.ar7-field.dbl .ar7-mon.me.s0{left:1%;bottom:5%;width:28%;height:52%}
+.ar7-field.dbl .ar7-mon.me.s1{left:27%;bottom:1%;width:28%;height:52%}
+.ar7-field.dbl .ar7-plat.foe{right:2%;width:50%}
+.ar7-field.dbl .ar7-plat.me{width:66%}
+.ar7-field.dbl .ar7-hud{width:min(260px,34%);padding:4px 8px 5px}
+.ar7-field.dbl .ar7-hud .ar7-hud-name b{font-size:12px}
+.ar7-field.dbl .ar7-spot.foe.s0 .ar7-hud{left:2%;top:3%}
+.ar7-field.dbl .ar7-spot.foe.s1 .ar7-hud{left:2%;top:calc(3% + 90px)}
+.ar7-field.dbl .ar7-spot.me.s0 .ar7-hud{right:2%;bottom:calc(5% + 84px)}
+.ar7-field.dbl .ar7-spot.me.s1 .ar7-hud{right:2%;bottom:5%}
+.ar7-field.dbl .ar7-spot.me .ar7-hud::after{display:none}
+.ar7-field.dbl .ar7-spot.foe.s0 .ar7-dmg{right:36%;top:14%}
+.ar7-field.dbl .ar7-spot.foe.s1 .ar7-dmg{right:12%;top:8%}
+.ar7-field.dbl .ar7-spot.me.s0 .ar7-dmg{left:10%;top:44%}
+.ar7-field.dbl .ar7-spot.me.s1 .ar7-dmg{left:36%;top:48%}
+.ar7-field.dbl .ar7-spot.foe.tgt .ar7-mon img{filter:drop-shadow(0 0 0 #e3262f) drop-shadow(0 0 6px rgba(227,38,47,.9))}
+.ar7-field.dbl .ar7-spot.foe.tgt .ar7-hud{box-shadow:0 0 0 3px #e3262f}
+@media (max-width:640px){
+  .ar7-field.dbl .ar7-hud{width:46%;padding:3px 6px 4px}
+  .ar7-field.dbl .ar7-mon.foe.s0{right:34%;top:16%;width:26%;height:30%}
+  .ar7-field.dbl .ar7-mon.foe.s1{right:4%;top:10%;width:26%;height:30%}
+  .ar7-field.dbl .ar7-mon.me.s0{left:0;width:36%;height:44%}
+  .ar7-field.dbl .ar7-mon.me.s1{left:34%;width:36%;height:44%}
+  .ar7-field.dbl .ar7-spot.foe.s1 .ar7-hud{top:calc(3% + 62px)}
+  .ar7-field.dbl .ar7-spot.me.s0 .ar7-hud{bottom:calc(5% + 64px)}
+}
