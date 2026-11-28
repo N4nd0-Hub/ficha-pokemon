@@ -202,3 +202,5 @@ i.it7-px{font-style:normal;display:inline-grid;place-items:center;font-size:16px
 .it7-stage .it7-name{color:#1b1d2a}
 .it7-stage .it7-sub{color:#3a3f52;opacity:1}
 .it7-stage .it7-sub b{color:#1b1d2a}
+/* sem piscar: a entrada só anima ao abrir a Mochila */
+.it7.settled .it7-win,.it7.settled .it7-slot{animation:none}

@@ -280,3 +280,6 @@ body.ex7-open{overflow:hidden}
 .ex7-gmacts{display:flex;flex-wrap:wrap;gap:6px}
 /* o aviso "Salvo às…" fica no canto inferior direito: some enquanto a Exploração está aberta */
 body.ex7-open #hhLocalSaveButton{display:none!important}
+/* sem piscar: a janela só anima ao abrir; caixas só animam quando são novas */
+.ex7.settled .ex7-win{animation:none}
+.ex7.still .ex7-modal,.ex7.still .ex7-card,.ex7.still .ex7-foeimg img,.ex7.still .ex7-pop,.ex7.still .ex7-shake,.ex7.still .ex7-stars{animation:none}
