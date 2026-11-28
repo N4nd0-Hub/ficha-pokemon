@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta name="hh-build" content="20261128a2">
+<meta name="hh-build" content="20261128b2">
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#e0393e" />
@@ -57,6 +57,7 @@
 <link rel="stylesheet" href="styles/items-v7.css?v=20261127z2" />
 <link rel="stylesheet" href="styles/explore-v7.css?v=20261127z2" />
 <link rel="stylesheet" href="styles/tm-gift-v7.css?v=20261127y1" />
+<link rel="stylesheet" href="styles/training-v7.css?v=20261128b2" />
 <link rel="stylesheet" href="styles/stat-chart-v7.css?v=20261127q3" />
 <link rel="stylesheet" href="styles/mobile-polish-v6.css?v=20261125m" />
 <link rel="stylesheet" href="styles/encyclopedia-device-v6.css?v=20261109-archive-2" />
@@ -1259,58 +1260,98 @@
         </div>
       </div>
 
-      <div class="page misc-page-v5" id="page3">
-        <section class="misc-menu-hero" aria-labelledby="miscMenuTitle">
-          <div class="misc-menu-copy">
-            <span class="misc-menu-kicker">PÁGINA 04 • MENU DO POKÉMON</span>
-            <h3 id="miscMenuTitle">Treino & Inventário</h3>
-            <p>Gerencie progressão, treinos, itens, Abilities extras e anotações sem sair da ficha.</p>
+      <div class="page misc-page-v5 tr7" id="page3">
+        <section class="tr7-hero" aria-labelledby="miscMenuTitle">
+          <div class="tr7-hero-art" id="tr7Art" aria-hidden="true"></div>
+          <div class="tr7-hero-copy">
+            <span class="tr7-kicker">PÁGINA 04 • CENTRO DE TREINAMENTO</span>
+            <h3 id="miscMenuTitle">Centro de Treinamento</h3>
+            <p id="tr7Sub">Ensine golpes novos: marque os sucessos de cada treino na mesa até o golpe ser aprendido.</p>
           </div>
-          <div class="misc-menu-status" aria-label="Resumo da página">
-            <div><span>PPg</span><b id="miscOverviewPpg">0 / 15</b></div>
-            <div><span>Treinos</span><b id="miscOverviewTraining">0</b></div>
-            <div><span>Itens</span><b id="miscOverviewItems">0</b></div>
-            <div><span>Abilities</span><b id="miscOverviewAbilities">0</b></div>
+          <div class="tr7-hero-stats" aria-label="Resumo dos treinos">
+            <div><span>Em treino</span><b id="miscOverviewTraining">0</b></div>
+            <div class="today"><span>Treino de hoje</span><b id="tr7Active">—</b></div>
+            <div><span>Prontos</span><b id="tr7Ready">0</b></div>
+            <div><span>TMs</span><b id="tr7Tms">0</b></div>
           </div>
         </section>
 
-        <div class="misc-options-stack">
-          <section class="panel misc-option-panel misc-option-training" data-misc-key="training">
-            <div class="panel-head">
-              <div class="misc-option-heading">
-                <span class="misc-option-icon" aria-hidden="true">TR</span>
-                <div><h2>Laboratório de Treinamento</h2><span class="eyebrow">Moves • 1 treino ativo por descanso</span></div>
-              </div>
-              <button class="misc-option-toggle" type="button" aria-label="Minimizar ou expandir Laboratório de Treinamento"><span>−</span><small>RECOLHER</small></button>
-            </div>
-            <div class="panel-body">
-              <div class="misc-training-rules" aria-label="Regras rápidas de treinamento">
-                <div class="misc-rule-chip"><b>5 sucessos</b><span>Move aprendido naturalmente.</span></div>
-                <div class="misc-rule-chip"><b>10 sucessos</b><span>Ilegal, Egg Move ou TM raro.</span></div>
-                <div class="misc-rule-chip"><b>Crítico = +2</b><span>Um crítico vale dois sucessos.</span></div>
-              </div>
-              <div class="move-auto-tools misc-search-row">
-                <input class="input" id="trainingMoveApiLookup" list="officialMoveSuggestions" placeholder="Buscar Move oficial ou exclusivo..." />
-                <button class="btn" id="trainingMoveApiLookupBtn">🔎 Preencher Move</button>
-              </div>
-              <div class="move-auto-status" id="trainingMoveApiLookupStatus"></div>
-              <div class="training-form misc-training-form">
-                <div class="field training-name"><label>Nome do Move</label><input class="input" id="trainingMoveName" placeholder="Ex.: Flamethrower" /></div>
-                <div class="field"><label>Tipo</label><input class="input" id="trainingElementType" placeholder="Ex.: Fire" /></div>
-                <div class="field"><label>Categoria</label><select class="input" id="trainingCategory"><option value="Physical">Physical</option><option value="Special">Special</option><option value="Status">Status</option></select></div>
-                <div class="field"><label>Power</label><input class="input" id="trainingPower" type="number" min="0" value="0" /></div>
-                <div class="field"><label>Accuracy</label><input class="input" id="trainingAccuracy" type="number" min="0" max="90" value="90" /></div>
-                <div class="field training-kind"><label>Tipo de Treino</label><select class="input" id="trainingMoveType"><option value="natural">Natural • 5 sucessos</option><option value="rare">Ilegal / Ovo / TM Raro • 10 sucessos</option></select></div>
-                <button class="btn primary training-start" id="addTrainingMoveBtn">＋ Iniciar Treino</button>
-              </div>
-              <div class="move-extra-form misc-training-extra">
-                <div class="field"><label>Chance do Efeito (%)</label><input class="input" id="trainingEffectChance" type="number" min="0" max="100" value="0" /></div>
-                <div class="field"><label>Descrição / Efeito do Move</label><textarea class="input" id="trainingDescription" placeholder="Ex.: 30% de chance de causar Paralysis..."></textarea></div>
-              </div>
-              <div class="training-list" id="trainingMovesList"></div>
-            </div>
+        <ul class="tr7-rules" aria-label="Regras de treino">
+          <li><b>5</b><span>sucessos<br>golpe natural</span></li>
+          <li><b>10</b><span>ilegal, ovo<br>ou TM raro</span></li>
+          <li class="tm"><b>1</b><span>TM legal<br>para a espécie</span></li>
+          <li class="tm"><b>3</b><span>TM ilegal<br>(3 dias)</span></li>
+          <li class="crit"><b>+2</b><span>crítico vale<br>dois sucessos</span></li>
+          <li class="sun"><b>☀</b><span>1 treino ativo<br>por descanso</span></li>
+        </ul>
+
+        <div class="tr7-grid">
+          <section class="tr7-board" aria-labelledby="tr7BoardTitle">
+            <header class="tr7-board-head"><h2 id="tr7BoardTitle">Quadro de treinos</h2><small>O treino de hoje fica no topo. Golpes prontos aparecem com “Aprender”.</small></header>
+            <div class="training-list tr7-list" id="trainingMovesList"></div>
           </section>
 
+          <aside class="tr7-side">
+            <section class="tr7-card tr7-new" aria-labelledby="tr7NewTitle">
+              <h2 id="tr7NewTitle"><span class="tr7-ico">＋</span>Novo treino</h2>
+              <div class="move-auto-tools tr7-search">
+                <input class="input" id="trainingMoveApiLookup" list="officialMoveSuggestions" placeholder="Buscar golpe oficial ou exclusivo…" />
+                <button class="btn" id="trainingMoveApiLookupBtn" type="button">🔎 Preencher</button>
+              </div>
+              <div class="move-auto-status" id="trainingMoveApiLookupStatus"></div>
+              <div class="training-form tr7-form">
+                <div class="field tr7-wide"><label for="trainingMoveName">Golpe</label><input class="input" id="trainingMoveName" placeholder="Ex.: Flamethrower" /></div>
+                <div class="field"><label for="trainingElementType">Tipo</label><input class="input" id="trainingElementType" placeholder="Ex.: Fire" /></div>
+                <div class="field"><label for="trainingCategory">Categoria</label><select class="input" id="trainingCategory"><option value="Physical">Físico</option><option value="Special">Especial</option><option value="Status">Status</option></select></div>
+                <div class="field"><label for="trainingPower">Power</label><input class="input" id="trainingPower" type="number" min="0" value="0" /></div>
+                <div class="field"><label for="trainingAccuracy">Precisão</label><input class="input" id="trainingAccuracy" type="number" min="0" max="90" value="90" /></div>
+                <div class="field tr7-wide"><label for="trainingMoveType">Tipo de treino</label><select class="input" id="trainingMoveType"><option value="natural">Natural · 5 sucessos</option><option value="rare">Ilegal / Ovo / TM raro · 10 sucessos</option></select></div>
+              </div>
+              <details class="tr7-more">
+                <summary>Efeito do golpe (opcional)</summary>
+                <div class="move-extra-form">
+                  <div class="field"><label for="trainingEffectChance">Chance do efeito (%)</label><input class="input" id="trainingEffectChance" type="number" min="0" max="100" value="0" /></div>
+                  <div class="field"><label for="trainingDescription">Descrição</label><textarea class="input" id="trainingDescription" placeholder="Ex.: 30% de chance de causar Paralysis…"></textarea></div>
+                </div>
+              </details>
+              <button class="btn primary training-start tr7-start" id="addTrainingMoveBtn" type="button">Começar treino</button>
+            </section>
+
+            <section class="tr7-card tr7-tms" aria-labelledby="tr7TmTitle">
+              <h2 id="tr7TmTitle"><span class="tr7-ico">💿</span>TMs na Mochila</h2>
+              <div id="tr7TmList" class="tr7-tmlist"></div>
+              <button class="btn tr7-tmopen" id="tr7TmOpen" type="button">Abrir o Criador de TM</button>
+            </section>
+          </aside>
+        </div>
+
+        <div class="tr7-extras">
+          <details class="tr7-card tr7-fold" id="tr7Abilities">
+            <summary><span class="tr7-ico">✦</span><b>Abilities extras</b><small><span id="miscOverviewAbilities">0</span> na memória · <span id="abilityBankCount">379</span> no compêndio</small></summary>
+            <div class="tr7-fold-body">
+              <div class="misc-ability-tools misc-search-row">
+                <input class="input" id="abilitySystemLookup" list="systemAbilitySuggestions" placeholder="Buscar Ability, ex.: Adaptability..." />
+                <button class="btn" id="abilitySystemLookupBtn" type="button">🔎 Preencher</button>
+              </div>
+              <div class="move-auto-status" id="abilitySystemLookupStatus"></div>
+              <datalist id="systemAbilitySuggestions"></datalist>
+              <div class="misc-ability-entry">
+                <div class="ability-create-grid"><input class="input" id="memoryAbilityName" placeholder="Nome da Ability" /><button class="btn primary" id="addMemoryAbilityBtn" type="button">＋ Adicionar</button></div>
+                <textarea class="input" id="memoryAbilityDescription" placeholder="Descrição / efeito..."></textarea>
+              </div>
+              <div class="section-helper">Abilities secundárias, Hidden Abilities, formas alternativas ou efeitos extras. A Ability principal continua na página Geral.</div>
+              <div class="ability-memory-list" id="abilityMemoryList"></div>
+            </div>
+          </details>
+          <details class="tr7-card tr7-fold" id="tr7Notes">
+            <summary><span class="tr7-ico">✎</span><b>Anotações do Pokémon</b><small>campanha · evolução · peculiaridades</small></summary>
+            <div class="tr7-fold-body"><textarea class="input notes-area" id="pokemonNotes" placeholder="Personalidade, histórico, peculiaridades, evolução, treinos, informações da campanha..."></textarea></div>
+          </details>
+        </div>
+
+        <!-- Itens e PPg agora vivem na Mochila e na página 01; os campos ficam escondidos para a ficha continuar funcionando -->
+        <div class="tr7-legacy" hidden aria-hidden="true">
+          <b id="miscOverviewPpg">0 / 15</b><b id="miscOverviewItems">0</b>
           <section class="panel misc-option-panel misc-option-items" data-misc-key="items">
             <div class="panel-head">
               <div class="misc-option-heading">
@@ -1344,30 +1385,6 @@
             </div>
           </section>
 
-          <section class="panel misc-option-panel misc-option-abilities" data-misc-key="abilities">
-            <div class="panel-head">
-              <div class="misc-option-heading">
-                <span class="misc-option-icon" aria-hidden="true">AB</span>
-                <div><h2>Abilities Extras</h2><span class="eyebrow">Memória • <span id="abilityBankCount">379</span> no compêndio</span></div>
-              </div>
-              <button class="misc-option-toggle" type="button" aria-label="Minimizar ou expandir Abilities Extras"><span>−</span><small>RECOLHER</small></button>
-            </div>
-            <div class="panel-body">
-              <div class="misc-ability-tools misc-search-row">
-                <input class="input" id="abilitySystemLookup" list="systemAbilitySuggestions" placeholder="Buscar Ability, ex.: Adaptability..." />
-                <button class="btn" id="abilitySystemLookupBtn">🔎 Preencher Ability</button>
-              </div>
-              <div class="move-auto-status" id="abilitySystemLookupStatus"></div>
-              <datalist id="systemAbilitySuggestions"></datalist>
-              <div class="misc-ability-entry">
-                <div class="ability-create-grid"><input class="input" id="memoryAbilityName" placeholder="Nome da Ability" /><button class="btn primary" id="addMemoryAbilityBtn">＋ Adicionar</button></div>
-                <textarea class="input" id="memoryAbilityDescription" placeholder="Descrição / efeito..."></textarea>
-              </div>
-              <div class="section-helper" style="margin-top:8px">Use esta área para Abilities secundárias, Hidden Abilities, formas alternativas ou efeitos extras. A Ability principal continua na página Geral.</div>
-              <div class="ability-memory-list" id="abilityMemoryList"></div>
-            </div>
-          </section>
-
           <section class="panel misc-option-panel misc-option-progress" data-misc-key="progress">
             <div class="panel-head">
               <div class="misc-option-heading">
@@ -1394,16 +1411,6 @@
             </div>
           </section>
 
-          <section class="panel misc-option-panel misc-option-notes" data-misc-key="notes">
-            <div class="panel-head">
-              <div class="misc-option-heading">
-                <span class="misc-option-icon" aria-hidden="true">NT</span>
-                <div><h2>Anotações do Pokémon</h2><span class="eyebrow">Campanha • evolução • peculiaridades</span></div>
-              </div>
-              <button class="misc-option-toggle" type="button" aria-label="Minimizar ou expandir Anotações do Pokémon"><span>−</span><small>RECOLHER</small></button>
-            </div>
-            <div class="panel-body"><textarea class="input notes-area" id="pokemonNotes" placeholder="Personalidade, histórico, peculiaridades, evolução, treinos, informações da campanha..."></textarea></div>
-          </section>
         </div>
       </div>
 
@@ -2415,7 +2422,7 @@
 
 <script src="scripts/qd-text-v7.js?v=20261127r1"></script>
 <script src="scripts/item-rules-v7.js?v=20261127q3"></script>
-<script src="scripts/app-core.js?v=20261127z1"></script>
+<script src="scripts/app-core.js?v=20261128b2"></script>
 
   <!-- Catálogo público: Pokédex GM V5.0 -->
   <script src="scripts/pokedex-gm-bridge.js?v=20261127r1" defer></script>
@@ -2433,6 +2440,7 @@
   <script src="scripts/update-check-v7.js?v=20261126u1" defer></script>
   <script src="scripts/items-v7.js?v=20261127z2" defer></script>
   <script src="scripts/tm-gift-v7.js?v=20261127y4" defer></script>
+  <script src="scripts/training-v7.js?v=20261128b2" defer></script>
   <script src="scripts/stat-chart-v7.js?v=20261127q3" defer></script>
   <script src="scripts/trainer-card-v6.js?v=20261126o" defer></script>
   <script src="scripts/trainer-inventory-v6.js?v=20261127y1" defer></script>
