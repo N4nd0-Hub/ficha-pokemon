@@ -10475,43 +10475,48 @@ function addTrainingMove(){
 function renderTrainingMoves(){
   const list=document.getElementById("trainingMovesList");
   if(!list)return;
+  const TC={Normal:"#a8a77a",Fire:"#ee8130",Water:"#6390f0",Electric:"#f7d02c",Grass:"#7ac74c",Ice:"#96d9d6",Fighting:"#c22e28",Poison:"#a33ea1",Ground:"#e2bf65",Flying:"#a98ff3",Psychic:"#f95587",Bug:"#a6b91a",Rock:"#b6a136",Ghost:"#735797",Dragon:"#6f35fc",Dark:"#705746",Steel:"#b7b7ce",Fairy:"#d685ad"};
+  const KIND={natural:["nat","Natural"],tm:["tm","💿 TM legal"],"tm-illegal":["tmx","💿 TM ilegal"],rare:["rare","Ilegal · Ovo · TM raro"]};
   const moves=current.trainingMoves||[];
-  list.innerHTML=moves.length?"":'<div class="empty-state">Nenhum move em treinamento.</div>';
+  // ordem: treino de hoje, prontos para aprender, depois os mais avançados
+  const order=[...moves].sort((x,y)=>(y.active?1:0)-(x.active?1:0)
+    ||((Number(y.successes||0)>=Number(y.required||5))?1:0)-((Number(x.successes||0)>=Number(x.required||5))?1:0)
+    ||(Number(y.successes||0)/Number(y.required||5))-(Number(x.successes||0)/Number(x.required||5)));
+  list.innerHTML=moves.length?"":`<div class="tr7-empty"><b>Nenhum golpe em treino.</b><span>Comece um treino no painel “Novo treino” ou use um TM da Mochila.</span></div>`;
 
-  moves.forEach(t=>{
-    const done=Number(t.successes||0)>=Number(t.required||5);
-    const pct=Math.min(100,(Number(t.successes||0)/Number(t.required||5))*100);
-    const card=document.createElement("div");
-    card.className="training-card"+(t.active?" active-training":"");
+  order.forEach(t=>{
+    const req=Math.max(1,Number(t.required||5)),got=Math.min(req,Number(t.successes||0));
+    const done=got>=req;
+    const pct=Math.min(100,got/req*100);
+    const tp=(typeof normalizeTypeName==="function"?normalizeTypeName(t.elementType):t.elementType)||"Normal";
+    const kd=KIND[t.trainingType]||KIND.rare;
+    const cat=t.category==="Special"?"Especial":t.category==="Status"?"Status":"Físico";
+    const card=document.createElement("article");
+    card.className="training-card tr7-move"+(t.active?" active-training on":"")+(done?" done":"");
+    card.style.setProperty("--t",TC[tp]||"#8a8a8a");
     card.innerHTML=`
-      <div class="training-top">
-        <div>
-          <div class="move-name">${esc(t.name)}</div>
-          <div class="move-meta">
-            <span class="tag">${esc(t.elementType||"Normal")}</span>
-            <span class="tag">${esc(t.category||"Physical")}</span>
-            <span class="tag">Power ${esc(String(t.powerLabel||Number(t.power||0)))}</span>
-            <span class="tag">Acc. ${esc(String(t.accuracyLabel||`${Number(t.accuracy||0)}%`))}</span>
-            ${t.source==="Sistema"?'<span class="tag">Exclusivo</span>':""}
-            ${Number(t.effectChance||0)>0?`<span class="tag effect-chance-tag combat-detail-tag">Efeito ${Number(t.effectChance||0)}%</span>`:""}
-            <span class="tag">${t.trainingType==="natural"?"Natural":t.trainingType==="tm"?"💿 TM · legal":t.trainingType==="tm-illegal"?"💿 TM · ilegal (3 dias)":"Ilegal / Ovo / TM Raro"}</span>
-            <span class="tag">${Number(t.successes||0)}/${Number(t.required||5)} sucessos</span>
-            ${t.active?'<span class="tag">Treino ativo</span>':""}
-            ${done?'<span class="tag">Concluído</span>':""}
-          </div>
-          ${t.description?`<div class="move-description">${esc(translateMoveEffectPt(t.description))}</div>`:""}
-        </div>
-        <button class="btn small danger remove-training">✕</button>
+      <div class="tr7-move-head">
+        <span class="tr7-type">${esc(tp)}</span>
+        <div class="tr7-move-title"><b class="move-name">${esc(t.name)}</b>
+          <small>${esc(cat)}${Number(t.power||0)||t.powerLabel?` · Power ${esc(String(t.powerLabel||Number(t.power||0)))}`:""} · Precisão ${esc(String(t.accuracyLabel||`${Number(t.accuracy||0)}%`))}${Number(t.effectChance||0)>0?` · Efeito ${Number(t.effectChance||0)}%`:""}${t.source==="Sistema"?" · Exclusivo":""}</small></div>
+        <button class="tr7-x remove-training" type="button" title="Cancelar este treino" aria-label="Cancelar o treino de ${esc(t.name)}">✕</button>
       </div>
-      <div class="training-progress"><div class="training-progress-fill" style="width:${pct}%"></div></div>
-      <div class="training-actions">
-        <button class="btn small set-active">${t.active?"Desmarcar ativo":"Marcar treino ativo"}</button>
-        <button class="btn small success-plus" ${done?"disabled":""}>+1 Sucesso</button>
-        <button class="btn small crit-plus" ${done?"disabled":""}>Crítico +2</button>
-        ${done?'<button class="btn primary small learn-move">Adicionar à Memória de Moves</button>':""}
+      ${req<=12?`<div class="tr7-pips" style="--n:${req}" aria-label="${got} de ${req} sucessos">${Array.from({length:req},(_,i)=>`<i class="${i<got?"on":""}"></i>`).join("")}</div>`
+        :`<div class="training-progress tr7-bar"><div class="training-progress-fill" style="width:${pct}%"></div></div>`}
+      <div class="tr7-count"><span class="tr7-kind ${kd[0]}">${esc(kd[1])}</span><span class="tr7-num"><b>${got}</b> / ${req} sucesso${req>1?"s":""}</span>${done?' <em class="ok">pronto para aprender!</em>':` <em>faltam ${req-got}</em>`}${t.fromTm?` <em class="src">${esc(t.fromTm)}</em>`:""}</div>
+      ${t.description?`<details class="tr7-desc"><summary>Efeito do golpe</summary><p class="move-description">${esc(translateMoveEffectPt(t.description))}</p></details>`:""}
+      <div class="training-actions tr7-acts">
+        ${done?`<button class="btn primary learn-move tr7-learn" type="button">✦ Aprender ${esc(t.name)}</button>`:`
+        <button class="btn small set-active tr7-today" type="button" aria-pressed="${!!t.active}">${t.active?"☀ Treinando hoje":"Treinar hoje"}</button>
+        <button class="btn small success-plus" type="button">+1 sucesso</button>
+        <button class="btn small crit-plus" type="button" title="Um crítico vale dois sucessos">Crítico +2</button>
+        <button class="btn small success-minus" type="button" title="Desfazer um sucesso" ${got?"":"disabled"}>−1</button>`}
       </div>
     `;
-    card.querySelector(".set-active").onclick=()=>{
+    const minus=card.querySelector(".success-minus");
+    if(minus)minus.onclick=()=>{t.successes=Math.max(0,Number(t.successes||0)-1);renderTrainingMoves();debouncedSave();};
+    const setActive=card.querySelector(".set-active");
+    if(setActive)setActive.onclick=()=>{
       if(!t.active){
         current.trainingMoves.forEach(x=>x.active=false);
         t.active=true;
@@ -10520,11 +10525,13 @@ function renderTrainingMoves(){
       }
       renderTrainingMoves();debouncedSave();
     };
-    card.querySelector(".success-plus").onclick=()=>{
+    const plus=card.querySelector(".success-plus");
+    if(plus)plus.onclick=()=>{
       t.successes=Math.min(t.required,Number(t.successes||0)+1);
       renderTrainingMoves();debouncedSave();
     };
-    card.querySelector(".crit-plus").onclick=()=>{
+    const crit=card.querySelector(".crit-plus");
+    if(crit)crit.onclick=()=>{
       t.successes=Math.min(t.required,Number(t.successes||0)+2);
       renderTrainingMoves();debouncedSave();
     };
@@ -10563,6 +10570,7 @@ function renderTrainingMoves(){
     };
     list.appendChild(card);
   });
+  try{document.dispatchEvent(new CustomEvent("hh:training"));}catch(e){}
 }
 
 function addCustomItem(){
